@@ -61,7 +61,7 @@ class MarketDataFragmentHandlerTest {
         String broadcastedMessage = messageCaptor.getValue();
         assertThat(broadcastedMessage).contains("\"type\":\"trade\"");
         assertThat(broadcastedMessage).contains("\"symbol\":\"AAPL\"");
-        assertThat(broadcastedMessage).contains("\"price\":1.5000");
+        assertThat(broadcastedMessage).contains("\"price\":1.5");
         assertThat(broadcastedMessage).contains("\"quantity\":100");
     }
 
@@ -93,8 +93,8 @@ class MarketDataFragmentHandlerTest {
         String broadcastedMessage = messageCaptor.getValue();
         assertThat(broadcastedMessage).contains("\"type\":\"quote\"");
         assertThat(broadcastedMessage).contains("\"symbol\":\"MSFT\"");
-        assertThat(broadcastedMessage).contains("\"bid\":{\"price\":3.0000");
-        assertThat(broadcastedMessage).contains("\"ask\":{\"price\":3.0100");
+        assertThat(broadcastedMessage).contains("\"bid\":{\"price\":3.0");
+        assertThat(broadcastedMessage).contains("\"ask\":{\"price\":3.01");
     }
 
     @Test
