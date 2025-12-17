@@ -44,7 +44,7 @@ public class MarketDataFragmentHandler implements FragmentHandler {
     private long sampleCounter = 0;
 
     @Inject
-    private MarketDataBroadcaster broadcaster;
+    MarketDataBroadcaster broadcaster;
 
     @Override
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
