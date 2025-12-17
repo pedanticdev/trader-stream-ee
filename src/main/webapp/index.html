@@ -777,13 +777,14 @@
             };
             ws.onclose=()=>{
                 document.getElementById('statusIndicator').classList.remove('connected');
-                document.getElementById('statusText').textContent='Disconnected';
+                document.getElementById('statusText').textContent='Disconnected (Reconnecting...)';
                 document.getElementById('connectBtn').textContent='Connect';
                 document.getElementById('modeDisplay').textContent = '';
                 document.getElementById('chartModeLabel').textContent = 'Disconnected';
-                addLog('WebSocket disconnected');
+                addLog('WebSocket disconnected. Attempting auto-reconnect in 3s...');
                 if (window.chartInterval) clearInterval(window.chartInterval);
                 if (window.gcStatsInterval) clearInterval(window.gcStatsInterval);
+                setTimeout(connect, 3000);
             };
             ws.onerror=error=>addLog('WebSocket error: '+error);
             ws.onmessage=event=>{

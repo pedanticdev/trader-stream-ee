@@ -171,8 +171,9 @@ public class MarketDataPublisher {
 
                     LockSupport.parkNanos(PARK_NANOS);
 
-                } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "Error in publisher loop", e);
+                } catch (Throwable e) {
+                    LOGGER.log(Level.SEVERE, "Critical error in publisher loop", e);
+                    // Brief pause on error, then continue
                     LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                 }
             }
