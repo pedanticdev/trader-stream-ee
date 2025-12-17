@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
@@ -64,6 +65,8 @@ public class MarketDataPublisher {
     private final AtomicLong tradeIdGenerator = new AtomicLong(1000);
 
     private final AtomicLong messagesPublished = new AtomicLong(0);
+    private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
+    private static final int MAX_CONSECUTIVE_FAILURES = 50;
     private long sampleCounter = 0;
     private volatile boolean initialized = false;
     private volatile boolean running = false;
@@ -201,6 +204,9 @@ public class MarketDataPublisher {
                         messagesSinceLastLog,
                         messagesPerSecond
                     ));
+
+                    String statsJson = String.format("{\"type\":\"stats\",\"total\":%d,\"rate\":%.0f}", currentCount, messagesPerSecond);
+                    broadcaster.broadcast(statsJson);
 
                     lastCount = currentCount;
                     lastTime = currentTime;
@@ -424,6 +430,7 @@ public class MarketDataPublisher {
 
             if (result > 0) {
                 messagesPublished.incrementAndGet();
+                consecutiveFailures.set(0);
                 return;
             } else if (result == Publication.BACK_PRESSURED) {
                 LOGGER.fine("Back pressured on " + messageType);
@@ -436,14 +443,28 @@ public class MarketDataPublisher {
                 }
             } else if (result == Publication.NOT_CONNECTED) {
                 LOGGER.warning("Publication not connected");
+                handlePublishFailure(messageType);
                 return;
             } else {
                 LOGGER.warning("Offer failed for " + messageType + ": " + result);
+                handlePublishFailure(messageType);
                 return;
             }
         }
 
         LOGGER.warning("Failed to publish " + messageType + " after retries");
+        handlePublishFailure(messageType);
+    }
+
+    private void handlePublishFailure(String messageType) {
+        int failures = consecutiveFailures.incrementAndGet();
+        if (failures >= MAX_CONSECUTIVE_FAILURES) {
+            LOGGER.severe(String.format(
+                "Circuit breaker triggered: %d consecutive publish failures (last attempted: %s). Stopping message generation.",
+                failures, messageType
+            ));
+            running = false;
+        }
     }
 
     @PreDestroy
