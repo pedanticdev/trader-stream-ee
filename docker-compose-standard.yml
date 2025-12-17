@@ -1,0 +1,25 @@
+services:
+  trader-stream-ee:
+    image: trader-stream-ee:standard
+    build:
+      context: .
+      dockerfile: Dockerfile.standard
+    container_name: trader-stream-ee
+    ports:
+      - "8080:8080"
+    # Increase shared memory not strictly needed for DIRECT mode but good to keep
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=${MODE:-DIRECT}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/trader-stream-ee/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - trader-network
+
+networks:
+  trader-network:
+    driver: bridge

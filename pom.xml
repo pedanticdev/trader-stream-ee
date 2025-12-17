@@ -15,6 +15,8 @@
         <jakartaee-api.version>11.0.0</jakartaee-api.version>
         <payara.version>7.2025.2</payara.version>
         <payara.home>payara6</payara.home>
+        <aeron.version>1.46.7</aeron.version>
+        <sbe.version>1.34.0</sbe.version>
     </properties>
     
     <dependencyManagement>
@@ -46,10 +48,83 @@
             <artifactId>payara-api</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- Aeron for high-throughput messaging -->
+        <dependency>
+            <groupId>io.aeron</groupId>
+            <artifactId>aeron-all</artifactId>
+            <version>${aeron.version}</version>
+        </dependency>
+        <!-- Simple Binary Encoding (SBE) for zero-copy serialization -->
+        <dependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>sbe-all</artifactId>
+            <version>${sbe.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
+        <finalName>trader-stream-ee</finalName>
         <plugins>
+            <!-- SBE code generator plugin -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-sbe-codecs</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <includeProjectDependencies>true</includeProjectDependencies>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/src/main/resources/sbe/market-data.xml</argument>
+                            </arguments>
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>sbe.output.dir</key>
+                                    <value>${project.build.directory}/generated-sources/sbe</value>
+                                </systemProperty>
+                                <systemProperty>
+                                    <key>sbe.target.language</key>
+                                    <value>Java</value>
+                                </systemProperty>
+                            </systemProperties>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.co.real-logic</groupId>
+                        <artifactId>sbe-all</artifactId>
+                        <version>${sbe.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <!-- Add generated sources to build path -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/sbe</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -62,15 +137,6 @@
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
-            </plugin>
-            <!-- Execute 'mvn clean package payara-server:dev' to run the application. -->
-            <plugin>
-                    <groupId>fish.payara.maven.plugins</groupId>
-                    <artifactId>payara-server-maven-plugin</artifactId>
-                    <version>1.0.0-Alpha3</version>
-                    <configuration>
-                        <payaraServerVersion>${payara.version}</payaraServerVersion>
-                    </configuration>
             </plugin>
             <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>

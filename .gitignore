@@ -27,3 +27,4 @@ container/
 docs/*
 *.md
 !README.md
+*.pdf

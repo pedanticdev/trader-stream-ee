@@ -1,0 +1,27 @@
+# Ignore build artifacts
+target/
+.git/
+.idea/
+*.iml
+.vscode/
+
+# Ignore environment files
+.env
+*.log
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore Docker files
+docker-compose*.yml
+!docker-compose.yml
+Dockerfile*
+!Dockerfile
+
+# Ignore documentation
+*.md
+!README.md
+
+# Ignore PDFs
+*.pdf

@@ -1,73 +1,40 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: jdd-postgres
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - jdd-network
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U keycloak" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.4.0
-    container_name: jdd-keycloak
-    command: start-dev --import-realm
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: keycloak
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 8180
-      KC_HOSTNAME_STRICT: false
-      KC_HOSTNAME_STRICT_HTTPS: false
-      KC_HTTP_ENABLED: true
-      KC_HTTP_PORT: 8180
-      KC_HEALTH_ENABLED: true
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    ports:
-      - "8180:8180"
-    volumes:
-      - ./keycloak/imports:/opt/keycloak/data/import
-      - keycloak_data:/opt/keycloak/data
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - jdd-network
-
-  payara-app:
+  trader-stream-ee:
+    image: trader-stream-ee:aeron
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: jdd-payara-app
+    container_name: trader-stream-ee
     ports:
       - "8080:8080"
-    depends_on:
-      keycloak:
-        condition: service_started
+    # Increase shared memory for Aeron IPC transport
+    shm_size: 512m
+    # JVM options are set in Dockerfile by default (C4 GC with 2g heap)
+    # Uncomment below to override with custom settings:
+    # environment:
+    #   - JAVA_OPTS=-XX:+UseZGC -Xms4g -Xmx4g -Xlog:gc*:stdout:time,uptime
     environment:
-      - keycloak_auth_server_url=http://keycloak:8180
-      - db_host=postgres
+      - TRADER_INGESTION_MODE=${MODE:-AERON}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/trader-stream-ee/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
-      - jdd-network
+      - trader-network
 
-volumes:
-  postgres_data:
-    driver: local
-  keycloak_data:
-    driver: local
+  # Optional: Grafana for monitoring GC metrics (commented out by default)
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: trader-grafana
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #   networks:
+  #     - trader-network
 
 networks:
-  jdd-network:
+  trader-network:
     driver: bridge

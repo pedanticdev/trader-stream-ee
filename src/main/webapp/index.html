@@ -1,47 +1,858 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>Welcome to Payara</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeStreamEE - Market Data Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-        <style>
-            body {
-                background-image: linear-gradient(rgba(0,44,62), rgba(0,44,62,.8), rgba(0,44,62));
-                color: #fff;
-            }
-            a {
-                font-weight: bold;
-                color: white;
-            }
-        </style>
-    </head>
-    <body>
+        /* General Styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        <h1>Greetings from Payara!</h1>
-        <p>
-            Thank you for visiting <a href="https://www.payara.fish/">Payara</a>! We're thrilled to have you here. Payara is your go-to destination for all things Jakarta EE and Java enterprise applications.
-        </p>
-        <p>
-            <a href="https://www.payara.fish/"><img width="50%" src="images/payara-fish-logo.svg" alt="Payara Logo"></a>
-        </p>
-        <h2>RESTful Service</h2>
-        <p>
-            The REST end-point is available at <a href="resources/hello">resources/hello</a>.
-            You can supply a name to the end-point using a query parameter like this: <a href="resources/hello?name=John">resources/hello?name=John</a>
-        </p>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8fafc;
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            background: white;
+            padding: 24px 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            background: white;
+            padding: 16px 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        }
+
+        .status-indicator.connected {
+            background: #10b981;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% {
+                opacity: 0.7;
+                box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+            }
+        }
+
+        .status-indicator.connected {
+            animation-name: pulseGreen;
+        }
+
+        @keyframes pulseGreen {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            50% {
+                opacity: 0.7;
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
+        }
+
+        .stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat { text-align: center; }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #1976d2;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #64748b;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .status-mode {
+            font-weight: 600;
+            color: #1976d2;
+            margin-left: 15px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+        }
+
+        /* Data Grid and Cards */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 1024px) {
+            .data-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Card Flip Container */
+        .card-container {
+            perspective: 1000px;
+            height: 100%;
+        }
+
+        .card {
+            position: relative;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            overflow: visible;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .card.flipped .card-front {
+            transform: rotateY(180deg);
+        }
+
+        .card.flipped .card-back {
+            transform: rotateY(0deg);
+        }
+
+        .card-front, .card-back {
+            width: 100%;
+            backface-visibility: hidden;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            transform: rotateY(-180deg);
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            border-radius: 8px;
+            padding: 30px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .card-back h3 {
+            font-size: 1.5em;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .card-back p {
+            font-size: 0.95em;
+            line-height: 1.6;
+            opacity: 0.95;
+            font-weight: 400;
+        }
+
+        .card-back .tech-stack {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .flip-hint {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7em;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .card:hover .flip-hint {
+            opacity: 1;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            color: white;
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 1.05em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .card-body {
+            padding: 24px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .card-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .card-body::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .card-body::-webkit-scrollbar-thumb {
+            background: #1976d2;
+            border-radius: 10px;
+        }
+
+        .card-body.chart-body {
+            max-height: none;
+            overflow: hidden;
+            height: 350px;
+        }
+
+        /* Message Styles */
+        .message {
+            padding: 14px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.82em;
+            border-left: 4px solid #1976d2;
+            background: #f5f5f5;
+            transition: all 0.2s;
+        }
+
+        .message:hover {
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .message.trade { border-left-color: #3b82f6; }
+        .message.quote { border-left-color: #10b981; }
+        .message.depth { border-left-color: #f59e0b; }
+
+        .message-type {
+            font-weight: 700;
+            color: #1976d2;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            font-size: 0.75em;
+            letter-spacing: 0.05em;
+        }
+
+        .message-data { color: #475569; }
+
+        .highlight {
+            color: #1976d2;
+            font-weight: 700;
+        }
+
+        /* Buttons */
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            background: #1565c0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Chart specific styles */
+        .chart-mode-label {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 500;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>TradeStreamEE</h1>
+                <p class="subtitle">High-Frequency Trading Dashboard • Aeron + SBE + Payara Micro + Azul Platform Prime</p>
+            </div>
+        </header>
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Disconnected</span>
+                <span id="modeDisplay" class="status-mode"></span>
+            </div>
+            <div class="stats">
+                <div class="stat"><div class="stat-value" id="messageCount">0</div><div class="stat-label">Messages</div></div>
+                <div class="stat"><div class="stat-value" id="messageRate">0</div><div class="stat-label">Msg/sec</div></div>
+            </div>
+            <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+        </div>
         
-                
-        <h2>API Documentation</h2>
-        <p>
-            Explore the API documentation for the RESTful service using Swagger and OpenAPI. You can access the documentation at the following link:
-            <a href="swagger.html">Swagger and OpenAPI Documentation</a>
-        </p>
+        <div class="data-grid">
+            <!-- GC Hiccup Monitor -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-front">
+                    <div class="card-header">
+                        Hiccup Monitor
+                        <span class="chart-mode-label" id="chartModeLabel">Waiting...</span>
+                        <span class="flip-hint">Click to learn</span>
+                    </div>
+                    <div class="card-body" style="height: 200px; overflow: hidden;">
+                        <canvas id="hiccupChart"></canvas>
+                    </div>
+                </div>
+                <div class="card-back">
+                    <h3>Hiccup Monitor</h3>
+                    <p>Tracks inter-arrival time gaps between messages. Spikes indicate "Stop-the-World" GC pauses where the application freezes.</p>
+                    <p>With Azul C4's pauseless GC, you should see a flat line even at 100k+ msg/sec. Standard OpenJDK G1GC shows frequent spikes as it struggles to clean up heap.</p>
+                    <div class="tech-stack">
+                        <strong>Measured:</strong> Performance.now() delta between WebSocket messages
+                    </div>
+                </div>
+            </div>
+
+            <!-- GC Statistics -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-front">
+                    <div class="card-header">
+                        GC Statistics
+                        <span class="chart-mode-label" id="gcCollectorName">--</span>
+                        <span class="flip-hint">Click to learn</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="message">
+                            <div class="message-type">Collections</div>
+                            <div class="message-data">
+                                Total: <span class="highlight" id="gcCollectionCount">--</span><br>
+                                Delta: <span class="highlight" id="gcCollectionDelta">--</span>/sec
+                            </div>
+                        </div>
+                        <div class="message">
+                            <div class="message-type">Collection Time</div>
+                            <div class="message-data">
+                                Total: <span class="highlight" id="gcCollectionTime">--</span> ms<br>
+                                Avg: <span class="highlight" id="gcAvgTime">--</span> ms
+                            </div>
+                        </div>
+                        <div class="message">
+                            <div class="message-type">Heap Usage</div>
+                            <div class="message-data">
+                                <span class="highlight" id="heapUsed">--</span> / <span id="heapMax">--</span> MB<br>
+                                <span class="highlight" id="heapPercent">--</span>% utilized
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-back">
+                    <h3>GC Statistics</h3>
+                    <p>Real-time garbage collection metrics. Collection <strong>count</strong> matters less than <strong>pause duration</strong>.</p>
+                    <p><strong>G1GC:</strong> Fewer collections (48), but longer pauses (4ms avg). At 100k msg/sec, a 4ms pause = 400 dropped messages.</p>
+                    <p><strong>Azul C4:</strong> More collections (500), but sub-millisecond pauses (0.1ms avg). Same load = only 10 dropped messages.</p>
+                    <p>C4 does work concurrently while G1GC batches cleanup into painful stops.</p>
+                    <div class="tech-stack">
+                        <strong>Source:</strong> /metrics endpoint (Prometheus format)<br>
+                        <strong>Key Metric:</strong> Avg pause time, not collection count
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Monitor -->
+            <div class="card full-width" style="margin-bottom: 20px;" onclick="flipCard(this)">
+                <div class="card-front">
+                    <div class="card-header">
+                        Real-Time Price Monitor (Live Feed)
+                        <span class="flip-hint">Click to learn</span>
+                    </div>
+                    <div class="card-body chart-body">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+                <div class="card-back">
+                    <h3>Price Monitor</h3>
+                    <p>Displays the last 20 trade prices received via WebSocket. Updates in real-time as messages stream in.</p>
+                    <p>Watch for smooth, continuous updates with Aeron mode. Any stuttering indicates GC pauses blocking the ingestion pipeline.</p>
+                    <div class="tech-stack">
+                        <strong>Chart:</strong> Chart.js (Bar)<br>
+                        <strong>Updates:</strong> On each Trade message
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Tables -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-front">
+                    <div class="card-header">Recent Trades</div>
+                    <div class="card-body" id="tradesContainer"></div>
+                </div>
+                <div class="card-back">
+                    <h3>Trade Messages</h3>
+                    <p>Shows the 5 most recent trade executions decoded from SBE binary format. Each trade includes timestamp, symbol, price, and quantity.</p>
+                    <div class="tech-stack">
+                        <strong>SBE Template:</strong> Trade (ID: 1)<br>
+                        <strong>Decoding:</strong> Zero-copy Flyweight pattern
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-front">
+                    <div class="card-header">Market Quotes</div>
+                    <div class="card-body" id="quotesContainer"></div>
+                </div>
+                <div class="card-back">
+                    <h3>Quote Messages</h3>
+                    <p>Displays bid/ask spreads for active symbols. Generated synthetically by the publisher and encoded using SBE.</p>
+                    <div class="tech-stack">
+                        <strong>SBE Template:</strong> Quote (ID: 2)<br>
+                        <strong>Fields:</strong> Bid Price, Ask Price, Bid Size, Ask Size
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-front">
+                    <div class="card-header">Market Depth</div>
+                    <div class="card-body" id="depthContainer"></div>
+                </div>
+                <div class="card-back">
+                    <h3>Market Depth</h3>
+                    <p>Level 2 order book data showing buy/sell orders at different price levels. Demonstrates SBE's ability to encode complex nested structures.</p>
+                    <div class="tech-stack">
+                        <strong>SBE Template:</strong> MarketDepth (ID: 3)<br>
+                        <strong>Structure:</strong> Repeating groups for each price level
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-front">
+                    <div class="card-header">System Log</div>
+                    <div class="card-body" id="logContainer"></div>
+                </div>
+                <div class="card-back">
+                    <h3>System Log</h3>
+                    <p>Connection events and diagnostic messages. Logs WebSocket lifecycle and ingestion mode switches.</p>
+                    <div class="tech-stack">
+                        <strong>Purpose:</strong> Debugging and monitoring<br>
+                        <strong>Events:</strong> Connect, Disconnect, Mode changes
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let ws=null,messageCount=0,lastMessageTime=0,messagesLastSecond=0;
+        let lastGcCount=0,lastGcPollTime=0;
+        let priceChart = null;
+        let hiccupChart = null;
+        let lastRateUpdate = Date.now();
+        let maxGapInWindow = 0;
+
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#333';
+        Chart.defaults.borderColor = 'rgba(0,0,0,0.1)';
+
+        function initCharts() {
+            // Price Chart (Bar)
+            const ctxPrice = document.getElementById('priceChart').getContext('2d');
+            priceChart = new Chart(ctxPrice, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Trade Price',
+                        data: [],
+                        backgroundColor: '#667eea',
+                        borderColor: '#5a67d8',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // Hiccup Monitor Chart (Line)
+            const ctxHiccup = document.getElementById('hiccupChart').getContext('2d');
+            hiccupChart = new Chart(ctxHiccup, {
+                type: 'line',
+                data: {
+                    labels: Array(50).fill(''), // Pre-fill labels
+                    datasets: [{
+                        label: 'Pause Duration (ms)',
+                        data: Array(50).fill(0), // Pre-fill data
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false }, // Hide X labels for cleaner look
+                        y: { 
+                            beginAtZero: true,
+                            suggestedMax: 50,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            title: { display: true, text: 'Pause Duration (ms)', font: { size: 12, weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            // Update Hiccup Chart
+            if (!hiccupChart) return;
+            
+            // Logic: If max gap > 10ms, plot it. Else plot 0.
+            const plotValue = maxGapInWindow > 10 ? maxGapInWindow : 0;
+            
+            hiccupChart.data.labels.push('');
+            hiccupChart.data.datasets[0].data.push(plotValue);
+            
+            if (hiccupChart.data.labels.length > 50) {
+                hiccupChart.data.labels.shift();
+                hiccupChart.data.datasets[0].data.shift();
+            }
+            
+            hiccupChart.update('none');
+            maxGapInWindow = 0; // Reset for next window
+        }
+
+        function updatePriceChart(price) {
+            if (!priceChart) return;
+            const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            priceChart.data.labels.push(now);
+            priceChart.data.datasets[0].data.push(price);
+            if (priceChart.data.labels.length > 50) {
+                priceChart.data.labels.shift();
+                priceChart.data.datasets[0].data.shift();
+            }
+            priceChart.update('none');
+        }
+
+        function parsePrometheusMetrics(text) {
+            const metrics = {};
+            const lines = text.split('\n');
+            for (const line of lines) {
+                if (line.startsWith('#') || !line.trim()) continue;
+                const match = line.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\{([^}]*)\}\s+(.+)$/);
+                if (match) {
+                    const [, name, labels, value] = match;
+                    const labelPairs = {};
+                    labels.split(',').forEach(pair => {
+                        const [key, val] = pair.split('=');
+                        if (key && val) labelPairs[key.trim()] = val.replace(/"/g, '').trim();
+                    });
+                    if (!metrics[name]) metrics[name] = [];
+                    metrics[name].push({ labels: labelPairs, value: parseFloat(value) });
+                }
+            }
+            return metrics;
+        }
+
+        function pollGCStats() {
+            fetch('/metrics')
+                .then(response => response.text())
+                .then(text => {
+                    const metrics = parsePrometheusMetrics(text);
+                    updateGCMetricsDisplay(metrics);
+                })
+                .catch(error => console.error('Error fetching metrics:', error));
+        }
+
+        function updateGCMetricsDisplay(metrics) {
+            const gcTotalMetrics = metrics['gc_total'] || [];
+            const gcTimeMetrics = metrics['gc_time_seconds_total'] || [];
+
+            let totalCollections = 0;
+            let totalCollectionTime = 0;
+            let collectorName = '';
+            let isAzulC4 = false;
+
+            gcTotalMetrics.forEach(m => {
+                const name = m.labels.name || '';
+
+                // Detect collector type and sum collections
+                if (name.includes('GPGC')) {
+                    isAzulC4 = true;
+                    // For Azul C4, only count "Pauses" (STW events)
+                    if (name.includes('Pauses')) {
+                        totalCollections += m.value;
+                        if (!collectorName) collectorName = 'GPGC';
+                    }
+                } else if (name.includes('G1')) {
+                    // For G1GC, count Young and Old generations (exclude Concurrent as it's not STW)
+                    if (name.includes('Young Generation') || name.includes('Old Generation')) {
+                        totalCollections += m.value;
+                        if (!collectorName) collectorName = 'G1GC';
+                    }
+                } else if (name.includes('Generation') || name.includes('Copy') || name.includes('MarkSweep')) {
+                    // Fallback for other GC types (ParallelGC, SerialGC, etc.)
+                    totalCollections += m.value;
+                    if (!collectorName) collectorName = name.split(' ')[0];
+                }
+            });
+
+            gcTimeMetrics.forEach(m => {
+                const name = m.labels.name || '';
+
+                if (isAzulC4) {
+                    // For Azul C4, only count "Pauses" time
+                    if (name.includes('Pauses')) {
+                        totalCollectionTime += m.value;
+                    }
+                } else if (name.includes('G1')) {
+                    // For G1GC, count Young and Old time (exclude Concurrent)
+                    if (name.includes('Young Generation') || name.includes('Old Generation')) {
+                        totalCollectionTime += m.value;
+                    }
+                } else if (name.includes('Generation') || name.includes('Copy') || name.includes('MarkSweep')) {
+                    // Fallback for other GC types
+                    totalCollectionTime += m.value;
+                }
+            });
+
+            const now = Date.now();
+            const timeDelta = (now - lastGcPollTime) / 1000;
+            const countDelta = totalCollections - lastGcCount;
+            const collectionsPerSec = timeDelta > 0 ? (countDelta / timeDelta).toFixed(1) : '0';
+
+            document.getElementById('gcCollectionCount').textContent = totalCollections.toLocaleString();
+            document.getElementById('gcCollectionDelta').textContent = collectionsPerSec;
+            document.getElementById('gcCollectionTime').textContent = (totalCollectionTime * 1000).toFixed(0);
+            document.getElementById('gcAvgTime').textContent = totalCollections > 0 ? ((totalCollectionTime * 1000) / totalCollections).toFixed(3) : '0';
+            document.getElementById('gcCollectorName').textContent = collectorName || 'Unknown';
+
+            lastGcCount = totalCollections;
+            lastGcPollTime = now;
+
+            const heapUsed = (metrics['memory_usedHeap_bytes']?.[0]?.value || 0) / (1024 * 1024);
+            const heapMax = (metrics['memory_maxHeap_bytes']?.[0]?.value || 0) / (1024 * 1024);
+            const heapPercent = heapMax > 0 ? ((heapUsed / heapMax) * 100).toFixed(0) : 0;
+
+            document.getElementById('heapUsed').textContent = heapUsed.toFixed(0);
+            document.getElementById('heapMax').textContent = heapMax.toFixed(0);
+            document.getElementById('heapPercent').textContent = heapPercent;
+        }
+
+        function flipCard(card) {
+            card.classList.toggle('flipped');
+        }
+
+        function toggleConnection(){ws&&ws.readyState===WebSocket.OPEN?ws.close():connect()}
         
-        <h2>Why Choose Payara?</h2>
-        <p>
-            Dive into the world of Jakarta EE with Payara. Our robust application server empowers you to build and deploy scalable, enterprise-ready solutions with ease.
-        </p>
-        <p>
-            Explore the incredible features of Payara, from seamless clustering to unparalleled support. Get started on your journey with Payara by checking out our <a href="https://docs.payara.fish/">documentation</a>.
-        </p>
-    </body>
+        function connect(){
+            const protocol=window.location.protocol==='https:'?'wss:':'ws:';
+            const contextPath=window.location.pathname.replace(/\/[^\/]*\.html.*$/,'').replace(/\/$/,'');
+            const wsUrl=`${protocol}//${window.location.host}${contextPath}/market-data`;
+            
+            addLog('Connecting to '+wsUrl);
+            ws=new WebSocket(wsUrl);
+            
+            ws.onopen=()=>{
+                document.getElementById('statusIndicator').classList.add('connected');
+                document.getElementById('statusText').textContent='Connected';
+                document.getElementById('connectBtn').textContent='Disconnect';
+                addLog('WebSocket connected');
+                lastMessageTime = performance.now();
+                lastRateUpdate = Date.now(); // Reset rate timer
+
+                // Start hiccup chart update loop (e.g., every 100ms)
+                if (window.chartInterval) clearInterval(window.chartInterval);
+                window.chartInterval = setInterval(updateCharts, 100);
+
+                // Start GC stats polling (every 3 seconds)
+                if (window.gcStatsInterval) clearInterval(window.gcStatsInterval);
+                window.gcStatsInterval = setInterval(pollGCStats, 3000);
+                pollGCStats(); // Initial poll
+            };
+            ws.onclose=()=>{
+                document.getElementById('statusIndicator').classList.remove('connected');
+                document.getElementById('statusText').textContent='Disconnected';
+                document.getElementById('connectBtn').textContent='Connect';
+                document.getElementById('modeDisplay').textContent = '';
+                document.getElementById('chartModeLabel').textContent = 'Disconnected';
+                addLog('WebSocket disconnected');
+                if (window.chartInterval) clearInterval(window.chartInterval);
+                if (window.gcStatsInterval) clearInterval(window.gcStatsInterval);
+            };
+            ws.onerror=error=>addLog('WebSocket error: '+error);
+            ws.onmessage=event=>{
+                let data = JSON.parse(event.data);
+                if (data.wrapped && data.data) {
+                    data = data.data;
+                }
+                handleMessage(data);
+            };
+        }
+
+        function handleMessage(data){
+            const nowPerf = performance.now();
+            const gap = nowPerf - lastMessageTime;
+            lastMessageTime = nowPerf;
+
+            // Track max hiccup in current window
+            if (gap > maxGapInWindow) {
+                maxGapInWindow = gap;
+            }
+
+            messageCount++;
+            messagesLastSecond++;
+            
+            const nowEpoch = Date.now();
+            if (nowEpoch - lastRateUpdate >= 1000) {
+                document.getElementById('messageCount').textContent=messageCount.toLocaleString();
+                document.getElementById('messageRate').textContent=messagesLastSecond.toLocaleString();
+                messagesLastSecond=0;
+                lastRateUpdate=nowEpoch;
+            }
+            
+            switch(data.type){
+                case'trade':
+                    addTrade(data);
+                    updatePriceChart(data.price);
+                    break;
+                case'quote':
+                    addQuote(data);
+                    break;
+                case'depth':
+                    addDepth(data);
+                    break;
+                case'info':
+                    addLog(data.message);
+                    if (data.mode) {
+                        const modeText = 'Mode: ' + data.mode;
+                        document.getElementById('modeDisplay').textContent = modeText;
+                        document.getElementById('chartModeLabel').textContent = modeText;
+                    }
+                    break;
+            }
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const d = new Date(timestamp);
+            return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.' + d.getMilliseconds().toString().padStart(3, '0');
+        }
+
+        function addTrade(data){const c=document.getElementById('tradesContainer'),m=document.createElement('div');m.className='message trade';m.innerHTML=`<div class="message-type">TRADE #${data.tradeId} <span style="float:right;font-size:0.8em;font-weight:normal;">${formatTime(data.timestamp)}</span></div><div class="message-data"><strong>${data.symbol}</strong> ${data.side} <span class="highlight">${data.quantity}</span> @ <span class="highlight">$${data.price.toFixed(2)}</span></div>`;c.insertBefore(m,c.firstChild);if(c.children.length>20)c.removeChild(c.lastChild)}
+        function addQuote(data){const c=document.getElementById('quotesContainer'),m=document.createElement('div');m.className='message quote';m.innerHTML=`<div class="message-type">${data.symbol} <span style="float:right;font-size:0.8em;font-weight:normal;">${formatTime(data.timestamp)}</span></div><div class="message-data">BID: <span class="highlight">${data.bid.size}</span> @ <span class="highlight">$${data.bid.price.toFixed(2)}</span><br>ASK: <span class="highlight">${data.ask.size}</span> @ <span class="highlight">$${data.ask.price.toFixed(2)}</span></div>`;c.insertBefore(m,c.firstChild);if(c.children.length>20)c.removeChild(c.lastChild)}
+        function addDepth(data){const c=document.getElementById('depthContainer'),m=document.createElement('div');m.className='message depth';let bids=data.bids.map(b=>`${b.quantity}@$${b.price.toFixed(2)}`).join(', '),asks=data.asks.map(a=>`${a.quantity}@$${a.price.toFixed(2)}`).join(', ');m.innerHTML=`<div class="message-type">${data.symbol} DEPTH <span style="float:right;font-size:0.8em;font-weight:normal;">${formatTime(data.timestamp)}</span></div><div class="message-data" style="font-size:0.75em;"><strong>BIDS:</strong> ${bids}<br><strong>ASKS:</strong> ${asks}</div>`;c.insertBefore(m,c.firstChild);if(c.children.length>10)c.removeChild(c.lastChild)}
+        function addLog(message){const c=document.getElementById('logContainer'),m=document.createElement('div');m.className='message info';m.innerHTML=`<div class="message-data">${new Date().toLocaleTimeString('en-US', { hour12: false })}: ${message}</div>`;c.insertBefore(m,c.firstChild);if(c.children.length>30)c.removeChild(c.lastChild)}
+        
+        window.addEventListener('load', () => {
+            initCharts();
+            setTimeout(connect, 1000);
+        });
+    </script>
+</body>
 </html>

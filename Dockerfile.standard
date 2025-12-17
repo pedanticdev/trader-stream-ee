@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for TradeStreamEE
-# Uses Azul Platform Prime (Zing) for Pauseless Garbage Collection demonstration
+# Uses Eclipse Temurin (Standard OpenJDK) for comparison against Azul Platform Prime
 
 FROM azul/zulu-openjdk:21 AS build
 WORKDIR /app
@@ -16,11 +16,11 @@ COPY src ./src
 
 RUN ./mvnw clean package -DskipTests
 
-# Use Azul Platform Prime for C4 GC
-FROM azul/prime:21
+# Use Eclipse Temurin (Standard OpenJDK)
+FROM eclipse-temurin:21
 
 LABEL maintainer="TradeStreamEE"
-LABEL description="High-frequency trading dashboard with Aeron + SBE + Payara Micro + Azul C4"
+LABEL description="High-frequency trading dashboard (Standard JVM Comparison)"
 
 WORKDIR /opt/payara
 
@@ -38,16 +38,10 @@ COPY --from=build /app/target/*.war ROOT.war
 
 EXPOSE 8080
 
-# Default JVM Options for Azul Platform Prime
-# Note: These are defaults - can be overridden via docker-compose or docker run -e
-# Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
+# Standard JVM Options (G1GC)
 ENV JAVA_OPTS="-Xms2g \
     -Xmx4g \
-    -Xlog:gc*:file=/opt/payara/gc.log:time,uptime:filecount=5,filesize=10M \
-    -XX:+UnlockDiagnosticVMOptions \
-    -XX:+UnlockExperimentalVMOptions \
-    -XX:+AlwaysPreTouch \
-    -XX:-UseBiasedLocking \
+    -XX:+UseG1GC \
     -Djava.net.preferIPv4Stack=true"
 
 # Health check

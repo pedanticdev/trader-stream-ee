@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+                   package="fish.payara.trader.sbe"
+                   id="1"
+                   version="0"
+                   semanticVersion="0.1"
+                   description="Market Data Schema for High-Frequency Trading"
+                   byteOrder="littleEndian">
+
+    <types>
+        <!-- Primitive type definitions -->
+        <type name="timestamp" primitiveType="int64" description="Unix epoch timestamp in nanoseconds"/>
+        <type name="price" primitiveType="int64" description="Price in fixed-point (multiply by 10000 for decimal)"/>
+        <type name="quantity" primitiveType="int64" description="Quantity"/>
+
+        <!-- Composite types -->
+        <composite name="messageHeader" description="Standard SBE message header">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+
+        <composite name="varStringEncoding" description="Variable-length string encoding">
+            <type name="length" primitiveType="uint16" maxValue="1024"/>
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+        </composite>
+
+        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint16"/>
+        </composite>
+
+        <!-- Enumerations -->
+        <enum name="Side" encodingType="uint8" description="Order side">
+            <validValue name="BUY">0</validValue>
+            <validValue name="SELL">1</validValue>
+        </enum>
+
+        <enum name="OrderType" encodingType="uint8" description="Order type">
+            <validValue name="MARKET">0</validValue>
+            <validValue name="LIMIT">1</validValue>
+            <validValue name="STOP">2</validValue>
+        </enum>
+
+        <enum name="ExecType" encodingType="uint8" description="Execution type">
+            <validValue name="NEW">0</validValue>
+            <validValue name="PARTIAL_FILL">1</validValue>
+            <validValue name="FILL">2</validValue>
+            <validValue name="CANCELED">3</validValue>
+            <validValue name="REJECTED">4</validValue>
+        </enum>
+    </types>
+
+    <!-- Message definitions -->
+
+    <!-- Trade message: reports executed trades -->
+    <sbe:message name="Trade" id="1" description="Trade execution report">
+        <field name="timestamp" id="1" type="timestamp" description="Execution timestamp"/>
+        <field name="tradeId" id="2" type="int64" description="Unique trade identifier"/>
+        <field name="price" id="3" type="price" description="Execution price"/>
+        <field name="quantity" id="4" type="quantity" description="Executed quantity"/>
+        <field name="side" id="5" type="Side" description="Buy or sell"/>
+        <data name="symbol" id="6" type="varStringEncoding" description="Symbol string (e.g., AAPL)"/>
+    </sbe:message>
+
+    <!-- Quote message: top-of-book bid/ask -->
+    <sbe:message name="Quote" id="2" description="Market quote">
+        <field name="timestamp" id="1" type="timestamp" description="Quote timestamp"/>
+        <field name="bidPrice" id="2" type="price" description="Best bid price"/>
+        <field name="bidSize" id="3" type="quantity" description="Best bid size"/>
+        <field name="askPrice" id="4" type="price" description="Best ask price"/>
+        <field name="askSize" id="5" type="quantity" description="Best ask size"/>
+        <data name="symbol" id="6" type="varStringEncoding" description="Symbol string"/>
+    </sbe:message>
+
+    <!-- Market depth message: full order book with multiple levels -->
+    <sbe:message name="MarketDepth" id="3" description="Market depth snapshot">
+        <field name="timestamp" id="1" type="timestamp" description="Snapshot timestamp"/>
+        <field name="sequenceNumber" id="2" type="int64" description="Sequence number for ordering"/>
+
+        <!-- Repeating group for bid levels -->
+        <group name="bids" id="4" description="Bid levels">
+            <field name="price" id="5" type="price" description="Bid price"/>
+            <field name="quantity" id="6" type="quantity" description="Bid quantity"/>
+        </group>
+
+        <!-- Repeating group for ask levels -->
+        <group name="asks" id="7" description="Ask levels">
+            <field name="price" id="8" type="price" description="Ask price"/>
+            <field name="quantity" id="9" type="quantity" description="Ask quantity"/>
+        </group>
+
+        <data name="symbol" id="10" type="varStringEncoding" description="Symbol string"/>
+    </sbe:message>
+
+    <!-- Order acknowledgment message -->
+    <sbe:message name="OrderAck" id="4" description="Order acknowledgment">
+        <field name="timestamp" id="1" type="timestamp" description="Ack timestamp"/>
+        <field name="orderId" id="2" type="int64" description="Order identifier"/>
+        <field name="clientOrderId" id="3" type="int64" description="Client order identifier"/>
+        <field name="side" id="4" type="Side" description="Buy or sell"/>
+        <field name="orderType" id="5" type="OrderType" description="Order type"/>
+        <field name="price" id="6" type="price" description="Order price"/>
+        <field name="quantity" id="7" type="quantity" description="Order quantity"/>
+        <field name="execType" id="8" type="ExecType" description="Execution type"/>
+        <field name="leavesQty" id="9" type="quantity" description="Remaining quantity"/>
+        <field name="cumQty" id="10" type="quantity" description="Cumulative filled quantity"/>
+        <data name="symbol" id="11" type="varStringEncoding" description="Symbol string"/>
+    </sbe:message>
+
+    <!-- Heartbeat message for connection monitoring -->
+    <sbe:message name="Heartbeat" id="5" description="Heartbeat">
+        <field name="timestamp" id="1" type="timestamp" description="Heartbeat timestamp"/>
+        <field name="sequenceNumber" id="2" type="int64" description="Sequence number"/>
+    </sbe:message>
+
+</sbe:messageSchema>
