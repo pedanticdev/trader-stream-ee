@@ -1,5 +1,7 @@
 package fish.payara.trader.aeron;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import fish.payara.trader.concurrency.VirtualThreadExecutor;
 import fish.payara.trader.sbe.*;
 import fish.payara.trader.websocket.MarketDataBroadcaster;
@@ -20,9 +22,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.nio.ByteBuffer;
-import java.util.Random;
+
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
@@ -59,14 +63,17 @@ public class MarketDataPublisher {
     // Buffer for encoding messages
     private final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_SIZE));
 
-    private final Random random = new Random();
+
     private final AtomicLong sequenceNumber = new AtomicLong(0);
     private final AtomicLong tradeIdGenerator = new AtomicLong(1000);
 
     private final AtomicLong messagesPublished = new AtomicLong(0);
+    private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
+    private static final int MAX_CONSECUTIVE_FAILURES = 50;
     private long sampleCounter = 0;
     private volatile boolean initialized = false;
     private volatile boolean running = false;
+    private boolean isDirectMode;
     
     private Future<?> publisherFuture;
     private Future<?> statsFuture;
@@ -95,6 +102,7 @@ public class MarketDataPublisher {
         if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
             LOGGER.info("Running in DIRECT mode - Bypassing Aeron/SBE setup.");
             initialized = true;
+            isDirectMode = true;
             startPublishing();
             return;
         }
@@ -171,8 +179,9 @@ public class MarketDataPublisher {
 
                     LockSupport.parkNanos(PARK_NANOS);
 
-                } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "Error in publisher loop", e);
+                } catch (Throwable e) {
+                    LOGGER.log(Level.SEVERE, "Critical error in publisher loop", e);
+                    // Brief pause on error, then continue
                     LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                 }
             }
@@ -201,6 +210,9 @@ public class MarketDataPublisher {
                         messagesPerSecond
                     ));
 
+                    String statsJson = String.format("{\"type\":\"stats\",\"total\":%d,\"rate\":%.0f}", currentCount, messagesPerSecond);
+                    broadcaster.broadcast(statsJson);
+
                     lastCount = currentCount;
                     lastTime = currentTime;
                 } catch (InterruptedException e) {
@@ -215,11 +227,12 @@ public class MarketDataPublisher {
      * Publish a Trade message
      */
     private void publishTrade() {
-        if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
-            final String symbol = SYMBOLS[random.nextInt(SYMBOLS.length)];
-            final double price = 100.0 + random.nextDouble() * 400.0;
-            final int quantity = random.nextInt(1000) + 100;
-            final String side = random.nextBoolean() ? "BUY" : "SELL";
+        if (isDirectMode) {
+            final ThreadLocalRandom currentRandom = ThreadLocalRandom.current(); // Use ThreadLocalRandom
+            final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
+            final double price = 100.0 + currentRandom.nextDouble() * 400.0;
+            final int quantity = currentRandom.nextInt(1000) + 100;
+            final String side = currentRandom.nextBoolean() ? "BUY" : "SELL";
             
             String json = String.format(
                 "{\"type\":\"trade\",\"timestamp\":%d,\"tradeId\":%d,\"symbol\":\"%s\",\"price\":%.4f,\"quantity\":%d,\"side\":\"%s\"}",
@@ -238,7 +251,8 @@ public class MarketDataPublisher {
         }
 
         int bufferOffset = 0;
-        final String symbol = SYMBOLS[random.nextInt(SYMBOLS.length)];
+        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
+        final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
 
         headerEncoder.wrap(buffer, bufferOffset)
             .blockLength(tradeEncoder.sbeBlockLength())
@@ -251,9 +265,9 @@ public class MarketDataPublisher {
         tradeEncoder.wrap(buffer, bufferOffset)
             .timestamp(System.currentTimeMillis())
             .tradeId(tradeIdGenerator.incrementAndGet())
-            .price((long) ((100.0 + random.nextDouble() * 400.0) * 10000))  // $100-$500
-            .quantity(random.nextInt(1000) + 100)
-            .side(random.nextBoolean() ? Side.BUY : Side.SELL)
+            .price((long) ((100.0 + currentRandom.nextDouble() * 400.0) * 10000))  // $100-$500
+            .quantity(currentRandom.nextInt(1000) + 100)
+            .side(currentRandom.nextBoolean() ? Side.BUY : Side.SELL)
             .symbol(symbol);
 
         final int length = headerEncoder.encodedLength() + tradeEncoder.encodedLength();
@@ -264,13 +278,14 @@ public class MarketDataPublisher {
      * Publish a Quote message
      */
     private void publishQuote() {
-        if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
-            final String symbol = SYMBOLS[random.nextInt(SYMBOLS.length)];
-            final double basePrice = 100.0 + random.nextDouble() * 400.0;
+        if (isDirectMode) {
+            final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
+            final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
+            final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
             final double bidPrice = basePrice - 0.01;
             final double askPrice = basePrice + 0.01;
-            final int bidSize = random.nextInt(10000) + 100;
-            final int askSize = random.nextInt(10000) + 100;
+            final int bidSize = currentRandom.nextInt(10000) + 100;
+            final int askSize = currentRandom.nextInt(10000) + 100;
 
             String json = String.format(
                 "{\"type\":\"quote\",\"timestamp\":%d,\"symbol\":\"%s\",\"bid\":{\"price\":%.4f,\"size\":%d},\"ask\":{\"price\":%.4f,\"size\":%d}}",
@@ -286,8 +301,9 @@ public class MarketDataPublisher {
         }
 
         int bufferOffset = 0;
-        final String symbol = SYMBOLS[random.nextInt(SYMBOLS.length)];
-        final double basePrice = 100.0 + random.nextDouble() * 400.0;
+        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
+        final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
+        final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
 
         headerEncoder.wrap(buffer, bufferOffset)
             .blockLength(quoteEncoder.sbeBlockLength())
@@ -300,9 +316,9 @@ public class MarketDataPublisher {
         quoteEncoder.wrap(buffer, bufferOffset)
             .timestamp(System.currentTimeMillis())
             .bidPrice((long) ((basePrice - 0.01) * 10000))
-            .bidSize(random.nextInt(10000) + 100)
+            .bidSize(currentRandom.nextInt(10000) + 100)
             .askPrice((long) ((basePrice + 0.01) * 10000))
-            .askSize(random.nextInt(10000) + 100)
+            .askSize(currentRandom.nextInt(10000) + 100)
             .symbol(symbol);
 
         final int length = headerEncoder.encodedLength() + quoteEncoder.encodedLength();
@@ -313,9 +329,10 @@ public class MarketDataPublisher {
      * Publish a MarketDepth message
      */
     private void publishMarketDepth() {
-        if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
-            final String symbol = SYMBOLS[random.nextInt(SYMBOLS.length)];
-            final double basePrice = 100.0 + random.nextDouble() * 400.0;
+        if (isDirectMode) {
+            final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
+            final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
+            final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
             final long timestamp = System.currentTimeMillis();
             final long seq = sequenceNumber.incrementAndGet();
 
@@ -323,7 +340,7 @@ public class MarketDataPublisher {
             for (int i = 0; i < 5; i++) {
                 if (i > 0) bidsJson.append(",");
                 bidsJson.append(String.format("{\"price\":%.4f,\"quantity\":%d}",
-                    basePrice - (i + 1) * 0.01, random.nextInt(5000) + 100));
+                    basePrice - (i + 1) * 0.01, currentRandom.nextInt(5000) + 100));
             }
             bidsJson.append("]");
 
@@ -331,7 +348,7 @@ public class MarketDataPublisher {
             for (int i = 0; i < 5; i++) {
                 if (i > 0) asksJson.append(",");
                 asksJson.append(String.format("{\"price\":%.4f,\"quantity\":%d}",
-                    basePrice + (i + 1) * 0.01, random.nextInt(5000) + 100));
+                    basePrice + (i + 1) * 0.01, currentRandom.nextInt(5000) + 100));
             }
             asksJson.append("]");
 
@@ -347,8 +364,9 @@ public class MarketDataPublisher {
         }
 
         int bufferOffset = 0;
-        final String symbol = SYMBOLS[random.nextInt(SYMBOLS.length)];
-        final double basePrice = 100.0 + random.nextDouble() * 400.0;
+        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
+        final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
+        final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
 
         headerEncoder.wrap(buffer, bufferOffset)
             .blockLength(marketDepthEncoder.sbeBlockLength())
@@ -366,14 +384,14 @@ public class MarketDataPublisher {
         for (int i = 0; i < 5; i++) {
             bidsEncoder.next()
                 .price((long) ((basePrice - (i + 1) * 0.01) * 10000))
-                .quantity(random.nextInt(5000) + 100);
+                .quantity(currentRandom.nextInt(5000) + 100);
         }
 
         MarketDepthEncoder.AsksEncoder asksEncoder = marketDepthEncoder.asksCount(5);
         for (int i = 0; i < 5; i++) {
             asksEncoder.next()
                 .price((long) ((basePrice + (i + 1) * 0.01) * 10000))
-                .quantity(random.nextInt(5000) + 100);
+                .quantity(currentRandom.nextInt(5000) + 100);
         }
 
         marketDepthEncoder.symbol(symbol);
@@ -386,7 +404,7 @@ public class MarketDataPublisher {
      * Publish a Heartbeat message
      */
     private void publishHeartbeat() {
-        if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
+        if (isDirectMode) {
             // In DIRECT mode, we just increment counter but don't broadcast heartbeats to UI
             // as they are mainly for system health checks in the Aeron log
             messagesPublished.incrementAndGet();
@@ -423,6 +441,7 @@ public class MarketDataPublisher {
 
             if (result > 0) {
                 messagesPublished.incrementAndGet();
+                consecutiveFailures.set(0);
                 return;
             } else if (result == Publication.BACK_PRESSURED) {
                 LOGGER.fine("Back pressured on " + messageType);
@@ -435,14 +454,28 @@ public class MarketDataPublisher {
                 }
             } else if (result == Publication.NOT_CONNECTED) {
                 LOGGER.warning("Publication not connected");
+                handlePublishFailure(messageType);
                 return;
             } else {
                 LOGGER.warning("Offer failed for " + messageType + ": " + result);
+                handlePublishFailure(messageType);
                 return;
             }
         }
 
         LOGGER.warning("Failed to publish " + messageType + " after retries");
+        handlePublishFailure(messageType);
+    }
+
+    private void handlePublishFailure(String messageType) {
+        int failures = consecutiveFailures.incrementAndGet();
+        if (failures >= MAX_CONSECUTIVE_FAILURES) {
+            LOGGER.severe(String.format(
+                "Circuit breaker triggered: %d consecutive publish failures (last attempted: %s). Stopping message generation.",
+                failures, messageType
+            ));
+            running = false;
+        }
     }
 
     @PreDestroy

@@ -24,14 +24,9 @@ LABEL description="High-frequency trading dashboard with Aeron + SBE + Payara Mi
 
 WORKDIR /opt/payara
 
-# Download Payara Micro
+# Add Payara Micro from URL
 ARG PAYARA_VERSION=7.2025.2
-RUN apt-get update && \
-    apt-get install -y wget curl && \
-    wget -q -O payara-micro.jar \
-    "https://nexus.payara.fish/repository/payara-community/fish/payara/extras/payara-micro/${PAYARA_VERSION}/payara-micro-${PAYARA_VERSION}.jar" && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/payara-micro/${PAYARA_VERSION}/payara-micro-${PAYARA_VERSION}.jar /opt/payara/payara-micro.jar
 
 # Copy WAR file from build stage
 COPY --from=build /app/target/*.war ROOT.war
@@ -41,8 +36,8 @@ EXPOSE 8080
 # Default JVM Options for Azul Platform Prime
 # Note: These are defaults - can be overridden via docker-compose or docker run -e
 # Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
-ENV JAVA_OPTS="-Xms2g \
-    -Xmx4g \
+ENV JAVA_OPTS="-Xms8g \
+    -Xmx8g \
     -Xlog:gc*:file=/opt/payara/gc.log:time,uptime:filecount=5,filesize=10M \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:+UnlockExperimentalVMOptions \

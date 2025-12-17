@@ -115,6 +115,17 @@
             display: flex;
             gap: 40px;
         }
+        
+        .stat-group {
+            display: flex;
+            gap: 20px;
+            padding-right: 20px;
+            border-right: 1px solid #e2e8f0;
+        }
+        
+        .stat-group:last-child {
+            border-right: none;
+        }
 
         .stat { text-align: center; }
 
@@ -122,6 +133,10 @@
             font-size: 1.8em;
             font-weight: 700;
             color: #1976d2;
+        }
+        
+        .stat-value.backend {
+            color: #7c3aed; /* Purple for backend stats */
         }
 
         .stat-label {
@@ -376,8 +391,14 @@
                 <span id="modeDisplay" class="status-mode"></span>
             </div>
             <div class="stats">
-                <div class="stat"><div class="stat-value" id="messageCount">0</div><div class="stat-label">Messages</div></div>
-                <div class="stat"><div class="stat-value" id="messageRate">0</div><div class="stat-label">Msg/sec</div></div>
+                <div class="stat-group">
+                    <div class="stat"><div class="stat-value backend" id="backendRate">0</div><div class="stat-label">Backend Msg/sec</div></div>
+                    <div class="stat"><div class="stat-value backend" id="backendTotal">0</div><div class="stat-label">Total Generated</div></div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat"><div class="stat-value" id="messageRate">0</div><div class="stat-label">UI Msg/sec</div></div>
+                    <div class="stat"><div class="stat-value" id="messageCount">0</div><div class="stat-label">UI Received</div></div>
+                </div>
             </div>
             <button id="connectBtn" onclick="toggleConnection()">Connect</button>
         </div>
@@ -775,15 +796,16 @@
                 window.gcStatsInterval = setInterval(pollGCStats, 3000);
                 pollGCStats(); // Initial poll
             };
-            ws.onclose=()=>{
+            ws.onclose=( )=>{
                 document.getElementById('statusIndicator').classList.remove('connected');
-                document.getElementById('statusText').textContent='Disconnected';
+                document.getElementById('statusText').textContent='Disconnected (Reconnecting...)';
                 document.getElementById('connectBtn').textContent='Connect';
                 document.getElementById('modeDisplay').textContent = '';
                 document.getElementById('chartModeLabel').textContent = 'Disconnected';
-                addLog('WebSocket disconnected');
+                addLog('WebSocket disconnected. Attempting auto-reconnect in 3s...');
                 if (window.chartInterval) clearInterval(window.chartInterval);
                 if (window.gcStatsInterval) clearInterval(window.gcStatsInterval);
+                setTimeout(connect, 3000);
             };
             ws.onerror=error=>addLog('WebSocket error: '+error);
             ws.onmessage=event=>{
@@ -833,6 +855,14 @@
                         const modeText = 'Mode: ' + data.mode;
                         document.getElementById('modeDisplay').textContent = modeText;
                         document.getElementById('chartModeLabel').textContent = modeText;
+                    }
+                    break;
+                case 'stats':
+                    if (data.total) {
+                        document.getElementById('backendTotal').textContent = data.total.toLocaleString();
+                    }
+                    if (data.rate) {
+                        document.getElementById('backendRate').textContent = parseInt(data.rate).toLocaleString();
                     }
                     break;
             }
