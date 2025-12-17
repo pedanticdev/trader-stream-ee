@@ -46,6 +46,10 @@ public class MarketDataFragmentHandler implements FragmentHandler {
     @Inject
     MarketDataBroadcaster broadcaster;
 
+    // Optimization: Reusable buffers to reduce allocation
+    private final byte[] symbolBuffer = new byte[128];
+    private final StringBuilder sb = new StringBuilder(1024);
+
     @Override
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
         try {
@@ -100,6 +104,10 @@ public class MarketDataFragmentHandler implements FragmentHandler {
      * Process Trade message using SBE decoder (zero-copy)
      */
     private void processTrade(DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
+        if (!shouldBroadcast) {
+            return;
+        }
+
         tradeDecoder.wrap(buffer, offset, blockLength, version);
 
         // Extract fields from SBE decoder
@@ -109,30 +117,30 @@ public class MarketDataFragmentHandler implements FragmentHandler {
         final long quantity = tradeDecoder.quantity();
         final Side side = tradeDecoder.side();
 
-        // Extract variable-length symbol string
+        // Extract variable-length symbol string using reusable buffer
         final int symbolLength = tradeDecoder.symbolLength();
-        final byte[] symbolBytes = new byte[symbolLength];
-        tradeDecoder.getSymbol(symbolBytes, 0, symbolLength);
-        final String symbol = new String(symbolBytes);
+        tradeDecoder.getSymbol(symbolBuffer, 0, symbolLength);
+        final String symbol = new String(symbolBuffer, 0, symbolLength);
 
-        // Only broadcast sampled messages to avoid overwhelming browser
-        if (shouldBroadcast) {
-            // Convert to JSON (intentionally creating garbage for GC testing)
-            String json = String.format(
-                "{\"type\":\"trade\",\"timestamp\":%d,\"tradeId\":%d,\"symbol\":\"%s\"," +
-                "\"price\":%.4f,\"quantity\":%d,\"side\":\"%s\"}",
-                timestamp, tradeId, symbol,
-                price / 10000.0, quantity, side
-            );
+        sb.setLength(0);
+        sb.append("{\"type\":\"trade\",\"timestamp\":").append(timestamp)
+          .append(",\"tradeId\":").append(tradeId)
+          .append(",\"symbol\":\"").append(symbol).append("\"")
+          .append(",\"price\":").append(price / 10000.0)
+          .append(",\"quantity\":").append(quantity)
+          .append(",\"side\":\"").append(side).append("\"}");
 
-            broadcaster.broadcast(json);
-        }
+        broadcaster.broadcast(sb.toString());
     }
 
     /**
      * Process Quote message using SBE decoder (zero-copy)
      */
     private void processQuote(DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
+        if (!shouldBroadcast) {
+            return;
+        }
+
         quoteDecoder.wrap(buffer, offset, blockLength, version);
 
         final long timestamp = quoteDecoder.timestamp();
@@ -142,84 +150,76 @@ public class MarketDataFragmentHandler implements FragmentHandler {
         final long askSize = quoteDecoder.askSize();
 
         final int symbolLength = quoteDecoder.symbolLength();
-        final byte[] symbolBytes = new byte[symbolLength];
-        quoteDecoder.getSymbol(symbolBytes, 0, symbolLength);
-        final String symbol = new String(symbolBytes);
+        quoteDecoder.getSymbol(symbolBuffer, 0, symbolLength);
+        final String symbol = new String(symbolBuffer, 0, symbolLength);
 
-        // Only broadcast sampled messages
-        if (shouldBroadcast) {
-            String json = String.format(
-                "{\"type\":\"quote\",\"timestamp\":%d,\"symbol\":\"%s\"," +
-                "\"bid\":{\"price\":%.4f,\"size\":%d},\"ask\":{\"price\":%.4f,\"size\":%d}}",
-                timestamp, symbol,
-                bidPrice / 10000.0, bidSize,
-                askPrice / 10000.0, askSize
-            );
+        sb.setLength(0);
+        sb.append("{\"type\":\"quote\",\"timestamp\":").append(timestamp)
+          .append(",\"symbol\":\"").append(symbol).append("\"")
+          .append(",\"bid\":{\"price\":").append(bidPrice / 10000.0).append(",\"size\":").append(bidSize).append("}")
+          .append(",\"ask\":{\"price\":").append(askPrice / 10000.0).append(",\"size\":").append(askSize).append("}}");
 
-            broadcaster.broadcast(json);
-        }
+        broadcaster.broadcast(sb.toString());
     }
 
     /**
      * Process MarketDepth message with repeating groups (zero-copy)
      */
     private void processMarketDepth(DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
+        if (!shouldBroadcast) {
+            return;
+        }
+
         marketDepthDecoder.wrap(buffer, offset, blockLength, version);
 
         final long timestamp = marketDepthDecoder.timestamp();
         final long sequenceNumber = marketDepthDecoder.sequenceNumber();
 
-        // Only broadcast sampled messages (but always decode for GC stress)
-        if (shouldBroadcast) {
-            // Build JSON for bids
-            StringBuilder bidsJson = new StringBuilder("[");
-            MarketDepthDecoder.BidsDecoder bids = marketDepthDecoder.bids();
-            int bidCount = 0;
-            while (bids.hasNext()) {
-                bids.next();
-                if (bidCount > 0) bidsJson.append(",");
-                bidsJson.append(String.format(
-                    "{\"price\":%.4f,\"quantity\":%d}",
-                    bids.price() / 10000.0, bids.quantity()
-                ));
-                bidCount++;
-            }
-            bidsJson.append("]");
+        sb.setLength(0);
+        sb.append("{\"type\":\"depth\",\"timestamp\":").append(timestamp)
+          .append(",\"sequence\":").append(sequenceNumber)
+          .append(",\"bids\":[");
 
-            // Build JSON for asks
-            StringBuilder asksJson = new StringBuilder("[");
-            MarketDepthDecoder.AsksDecoder asks = marketDepthDecoder.asks();
-            int askCount = 0;
-            while (asks.hasNext()) {
-                asks.next();
-                if (askCount > 0) asksJson.append(",");
-                asksJson.append(String.format(
-                    "{\"price\":%.4f,\"quantity\":%d}",
-                    asks.price() / 10000.0, asks.quantity()
-                ));
-                askCount++;
-            }
-            asksJson.append("]");
-
-            final int symbolLength = marketDepthDecoder.symbolLength();
-            final byte[] symbolBytes = new byte[symbolLength];
-            marketDepthDecoder.getSymbol(symbolBytes, 0, symbolLength);
-            final String symbol = new String(symbolBytes);
-
-            String json = String.format(
-                "{\"type\":\"depth\",\"timestamp\":%d,\"symbol\":\"%s\",\"sequence\":%d," +
-                "\"bids\":%s,\"asks\":%s}",
-                timestamp, symbol, sequenceNumber, bidsJson, asksJson
-            );
-
-            broadcaster.broadcast(json);
+        MarketDepthDecoder.BidsDecoder bids = marketDepthDecoder.bids();
+        int bidCount = 0;
+        while (bids.hasNext()) {
+            bids.next();
+            if (bidCount > 0) sb.append(",");
+            sb.append("{\"price\":").append(bids.price() / 10000.0)
+              .append(",\"quantity\":").append(bids.quantity()).append("}");
+            bidCount++;
         }
+        sb.append("],\"asks\":[");
+
+        MarketDepthDecoder.AsksDecoder asks = marketDepthDecoder.asks();
+        int askCount = 0;
+        while (asks.hasNext()) {
+            asks.next();
+            if (askCount > 0) sb.append(",");
+            sb.append("{\"price\":").append(asks.price() / 10000.0)
+              .append(",\"quantity\":").append(asks.quantity()).append("}");
+            askCount++;
+        }
+        sb.append("]");
+
+        // Must extract symbol after traversing groups in SBE for correct position in buffer
+        final int symbolLength = marketDepthDecoder.symbolLength();
+        marketDepthDecoder.getSymbol(symbolBuffer, 0, symbolLength);
+        final String symbol = new String(symbolBuffer, 0, symbolLength);
+        
+        sb.append(",\"symbol\":\"").append(symbol).append("\"}");
+
+        broadcaster.broadcast(sb.toString());
     }
 
     /**
      * Process OrderAck message
      */
     private void processOrderAck(DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
+        if (!shouldBroadcast) {
+            return;
+        }
+
         orderAckDecoder.wrap(buffer, offset, blockLength, version);
 
         final long timestamp = orderAckDecoder.timestamp();
@@ -234,22 +234,23 @@ public class MarketDataFragmentHandler implements FragmentHandler {
         final long cumQty = orderAckDecoder.cumQty();
 
         final int symbolLength = orderAckDecoder.symbolLength();
-        final byte[] symbolBytes = new byte[symbolLength];
-        orderAckDecoder.getSymbol(symbolBytes, 0, symbolLength);
-        final String symbol = new String(symbolBytes);
+        orderAckDecoder.getSymbol(symbolBuffer, 0, symbolLength);
+        final String symbol = new String(symbolBuffer, 0, symbolLength);
 
-        // Only broadcast sampled messages
-        if (shouldBroadcast) {
-            String json = String.format(
-                "{\"type\":\"orderAck\",\"timestamp\":%d,\"orderId\":%d,\"clientOrderId\":%d," +
-                "\"symbol\":\"%s\",\"side\":\"%s\",\"orderType\":\"%s\",\"price\":%.4f," +
-                "\"quantity\":%d,\"execType\":\"%s\",\"leavesQty\":%d,\"cumQty\":%d}",
-                timestamp, orderId, clientOrderId, symbol, side, orderType,
-                price / 10000.0, quantity, execType, leavesQty, cumQty
-            );
+        sb.setLength(0);
+        sb.append("{\"type\":\"orderAck\",\"timestamp\":").append(timestamp)
+          .append(",\"orderId\":").append(orderId)
+          .append(",\"clientOrderId\":").append(clientOrderId)
+          .append(",\"symbol\":\"").append(symbol).append("\"")
+          .append(",\"side\":\"").append(side).append("\"")
+          .append(",\"orderType\":\"").append(orderType).append("\"")
+          .append(",\"price\":").append(price / 10000.0)
+          .append(",\"quantity\":").append(quantity)
+          .append(",\"execType\":\"").append(execType).append("\"")
+          .append(",\"leavesQty\":").append(leavesQty)
+          .append(",\"cumQty\":").append(cumQty).append("}");
 
-            broadcaster.broadcast(json);
-        }
+        broadcaster.broadcast(sb.toString());
     }
 
     /**

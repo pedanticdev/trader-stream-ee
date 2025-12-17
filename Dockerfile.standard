@@ -39,8 +39,8 @@ COPY --from=build /app/target/*.war ROOT.war
 EXPOSE 8080
 
 # Standard JVM Options (G1GC)
-ENV JAVA_OPTS="-Xms2g \
-    -Xmx4g \
+ENV JAVA_OPTS="-Xms8g \
+    -Xmx8g \
     -XX:+UseG1GC \
     -Djava.net.preferIPv4Stack=true"
 

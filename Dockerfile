@@ -41,8 +41,8 @@ EXPOSE 8080
 # Default JVM Options for Azul Platform Prime
 # Note: These are defaults - can be overridden via docker-compose or docker run -e
 # Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
-ENV JAVA_OPTS="-Xms2g \
-    -Xmx4g \
+ENV JAVA_OPTS="-Xms8g \
+    -Xmx8g \
     -Xlog:gc*:file=/opt/payara/gc.log:time,uptime:filecount=5,filesize=10M \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:+UnlockExperimentalVMOptions \
