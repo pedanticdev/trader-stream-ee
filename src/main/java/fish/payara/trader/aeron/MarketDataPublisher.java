@@ -74,6 +74,8 @@ public class MarketDataPublisher {
     private volatile boolean initialized = false;
     private volatile boolean running = false;
     private boolean isDirectMode;
+    private long lastWarningLogTime = 0;
+    private static final long WARNING_LOG_INTERVAL_MS = 5000; // Log warnings at most once per 5 seconds
     
     private Future<?> publisherFuture;
     private Future<?> statsFuture;
@@ -444,7 +446,7 @@ public class MarketDataPublisher {
                 consecutiveFailures.set(0);
                 return;
             } else if (result == Publication.BACK_PRESSURED) {
-                LOGGER.fine("Back pressured on " + messageType);
+                // Back pressure is normal at high throughput, don't log
                 retries--;
                 try {
                     Thread.sleep(1);
@@ -453,18 +455,26 @@ public class MarketDataPublisher {
                     return;
                 }
             } else if (result == Publication.NOT_CONNECTED) {
-                LOGGER.warning("Publication not connected");
+                logWarningRateLimited("Publication not connected");
                 handlePublishFailure(messageType);
                 return;
             } else {
-                LOGGER.warning("Offer failed for " + messageType + ": " + result);
+                logWarningRateLimited("Offer failed for " + messageType + ": " + result);
                 handlePublishFailure(messageType);
                 return;
             }
         }
 
-        LOGGER.warning("Failed to publish " + messageType + " after retries");
+        logWarningRateLimited("Failed to publish " + messageType + " after retries");
         handlePublishFailure(messageType);
+    }
+
+    private void logWarningRateLimited(String message) {
+        long now = System.currentTimeMillis();
+        if (now - lastWarningLogTime >= WARNING_LOG_INTERVAL_MS) {
+            LOGGER.warning(message);
+            lastWarningLogTime = now;
+        }
     }
 
     private void handlePublishFailure(String messageType) {

@@ -38,10 +38,11 @@ EXPOSE 8080
 # Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
-    -Xlog:gc*:file=/opt/payara/gc.log:time,uptime:filecount=5,filesize=10M \
+    -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:+UnlockExperimentalVMOptions \
     -XX:+AlwaysPreTouch \
+    -XX:+UseTransparentHugePages \
     -XX:-UseBiasedLocking \
     -Djava.net.preferIPv4Stack=true"
 
