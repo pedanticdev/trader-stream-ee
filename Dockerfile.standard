@@ -37,6 +37,9 @@ EXPOSE 8080
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
     -XX:+UseG1GC \
+    -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \
+    -XX:+AlwaysPreTouch \
+    -XX:+UseTransparentHugePages \
     -Djava.net.preferIPv4Stack=true"
 
 # Health check

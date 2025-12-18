@@ -44,7 +44,7 @@ case "$ACTION" in
         echo "🚀 [Azul Prime] Starting with AERON Architecture (Optimized)..."
         echo "   > Dockerfile (Azul) + MODE=AERON"
         echo ""
-        MODE=AERON $DOCKER_COMPOSE -f docker-compose.yml up -d --build
+        MODE=AERON $DOCKER_COMPOSE -f docker-compose.yml up -d --build --force-recreate
         ;;
 
     azul-direct)
@@ -52,7 +52,7 @@ case "$ACTION" in
         echo "   > Dockerfile (Azul) + MODE=DIRECT"
         echo "   ℹ️  Observe how C4 handles high-allocation legacy code."
         echo ""
-        MODE=DIRECT $DOCKER_COMPOSE -f docker-compose.yml up -d --build
+        MODE=DIRECT $DOCKER_COMPOSE -f docker-compose.yml up -d --build --force-recreate
         ;;
 
     # --- Standard OpenJDK (G1 GC) Scenarios ---
@@ -62,7 +62,7 @@ case "$ACTION" in
         echo "   > Dockerfile.standard (Temurin) + MODE=DIRECT"
         echo "   ℹ️  Baseline performance: High allocation on G1GC."
         echo ""
-        MODE=DIRECT $DOCKER_COMPOSE -f docker-compose-standard.yml up -d --build
+        MODE=DIRECT $DOCKER_COMPOSE -f docker-compose-standard.yml up -d --build --force-recreate
         ;;
 
     standard-aeron)
@@ -70,7 +70,7 @@ case "$ACTION" in
         echo "   > Dockerfile.standard (Temurin) + MODE=AERON"
         echo "   ℹ️  Observe if off-heap transport helps G1GC."
         echo ""
-        MODE=AERON $DOCKER_COMPOSE -f docker-compose-standard.yml up -d --build
+        MODE=AERON $DOCKER_COMPOSE -f docker-compose-standard.yml up -d --build --force-recreate
         ;;
     
     # --- Utilities ---
