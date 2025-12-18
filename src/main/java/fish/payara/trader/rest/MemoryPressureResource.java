@@ -9,12 +9,15 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * REST endpoint for controlling memory pressure testing
  */
 @Path("/pressure")
 public class MemoryPressureResource {
+
+    private static final Logger LOGGER = Logger.getLogger(MemoryPressureResource.class.getName());
 
     @Inject
     private MemoryPressureService pressureService;
@@ -23,11 +26,14 @@ public class MemoryPressureResource {
     @Path("/status")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getStatus() {
+        AllocationMode currentMode = pressureService.getCurrentMode();
+        LOGGER.fine(String.format("GET /api/pressure/status - Current mode: %s", currentMode.name()));
+
         Map<String, Object> status = new HashMap<>();
-        status.put("currentMode", pressureService.getCurrentMode().name());
-        status.put("description", pressureService.getCurrentMode().getDescription());
+        status.put("currentMode", currentMode.name());
+        status.put("description", currentMode.getDescription());
         status.put("running", pressureService.isRunning());
-        status.put("bytesPerSecond", pressureService.getCurrentMode().getBytesPerSecond());
+        status.put("bytesPerSecond", currentMode.getBytesPerSecond());
         return Response.ok(status).build();
     }
 
@@ -37,6 +43,9 @@ public class MemoryPressureResource {
     public Response setMode(@PathParam("mode") String modeStr) {
         try {
             AllocationMode mode = AllocationMode.valueOf(modeStr.toUpperCase());
+            LOGGER.info(String.format("POST /api/pressure/mode/%s - Setting memory pressure mode to: %s (%.2f MB/sec)",
+                modeStr, mode.name(), mode.getBytesPerSecond() / (1024.0 * 1024.0)));
+
             pressureService.setAllocationMode(mode);
 
             Map<String, Object> result = new HashMap<>();
@@ -47,6 +56,8 @@ public class MemoryPressureResource {
 
             return Response.ok(result).build();
         } catch (IllegalArgumentException e) {
+            LOGGER.warning(String.format("POST /api/pressure/mode/%s - Invalid mode requested", modeStr));
+
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("error", "Invalid mode: " + modeStr);
@@ -59,6 +70,8 @@ public class MemoryPressureResource {
     @Path("/modes")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getModes() {
+        LOGGER.fine("GET /api/pressure/modes - Listing all allocation modes");
+
         Map<String, Map<String, Object>> modes = new HashMap<>();
 
         for (AllocationMode mode : AllocationMode.values()) {
