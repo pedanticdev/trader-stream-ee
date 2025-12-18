@@ -25,7 +25,7 @@ LABEL description="High-frequency trading dashboard (Standard JVM Comparison)"
 WORKDIR /opt/payara
 
 # Add Payara Micro from URL
-ARG PAYARA_VERSION=7.2025.2
+ARG PAYARA_VERSION=6.2025.11
 ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/payara-micro/${PAYARA_VERSION}/payara-micro-${PAYARA_VERSION}.jar /opt/payara/payara-micro.jar
 
 # Copy WAR file from build stage

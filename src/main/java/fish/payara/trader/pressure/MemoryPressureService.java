@@ -3,6 +3,7 @@ package fish.payara.trader.pressure;
 import fish.payara.trader.concurrency.VirtualThreadExecutor;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import jakarta.enterprise.concurrent.ManagedExecutorService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -29,8 +30,8 @@ public class MemoryPressureService {
     private long totalBytesAllocated = 0;
     private long lastStatsTime = System.currentTimeMillis();
 
-    @Inject
-    @VirtualThreadExecutor
+    @Resource
+//    @VirtualThreadExecutor
     private ManagedExecutorService executorService;
 
     @PostConstruct

@@ -7,6 +7,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 import jakarta.enterprise.concurrent.ManagedExecutorService;
@@ -47,9 +48,10 @@ public class AeronSubscriberBean {
 
     @Inject
     private MarketDataFragmentHandler fragmentHandler;
-    
-    @Inject
-    @VirtualThreadExecutor
+
+    @Resource
+
+//    @VirtualThreadExecutor
     private ManagedExecutorService managedExecutorService;
 
     void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {

@@ -9,6 +9,7 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import jakarta.ejb.DependsOn;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
@@ -89,13 +90,14 @@ public class MarketDataPublisher {
 
     @Inject
     private MarketDataBroadcaster broadcaster;
-    
-    @Inject
-    @VirtualThreadExecutor
+
+    @Resource
+
+//    @VirtualThreadExecutor
     private ManagedExecutorService managedExecutorService;
 
     void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
-        init();
+        managedExecutorService.submit(this::init);
     }
 
     public void init() {
@@ -435,6 +437,18 @@ public class MarketDataPublisher {
      * Offer buffer to Aeron publication with retry logic
      */
     private void offer(UnsafeBuffer buffer, int offset, int length, String messageType) {
+        if (publication == null) {
+            LOGGER.warning("Publication is null, cannot offer " + messageType);
+            handlePublishFailure(messageType);
+            return;
+        }
+
+        if (publication.isClosed()) {
+            LOGGER.warning("Publication is closed, cannot offer " + messageType);
+            handlePublishFailure(messageType);
+            return;
+        }
+
         long result;
         int retries = 3;
 
