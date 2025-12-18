@@ -354,6 +354,8 @@
             letter-spacing: 0.05em;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
         }
 
         button:hover {
@@ -363,6 +365,26 @@
 
         button:active {
             box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        button.processing {
+            opacity: 0.7;
+            transform: scale(0.98);
+        }
+
+        button.processing::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            animation: slide 0.6s;
+        }
+
+        @keyframes slide {
+            to { left: 100%; }
         }
 
         /* Chart specific styles */
@@ -471,6 +493,69 @@
                 </div>
             </div>
 
+            <!-- Memory Pressure Controls -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-front">
+                    <div class="card-header">
+                        GC Challenge Mode
+                        <span class="chart-mode-label" id="pressureMode">OFF</span>
+                        <span class="flip-hint">Click to learn</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="message">
+                            <div class="message-type">Allocation Rate</div>
+                            <div class="message-data">
+                                <span class="highlight" id="pressureRate">0 MB/sec</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                            <button onclick="event.stopPropagation(); setPressureMode('OFF')" style="flex: 1; background: #6c757d;">OFF</button>
+                            <button onclick="event.stopPropagation(); setPressureMode('LOW')" style="flex: 1; background: #28a745;">LOW</button>
+                            <button onclick="event.stopPropagation(); setPressureMode('MEDIUM')" style="flex: 1; background: #ffc107; color: #333;">MEDIUM</button>
+                            <button onclick="event.stopPropagation(); setPressureMode('HIGH')" style="flex: 1; background: #fd7e14;">HIGH</button>
+                            <button onclick="event.stopPropagation(); setPressureMode('EXTREME')" style="flex: 1; background: #dc3545;">EXTREME</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-back">
+                    <h3>GC Challenge Mode</h3>
+                    <p>Intentionally generates garbage to stress-test the GC under load. Watch how each collector responds.</p>
+                    <p><strong>Azul C4:</strong> Maintains low, consistent pause times even under EXTREME allocation pressure. Concurrent collection keeps up.</p>
+                    <p><strong>G1GC:</strong> Pause times spike as allocation rate increases. You'll see stuttering in message delivery and chart updates.</p>
+                    <p><strong>Rates:</strong> LOW=0.1MB/s, MEDIUM=0.5MB/s, HIGH=2MB/s, EXTREME=10MB/s</p>
+                    <div class="tech-stack">
+                        <strong>Technique:</strong> Mixed allocation patterns (Strings, arrays, objects, collections)<br>
+                        <strong>Inspired by:</strong> 1BRC stress testing
+                    </div>
+                </div>
+            </div>
+
+            <!-- GC Pause Time Chart -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-front">
+                    <div class="card-header">
+                        GC Pause Time (Live)
+                        <span class="chart-mode-label" id="gcPauseCollectorName">--</span>
+                        <span class="flip-hint">Click to learn</span>
+                    </div>
+                    <div class="card-body chart-body">
+                        <canvas id="gcPauseChart"></canvas>
+                    </div>
+                </div>
+                <div class="card-back">
+                    <h3>GC Pause Time Monitor</h3>
+                    <p>Real-time visualization of garbage collection pause times. Lower is better.</p>
+                    <p><strong>Azul C4 (Pauseless):</strong> Flat line near zero. Collections happen concurrently without stopping application threads.</p>
+                    <p><strong>G1GC (Stop-the-World):</strong> Visible spikes when GC pauses occur. Higher message rates = higher pause times.</p>
+                    <p>This chart demonstrates why C4 is ideal for latency-sensitive applications - predictable, consistent performance without pause spikes.</p>
+                    <div class="tech-stack">
+                        <strong>API:</strong> /api/gc/stats<br>
+                        <strong>Metric:</strong> Last pause duration (ms)<br>
+                        <strong>Update Rate:</strong> Every 3 seconds
+                    </div>
+                </div>
+            </div>
+
             <!-- Price Monitor -->
             <div class="card full-width" style="margin-bottom: 20px;" onclick="flipCard(this)">
                 <div class="card-front">
@@ -560,6 +645,7 @@
         let lastGcCount=0,lastGcPollTime=0;
         let priceChart = null;
         let hiccupChart = null;
+        let gcPauseChart = null;
         let lastRateUpdate = Date.now();
         let maxGapInWindow = 0;
 
@@ -621,6 +707,40 @@
                         y: { 
                             beginAtZero: true,
                             suggestedMax: 50,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            title: { display: true, text: 'Pause Duration (ms)', font: { size: 12, weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+
+            // GC Pause Time Chart (Line)
+            const ctxGcPause = document.getElementById('gcPauseChart').getContext('2d');
+            gcPauseChart = new Chart(ctxGcPause, {
+                type: 'line',
+                data: {
+                    labels: Array(50).fill(''),
+                    datasets: [{
+                        label: 'GC Pause Time (ms)',
+                        data: Array(50).fill(0),
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: 10,
                             grid: { color: 'rgba(0,0,0,0.05)' },
                             title: { display: true, text: 'Pause Duration (ms)', font: { size: 12, weight: 'bold' } }
                         }
@@ -765,6 +885,78 @@
             document.getElementById('heapPercent').textContent = heapPercent;
         }
 
+        function pollGCPauseStats() {
+            fetch('/api/gc/stats')
+                .then(response => response.json())
+                .then(stats => {
+                    if (stats && stats.length > 0) {
+                        const gcStat = stats[0];
+
+                        // Update collector name
+                        document.getElementById('gcPauseCollectorName').textContent = gcStat.gcName || '--';
+
+                        // Update chart with last pause duration
+                        if (gcPauseChart) {
+                            const pauseMs = gcStat.lastPauseDuration || 0;
+                            gcPauseChart.data.labels.push('');
+                            gcPauseChart.data.datasets[0].data.push(pauseMs);
+
+                            if (gcPauseChart.data.labels.length > 50) {
+                                gcPauseChart.data.labels.shift();
+                                gcPauseChart.data.datasets[0].data.shift();
+                            }
+
+                            gcPauseChart.update('none');
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching GC pause stats:', error));
+        }
+
+        function setPressureMode(mode) {
+            // Find the button that was clicked
+            const buttons = document.querySelectorAll('[onclick*="setPressureMode"]');
+            let clickedButton = null;
+            buttons.forEach(btn => {
+                if (btn.textContent.trim() === mode) {
+                    clickedButton = btn;
+                    btn.classList.add('processing');
+                }
+            });
+
+            fetch('/api/pressure/mode/' + mode, { method: 'POST' })
+                .then(response => response.json())
+                .then(result => {
+                    if (clickedButton) {
+                        clickedButton.classList.remove('processing');
+                    }
+                    if (result.success) {
+                        addLog('Memory pressure mode set to: ' + mode);
+                        pollPressureStatus(); // Immediate update
+                    } else {
+                        addLog('Error setting pressure mode: ' + result.error);
+                    }
+                })
+                .catch(error => {
+                    if (clickedButton) {
+                        clickedButton.classList.remove('processing');
+                    }
+                    console.error('Error setting pressure mode:', error);
+                    addLog('Failed to set pressure mode: ' + error.message);
+                });
+        }
+
+        function pollPressureStatus() {
+            fetch('/api/pressure/status')
+                .then(response => response.json())
+                .then(status => {
+                    document.getElementById('pressureMode').textContent = status.currentMode || 'OFF';
+                    const rateMBps = (status.bytesPerSecond / (1024 * 1024)).toFixed(1);
+                    document.getElementById('pressureRate').textContent = rateMBps + ' MB/sec';
+                })
+                .catch(error => console.error('Error fetching pressure status:', error));
+        }
+
         function flipCard(card) {
             card.classList.toggle('flipped');
         }
@@ -795,6 +987,16 @@
                 if (window.gcStatsInterval) clearInterval(window.gcStatsInterval);
                 window.gcStatsInterval = setInterval(pollGCStats, 3000);
                 pollGCStats(); // Initial poll
+
+                // Start GC pause stats polling (every 3 seconds)
+                if (window.gcPauseStatsInterval) clearInterval(window.gcPauseStatsInterval);
+                window.gcPauseStatsInterval = setInterval(pollGCPauseStats, 3000);
+                pollGCPauseStats(); // Initial poll
+
+                // Start memory pressure status polling (every 3 seconds)
+                if (window.pressureStatusInterval) clearInterval(window.pressureStatusInterval);
+                window.pressureStatusInterval = setInterval(pollPressureStatus, 3000);
+                pollPressureStatus(); // Initial poll
             };
             ws.onclose=( )=>{
                 document.getElementById('statusIndicator').classList.remove('connected');
