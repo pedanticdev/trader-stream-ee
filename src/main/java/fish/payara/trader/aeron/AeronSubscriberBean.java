@@ -53,7 +53,7 @@ public class AeronSubscriberBean {
     private ManagedExecutorService managedExecutorService;
 
     void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
-        init();
+        managedExecutorService.submit(() -> init());
     }
 
 

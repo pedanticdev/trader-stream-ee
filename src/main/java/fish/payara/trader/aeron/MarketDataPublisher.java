@@ -95,7 +95,7 @@ public class MarketDataPublisher {
     private ManagedExecutorService managedExecutorService;
 
     void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
-        init();
+        managedExecutorService.submit(this::init);
     }
 
     public void init() {
