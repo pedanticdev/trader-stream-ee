@@ -72,66 +72,179 @@ case "$ACTION" in
         echo ""
         MODE=AERON $DOCKER_COMPOSE -f docker-compose-standard.yml up -d --build --force-recreate
         ;;
-    
+
+    # --- Clustered Scenarios ---
+
+    cluster|cluster-azul)
+        echo "🚀 [Azul Prime Cluster] Starting 3-instance cluster with AERON..."
+        echo "   > Dockerfile.scale (Azul) + MODE=AERON + Nginx LB"
+        echo "   ℹ️  Demonstrates horizontal scalability with Hazelcast clustering."
+        echo ""
+        MODE=AERON DOCKERFILE=Dockerfile.scale $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --build --force-recreate
+        echo ""
+        echo "✅ Cluster started. Waiting for instances to be ready..."
+        sleep 10
+        echo ""
+        echo "📊 Cluster Status:"
+        curl -s http://localhost:8080/trader-stream-ee/api/status/cluster 2>/dev/null | jq . || echo "Cluster info endpoint not available yet"
+        echo ""
+        echo "🌐 Access: http://localhost:8080/trader-stream-ee/"
+        ;;
+
+    cluster-standard)
+        echo "🚀 [Standard JDK Cluster] Starting 3-instance cluster with AERON..."
+        echo "   > Dockerfile.scale.standard (Temurin) + MODE=AERON + Nginx LB"
+        echo "   ℹ️  Compare cluster performance with G1GC."
+        echo ""
+        MODE=AERON DOCKERFILE=Dockerfile.scale.standard $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --build --force-recreate
+        echo ""
+        echo "✅ Cluster started. Waiting for instances to be ready..."
+        sleep 10
+        echo ""
+        echo "📊 Cluster Status:"
+        curl -s http://localhost:8080/trader-stream-ee/api/status/cluster 2>/dev/null | jq . || echo "Cluster info endpoint not available yet"
+        echo ""
+        echo "🌐 Access: http://localhost:8080/trader-stream-ee/"
+        ;;
+
+    cluster-direct)
+        echo "🚀 [Azul Prime Cluster] Starting 3-instance cluster with DIRECT mode..."
+        echo "   > Dockerfile.scale (Azul) + MODE=DIRECT + Traefik LB"
+        echo "   ℹ️  Test cluster with high-allocation legacy mode."
+        echo ""
+        MODE=DIRECT DOCKERFILE=Dockerfile.scale $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --build --force-recreate
+        ;;
+
+    cluster-dynamic)
+        echo "🚀 [Dynamic Cluster] Starting scalable cluster..."
+        if [ -z "$2" ]; then
+            INSTANCES=3
+            echo "   > No instance count specified, defaulting to 3"
+        else
+            INSTANCES=$2
+        fi
+        echo "   > Dockerfile.scale (Azul) + MODE=AERON + $INSTANCES scalable instances"
+        echo "   ℹ️  Uses generic service for true dynamic scaling."
+        echo ""
+        MODE=AERON DOCKERFILE=Dockerfile.scale $DOCKER_COMPOSE -f docker-compose-scale.yml build trader-stream
+        $DOCKER_COMPOSE -f docker-compose-scale.yml up -d traefik
+        $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --scale trader-stream=$INSTANCES --no-recreate trader-stream
+        echo ""
+        echo "✅ Cluster started. Waiting for instances to be ready..."
+        sleep 15
+        echo ""
+        echo "📊 Cluster Status:"
+        curl -s http://localhost:8080/trader-stream-ee/api/status/cluster 2>/dev/null | jq . || echo "Cluster info endpoint not available yet"
+        echo ""
+        echo "🌐 Access: http://localhost:8080/trader-stream-ee/"
+        ;;
+
+    scale)
+        echo "🚀 Scaling cluster..."
+        if [ -z "$2" ]; then
+            echo "Usage: ./start.sh scale <number-of-instances>"
+            echo "Example: ./start.sh scale 5"
+            exit 1
+        fi
+        INSTANCES=$2
+        echo "   > Scaling to $INSTANCES instances (using generic trader-stream service)"
+        echo "   > Note: This uses the scalable service, not the named instances (trader-stream-1/2/3)"
+        $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --scale trader-stream=$INSTANCES --no-recreate
+        echo ""
+        echo "✅ Scaled to $INSTANCES instances"
+        sleep 10
+        echo ""
+        echo "📊 Checking cluster status..."
+        curl -s http://localhost:8080/trader-stream-ee/api/status/cluster 2>/dev/null | jq . || echo "Cluster info not available yet"
+        ;;
+
     # --- Utilities ---
 
     down|stop)
         echo "🛑 Stopping TradeStreamEE..."
         $DOCKER_COMPOSE -f docker-compose.yml down
         $DOCKER_COMPOSE -f docker-compose-standard.yml down
+        $DOCKER_COMPOSE -f docker-compose-scale.yml down
         echo "✅ Stopped"
         ;;
-    
+
     restart)
         echo "🔄 Restarting..."
         ./start.sh stop
         ./start.sh start
         ;;
-    
+
     logs)
         echo "📋 Showing logs..."
         # Try to find which container is running
-        if docker ps | grep -q "trader-stream-ee"; then
-            docker logs -f trader-stream-ee
+        if docker ps | grep -q "trader-stream"; then
+            if docker ps | grep -q "trader-stream-1"; then
+                # Cluster mode - show all instances
+                echo "Cluster mode detected - showing logs from all instances..."
+                $DOCKER_COMPOSE -f docker-compose-scale.yml logs -f
+            else
+                # Single instance mode
+                docker logs -f trader-stream-ee
+            fi
         else
             echo "❌ No running container found."
         fi
         ;;
-    
+
     status)
         echo "📊 Checking status..."
         echo ""
         if curl -f http://localhost:8080/trader-stream-ee/api/status 2>/dev/null | jq .; then
             echo ""
             echo "✅ Application is running"
+            echo ""
+            # Check if cluster mode
+            if curl -s http://localhost:8080/trader-stream-ee/api/status/cluster 2>/dev/null | grep -q "clustered"; then
+                echo "📡 Cluster Status:"
+                curl -s http://localhost:8080/trader-stream-ee/api/status/cluster 2>/dev/null | jq .
+            fi
         else
             echo "❌ Application is not responding"
             echo "Try: ./start.sh logs"
         fi
         ;;
-    
+
     clean)
         echo "🧹 Cleaning up..."
         $DOCKER_COMPOSE -f docker-compose.yml down -v
         $DOCKER_COMPOSE -f docker-compose-standard.yml down -v
+        $DOCKER_COMPOSE -f docker-compose-scale.yml down -v
         docker system prune -f
         echo "✅ Cleaned"
         ;;
-    
+
     *)
         echo "Usage: ./start.sh [command]"
         echo ""
-        echo "JVM Comparison Matrix:"
+        echo "Single Instance Modes:"
         echo "  azul-aeron       - Azul Prime (C4) + Aeron (Optimized)  [Default]"
         echo "  azul-direct      - Azul Prime (C4) + Direct (Legacy)"
         echo "  standard-direct  - Standard JDK (G1) + Direct (Legacy)  [Baseline]"
         echo "  standard-aeron   - Standard JDK (G1) + Aeron (Optimized)"
+        echo ""
+        echo "Clustered Modes (Fixed 3 instances + Traefik LB):"
+        echo "  cluster          - Azul Prime (C4) + Aeron + Hazelcast Cluster"
+        echo "  cluster-azul     - Same as 'cluster'"
+        echo "  cluster-standard - Standard JDK (G1) + Aeron + Hazelcast Cluster"
+        echo "  cluster-direct   - Azul Prime (C4) + Direct + Hazelcast Cluster"
+        echo ""
+        echo "Dynamic Scaling (Generic service + Traefik LB):"
+        echo "  cluster-dynamic [N] - Start N scalable instances (default: 3)"
+        echo "  scale N             - Scale existing dynamic cluster to N instances"
         echo ""
         echo "Utilities:"
         echo "  logs             - Show application logs"
         echo "  status           - Check if application is running"
         echo "  stop             - Stop the application"
         echo "  clean            - Stop and clean all containers/volumes"
+        echo ""
+        echo "Documentation:"
+        echo "  See SCALABILITY.md for clustering details"
         echo ""
         exit 1
         ;;

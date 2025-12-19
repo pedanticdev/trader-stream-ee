@@ -2,6 +2,8 @@ package fish.payara.trader.aeron;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.cp.IAtomicLong;
 import fish.payara.trader.concurrency.VirtualThreadExecutor;
 import fish.payara.trader.sbe.*;
 import fish.payara.trader.websocket.MarketDataBroadcaster;
@@ -88,23 +90,52 @@ public class MarketDataPublisher {
     private String ingestionMode;
 
     @Inject
+    @ConfigProperty(name = "ENABLE_PUBLISHER", defaultValue = "true")
+    String enablePublisherEnv;
+
+    @Inject
     private MarketDataBroadcaster broadcaster;
-    
+
+    @Inject
+    private HazelcastInstance hazelcastInstance;
+
     @Inject
     @VirtualThreadExecutor
     private ManagedExecutorService managedExecutorService;
 
+    // Cluster-wide message counter (shared across all instances)
+    private IAtomicLong clusterMessageCounter;
+
     void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
-        managedExecutorService.submit(this::init);
+//        managedExecutorService.submit(this::init);
+        init();
     }
 
     public void init() {
-        LOGGER.info("Initializing Market Data Publisher. Mode: " + ingestionMode);
+        // Check if publisher should be enabled on this instance
+        if (enablePublisherEnv != null && !"true".equalsIgnoreCase(enablePublisherEnv)) {
+            LOGGER.info("Market Data Publisher DISABLED on this instance (ENABLE_PUBLISHER=" + enablePublisherEnv + ")");
+            LOGGER.info("This instance will only consume messages from the cluster topic via Hazelcast");
+            return;
+        }
+
+        LOGGER.info("Initializing Market Data Publisher (ENABLE_PUBLISHER=" + enablePublisherEnv + "). Mode: " + ingestionMode);
 
         if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
             LOGGER.info("Running in DIRECT mode - Bypassing Aeron/SBE setup.");
             initialized = true;
             isDirectMode = true;
+
+            // Initialize cluster-wide message counter
+            if (hazelcastInstance != null) {
+                try {
+                    clusterMessageCounter = hazelcastInstance.getCPSubsystem().getAtomicLong("cluster-message-count");
+                    LOGGER.info("Initialized cluster-wide message counter (DIRECT mode)");
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Failed to initialize cluster message counter, using local counter only", e);
+                }
+            }
+
             startPublishing();
             return;
         }
@@ -146,6 +177,17 @@ public class MarketDataPublisher {
             if (publication.isConnected()) {
                 LOGGER.info("Market Data Publisher initialized successfully");
                 initialized = true;
+
+                // Initialize cluster-wide message counter
+                if (hazelcastInstance != null) {
+                    try {
+                        clusterMessageCounter = hazelcastInstance.getCPSubsystem().getAtomicLong("cluster-message-count");
+                        LOGGER.info("Initialized cluster-wide message counter");
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Failed to initialize cluster message counter, using local counter only", e);
+                    }
+                }
+
                 startPublishing();
             } else {
                 LOGGER.warning("Publisher not connected after waiting");
@@ -249,6 +291,14 @@ public class MarketDataPublisher {
                 broadcaster.broadcastWithArtificialLoad(json);
             }
             messagesPublished.incrementAndGet();
+            // Increment cluster-wide counter
+            if (clusterMessageCounter != null) {
+                try {
+                    clusterMessageCounter.incrementAndGet();
+                } catch (Exception e) {
+                    // Ignore cluster counter errors, not critical
+                }
+            }
             return;
         }
 
@@ -299,6 +349,14 @@ public class MarketDataPublisher {
                 broadcaster.broadcastWithArtificialLoad(json);
             }
             messagesPublished.incrementAndGet();
+            // Increment cluster-wide counter
+            if (clusterMessageCounter != null) {
+                try {
+                    clusterMessageCounter.incrementAndGet();
+                } catch (Exception e) {
+                    // Ignore cluster counter errors, not critical
+                }
+            }
             return;
         }
 
@@ -362,6 +420,14 @@ public class MarketDataPublisher {
                 broadcaster.broadcastWithArtificialLoad(json);
             }
             messagesPublished.incrementAndGet();
+            // Increment cluster-wide counter
+            if (clusterMessageCounter != null) {
+                try {
+                    clusterMessageCounter.incrementAndGet();
+                } catch (Exception e) {
+                    // Ignore cluster counter errors, not critical
+                }
+            }
             return;
         }
 
@@ -443,6 +509,14 @@ public class MarketDataPublisher {
 
             if (result > 0) {
                 messagesPublished.incrementAndGet();
+                // Increment cluster-wide counter
+                if (clusterMessageCounter != null) {
+                    try {
+                        clusterMessageCounter.incrementAndGet();
+                    } catch (Exception e) {
+                        // Ignore cluster counter errors, not critical
+                    }
+                }
                 consecutiveFailures.set(0);
                 return;
             } else if (result == Publication.BACK_PRESSURED) {
@@ -514,5 +588,16 @@ public class MarketDataPublisher {
 
     public long getMessagesPublished() {
         return messagesPublished.get();
+    }
+
+    public long getClusterMessagesPublished() {
+        if (clusterMessageCounter != null) {
+            try {
+                return clusterMessageCounter.get();
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Failed to read cluster message counter", e);
+            }
+        }
+        return 0;
     }
 }
