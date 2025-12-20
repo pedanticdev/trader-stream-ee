@@ -112,6 +112,17 @@ public class MarketDataPublisher {
     }
 
     public void init() {
+        // Initialize cluster-wide message counter on ALL instances (even non-publishers)
+        // This allows all instances to read the shared counter value via Hazelcast CP Subsystem
+        if (hazelcastInstance != null) {
+            try {
+                clusterMessageCounter = hazelcastInstance.getCPSubsystem().getAtomicLong("cluster-message-count");
+                LOGGER.info("Initialized cluster-wide message counter");
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Failed to initialize cluster message counter, using local counter only", e);
+            }
+        }
+
         // Check if publisher should be enabled on this instance
         if (enablePublisherEnv != null && !"true".equalsIgnoreCase(enablePublisherEnv)) {
             LOGGER.info("Market Data Publisher DISABLED on this instance (ENABLE_PUBLISHER=" + enablePublisherEnv + ")");
@@ -125,16 +136,6 @@ public class MarketDataPublisher {
             LOGGER.info("Running in DIRECT mode - Bypassing Aeron/SBE setup.");
             initialized = true;
             isDirectMode = true;
-
-            // Initialize cluster-wide message counter
-            if (hazelcastInstance != null) {
-                try {
-                    clusterMessageCounter = hazelcastInstance.getCPSubsystem().getAtomicLong("cluster-message-count");
-                    LOGGER.info("Initialized cluster-wide message counter (DIRECT mode)");
-                } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "Failed to initialize cluster message counter, using local counter only", e);
-                }
-            }
 
             startPublishing();
             return;
@@ -178,16 +179,6 @@ public class MarketDataPublisher {
                 LOGGER.info("Market Data Publisher initialized successfully");
                 initialized = true;
 
-                // Initialize cluster-wide message counter
-                if (hazelcastInstance != null) {
-                    try {
-                        clusterMessageCounter = hazelcastInstance.getCPSubsystem().getAtomicLong("cluster-message-count");
-                        LOGGER.info("Initialized cluster-wide message counter");
-                    } catch (Exception e) {
-                        LOGGER.log(Level.WARNING, "Failed to initialize cluster message counter, using local counter only", e);
-                    }
-                }
-
                 startPublishing();
             } else {
                 LOGGER.warning("Publisher not connected after waiting");
@@ -204,14 +195,26 @@ public class MarketDataPublisher {
     private void startPublishing() {
         running = true;
         publisherFuture = managedExecutorService.submit(() -> {
-            LOGGER.info("Market data publisher task started - targeting 50k-100k messages/sec");
+            LOGGER.info("Market data publisher task started - targeting 50k-100k messages/sec with burst patterns");
 
-            final int BURST_SIZE = 500;
-            final long PARK_NANOS = 5_000; // 5 microseconds = ~100k messages/sec
+            final int BASE_BURST_SIZE = 500;
+            final long PARK_NANOS = 5_000; // 5 microseconds base rate
 
             while (running && !Thread.currentThread().isInterrupted()) {
                 try {
-                    for (int i = 0; i < BURST_SIZE && running; i++) {
+                    // Apply burst multiplier for realistic market spikes
+                    int burstMultiplier = getBurstMultiplier();
+                    int adjustedBurstSize = BASE_BURST_SIZE * burstMultiplier;
+
+                    // Log burst transitions
+                    if (burstMultiplier > 1) {
+                        long secondOfMinute = (System.currentTimeMillis() / 1000) % 60;
+                        if (secondOfMinute == 20 || secondOfMinute == 45) {
+                            LOGGER.info("BURST MODE: " + burstMultiplier + "x allocation spike started");
+                        }
+                    }
+
+                    for (int i = 0; i < adjustedBurstSize && running; i++) {
                         publishTrade();
                         publishQuote();
                         publishMarketDepth();
@@ -247,14 +250,19 @@ public class MarketDataPublisher {
                     double elapsedSeconds = (currentTime - lastTime) / 1000.0;
                     double messagesPerSecond = messagesSinceLastLog / elapsedSeconds;
 
+                    int currentMultiplier = getBurstMultiplier();
+                    String burstStatus = currentMultiplier > 1 ?
+                        " [BURST: " + currentMultiplier + "x]" : "";
+
                     LOGGER.info(String.format(
-                        "Publisher Stats - Total: %,d | Last 5s: %,d (%.0f msg/sec)",
-                        currentCount,
-                        messagesSinceLastLog,
-                        messagesPerSecond
+                        "Publisher Stats - Total: %,d | Last 5s: %,d (%.0f msg/sec)%s",
+                        currentCount, messagesSinceLastLog, messagesPerSecond, burstStatus
                     ));
 
-                    String statsJson = String.format("{\"type\":\"stats\",\"total\":%d,\"rate\":%.0f}", currentCount, messagesPerSecond);
+                    String statsJson = String.format(
+                        "{\"type\":\"stats\",\"total\":%d,\"rate\":%.0f,\"burstMultiplier\":%d}",
+                        currentCount, messagesPerSecond, currentMultiplier
+                    );
                     broadcaster.broadcast(statsJson);
 
                     lastCount = currentCount;
@@ -265,6 +273,28 @@ public class MarketDataPublisher {
                 }
             }
         });
+    }
+
+    /**
+     * Calculate burst multiplier based on time pattern simulating market events
+     *
+     * Pattern (60-second cycle):
+     * - 00-20s: Normal trading (1x)
+     * - 20-25s: News event burst (5x allocation spike)
+     * - 25-45s: Normal trading (1x)
+     * - 45-50s: Market close spike (3x allocation)
+     * - 50-60s: Normal trading (1x)
+     */
+    private int getBurstMultiplier() {
+        long secondOfMinute = (System.currentTimeMillis() / 1000) % 60;
+
+        if (secondOfMinute >= 20 && secondOfMinute < 25) {
+            return 5; // News event - 5x burst
+        } else if (secondOfMinute >= 45 && secondOfMinute < 50) {
+            return 3; // Market close - 3x spike
+        }
+
+        return 1; // Normal
     }
 
     /**

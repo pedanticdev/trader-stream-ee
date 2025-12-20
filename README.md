@@ -193,6 +193,14 @@ The `start.sh` script provides commands to run the TradeStreamEE application in 
 | **3. Fixing Legacy Code**       | `./start.sh azul-direct`     | Azul Prime (C4)     | Direct (Heavy)         | Show how C4 can stabilize a high-allocation app without code changes. |
 | **4. Optimizing Standard Java** | `./start.sh standard-aeron`  | Standard JDK (G1GC) | Aeron (Optimized)      | See if architectural optimization helps G1GC performance.             |
 
+### Observability Commands
+*   `./start-comparison.sh` - Deploy complete JVM comparison stack (recommended)
+*   `./stop-comparison.sh` - Stop all comparison services
+*   `docker-compose -f docker-compose-monitoring.yml up -d` - Start monitoring stack only
+*   `docker-compose -f docker-compose-c4.yml up -d` - Start C4 cluster only
+*   `docker-compose -f docker-compose-g1.yml up -d` - Start G1GC cluster only
+*   `docker-compose -f docker-compose-monitoring.yml ps` - Check monitoring status
+
 ### Utilities
 *   `./start.sh logs` - View live logs
 *   `./start.sh stop` - Stop containers
@@ -211,19 +219,243 @@ Controls how data moves from the Publisher to the Processor.
 * `AERON` (Default): Uses the high-speed binary ring buffer.
 * `DIRECT`: Bypasses Aeron; generates Strings directly in the Publisher loop. Useful for isolating Transport vs. GC overhead.
 
-### JVM Tuning (Azul Prime)
+### JVM Tuning & Configuration
 
-The `Dockerfile` is pre-configured with best practices for the C4 collector:
+The Docker configurations are optimized with enhanced settings for performance testing:
 
+**Azul Prime (C4) Configuration:**
 ```dockerfile
-ENV JAVA_OPTS="-Xms2g -Xmx2g -XX:+AlwaysPreTouch -Djava.net.preferIPv4Stack=true"
+ENV JAVA_OPTS="-Xms8g -Xmx8g -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
 ```
 
-* **Note:** We purposefully **do not** use `-XX:+UseZGC` in the optimized image, as C4 is the native collector for Azul Prime.
+**Standard JDK (G1GC) Configuration:**
+```dockerfile
+ENV JAVA_OPTS="-Xms8g -Xmx8g -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
+```
+
+**Infrastructure Improvements:**
+
+* **8GB Heap Size**: Increased from 2GB to 8GB to handle extreme memory pressure testing
+* **Pre-touch Memory** (`-XX:+AlwaysPreTouch`): Pre-allocates heap pages to eliminate runtime allocation overhead
+* **Transparent Huge Pages** (`-XX:+UseTransparentHugePages`): Reduces TLB misses for large memory operations
+* **Enhanced GC Logging**: Detailed GC event logging with decorators for comprehensive analysis
+* **Rate-Limited Logging**: Prevents log flooding during high-throughput operations
+* **Maven Wrapper**: Ensures consistent build environments across platforms
+
+**Note:** We purposefully **do not** use `-XX:+UseZGC` in the Azul Prime image, as C4 is the native, optimized collector for Azul Platform Prime.
+
+### GC Monitoring & Stress Testing
+
+The application includes comprehensive GC monitoring and memory pressure testing capabilities to demonstrate JVM performance differences:
+
+#### GC Statistics Collection
+
+**GCStatsService** collects real-time garbage collection metrics via JMX MXBeans:
+
+* **Collection Metrics**: Total collection count and time for each GC type
+* **Pause Time Analysis**: Individual pause durations with percentile calculations (P50, P95, P99, P99.9, Max)
+* **Memory Usage**: Heap memory utilization (total, used, free)
+* **Recent Pause History**: Last 100 pause times for trend analysis
+
+#### Memory Pressure Testing
+
+**MemoryPressureService** provides controlled memory allocation to stress test GC performance:
+
+**Allocation Modes:**
+* **OFF**: No additional allocation
+* **LOW**: 1 MB/sec - Light pressure
+* **MEDIUM**: 10 MB/sec - Moderate pressure
+* **HIGH**: 500 MB/sec - Heavy pressure
+* **EXTREME**: 2 GB/sec - Extreme pressure
+
+Each mode allocates byte arrays in a background thread to create realistic memory pressure, allowing observation of:
+* C4's concurrent collection vs G1GC's "stop-the-world" pauses
+* Latency impact under increasing memory pressure
+* Throughput degradation patterns
+
+#### GC Challenge Mode
+
+The web UI includes **GC Challenge Mode** controls that allow:
+* Real-time switching between allocation modes
+* Visual feedback showing current stress level
+* Side-by-side pause time visualization
+* Immediate observation of collector behavior under load
+
+This feature enables live demonstration of how Azul C4 maintains low pause times even under extreme memory pressure, while G1GC shows increasingly long pauses.
 
 
 
-## 📊 Monitoring & Metrics
+## 📊 Monitoring & Observability
+
+TradeStreamEE includes comprehensive monitoring infrastructure to compare JVM performance between Azul C4 and standard G1GC configurations.
+
+### Monitoring Stack
+
+| Component | Technology | Purpose | Access |
+|:---|:---|:---|:---|
+| **Metrics Collection** | Prometheus + JMX Exporter | JVM GC metrics, memory, threads | http://localhost:9090 |
+| **Visualization** | Grafana | Performance dashboards | http://localhost:3000 (admin/admin) |
+| **Log Aggregation** | Loki + Promtail | Centralized log management | http://localhost:3100 |
+| **Load Balancing** | Traefik | Traffic distribution + metrics | http://localhost:8080 (C4), http://localhost:9080 (G1) |
+
+### JVM Comparison Dashboard
+
+The pre-configured Grafana dashboard provides:
+
+* **GC Pause Time Comparison** - P99 latency comparison between C4 and G1GC
+* **GC Collection Count Rate** - Collection frequency analysis
+* **Heap Memory Usage** - Real-time memory utilization
+* **Thread Count** - Concurrent thread monitoring
+* **GC Pause Distribution** - Heatmap showing pause time patterns
+* **Performance Summary** - Key metrics with threshold alerts
+
+### Starting the Observability Stack
+
+#### Option 1: Automated Setup (Recommended)
+
+Use the provided `start-comparison.sh` script for complete automated deployment:
+
+```bash
+# Deploy entire JVM comparison stack
+./start-comparison.sh
+```
+
+This script automatically:
+* Creates the monitoring directory structure
+* Downloads the JMX Prometheus exporter
+* Builds the application and Docker images
+* Creates required Docker networks
+* Starts the complete monitoring stack (Prometheus, Grafana, Loki)
+* Deploys both C4 and G1GC clusters with load balancers
+
+#### Option 2: Manual Setup
+
+For granular control, start components manually:
+
+```bash
+# Create required networks
+docker network create trader-network
+docker network create monitoring
+
+# Start monitoring infrastructure
+docker-compose -f docker-compose-monitoring.yml up -d
+
+# Start C4 cluster (Azul Prime)
+docker-compose -f docker-compose-c4.yml up -d
+
+# Start G1 cluster (Eclipse Temurin)
+docker-compose -f docker-compose-g1.yml up -d
+
+# View monitoring stack status
+docker-compose -f docker-compose-monitoring.yml ps
+```
+
+#### Stopping the Comparison
+
+Use the provided stop script:
+
+```bash
+# Stop all comparison services
+./stop-comparison.sh
+
+# Stop all comparison services and remove volumes
+./stop-comparison.sh --prune
+```
+
+### Access Points
+
+After starting the observability stack:
+
+* **Grafana Dashboard**: http://localhost:3000 (admin/admin)
+* **C4 Application**: http://localhost:8080 (via Traefik load balancer)
+* **G1 Application**: http://localhost:9080 (via Traefik load balancer)
+* **Prometheus**: http://localhost:9090
+* **Individual C4 instances**: http://localhost:8081, http://localhost:8082, http://localhost:8083
+* **Individual G1 instances**: http://localhost:9081, http://localhost:9082, http://localhost:9083
+
+### Monitoring Configuration
+
+#### JMX Exporter
+Each JVM instance runs a JMX exporter agent that exposes:
+* Garbage collection metrics (pause times, collection counts)
+* Memory pool usage (heap/non-heap)
+* Thread information
+* Custom application metrics
+
+#### Prometheus Configuration
+The Prometheus setup (`monitoring/prometheus/prometheus.yml`) scrapes:
+* JMX metrics from all JVM instances (ports 9010-9022)
+* Traefik metrics for load balancer performance
+* Self-monitoring metrics
+
+#### Log Collection
+Promtail automatically collects and ships container logs to Loki, enabling:
+* Log-based troubleshooting
+* Correlation of performance issues with application events
+* JVM type and instance label-based filtering
+
+### Stress Testing the Comparison
+
+After deploying the observability stack, you can stress test both JVM configurations to observe the performance differences:
+
+#### Memory Pressure API Endpoints
+
+```bash
+# Set allocation mode for memory pressure testing
+curl -X POST http://localhost:8080/api/pressure/mode/EXTREME    # C4 cluster
+curl -X POST http://localhost:9080/api/pressure/mode/EXTREME    # G1GC cluster
+
+# Available modes: OFF, LOW, MEDIUM, HIGH, EXTREME
+
+# Get current GC statistics
+curl http://localhost:8080/api/gc/stats
+curl http://localhost:9080/api/gc/stats
+
+# Reset GC statistics
+curl -X POST http://localhost:8080/api/gc/reset
+curl -X POST http://localhost:9080/api/gc/reset
+```
+
+#### UI-Based Testing
+
+The web interface provides interactive controls:
+
+* **GC Challenge Mode Panel**: Select allocation modes with visual buttons
+* **Real-time Pause Time Chart**: Shows GC pauses as they occur
+* **Backend Message Rate Display**: Monitor throughput impact
+* **Visual Feedback**: Immediate color-coded response to mode changes
+
+#### Expected Results
+
+The stress tests will:
+1. Generate controlled allocation rates (1 MB to 2 GB per second)
+2. Create realistic memory pressure scenarios
+3. Allow real-time comparison of pause times between C4 and G1GC
+4. Demonstrate C4's concurrent collection vs G1GC's "stop-the-world" pauses
+5. Show latency impact and throughput degradation patterns
+6. Visualize the "pauseless" characteristics of C4 under extreme load
+
+**Sample GC Stats Response:**
+```json
+{
+  "gcName": "C4",
+  "collectionCount": 1543,
+  "collectionTime": 8934,
+  "lastPauseDuration": 0.5,
+  "percentiles": {
+    "p50": 0.3,
+    "p95": 1.2,
+    "p99": 2.8,
+    "p999": 5.6,
+    "max": 12.4
+  },
+  "totalMemory": 8589934592,
+  "usedMemory": 3221225472,
+  "freeMemory": 5368709120
+}
+```
+
+## 📊 Application Metrics
 
 The application exposes a lightweight REST endpoint for health checks and internal metrics.
 
@@ -257,11 +489,31 @@ src/main/
 │   ├── aeron/          # Aeron Publisher, Subscriber, FragmentHandler
 │   ├── sbe/            # Generated SBE Codecs (Flyweights)
 │   ├── websocket/      # Jakarta WebSocket Endpoint
-│   └── rest/           # Status Resource
+│   ├── rest/           # Status, GC Stats, and Memory Pressure Resources
+│   ├── gc/             # GC statistics collection and monitoring
+│   ├── pressure/       # Memory pressure testing services
+│   └── monitoring/     # GC monitoring services (GCPauseMonitor, MemoryPressure)
 ├── resources/sbe/
 │   └── market-data.xml # SBE Schema Definition
 └── webapp/
     └── index.html      # Dashboard UI (Chart.js + WebSocket)
+
+monitoring/
+├── grafana/
+│   ├── provisioning/   # Grafana datasources and dashboard configs
+│   └── dashboards/     # Pre-configured JVM comparison dashboard
+├── jmx-exporter/       # JMX exporter configuration and JAR
+├── prometheus/         # Prometheus configuration
+├── loki/              # Loki log aggregation config
+└── promtail/          # Promtail log shipping config
+
+start-comparison.sh           # Automated deployment script for JVM comparison
+stop-comparison.sh            # Stop script for comparison services
+docker-compose-c4.yml          # Azul Prime C4 cluster setup
+docker-compose-g1.yml          # Eclipse Temurin G1GC cluster setup
+docker-compose-monitoring.yml  # Monitoring stack (Prometheus, Grafana, Loki)
+Dockerfile.scale               # Multi-stage build for C4 instances
+Dockerfile.scale.standard      # Build for G1GC instances
 ```
 
 ## 📜 License

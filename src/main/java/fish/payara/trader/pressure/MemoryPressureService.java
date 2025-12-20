@@ -9,8 +9,10 @@ import jakarta.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
@@ -28,6 +30,11 @@ public class MemoryPressureService {
 
     private long totalBytesAllocated = 0;
     private long lastStatsTime = System.currentTimeMillis();
+
+    // Long-lived objects that survive to tenured/old generation
+    private final List<byte[]> tenuredObjects = new CopyOnWriteArrayList<>();
+    private static final int TENURED_TARGET_MB = 1024; // Target 1GB in old gen
+    private final AtomicLong tenuredBytesAllocated = new AtomicLong(0);
 
     @Inject
     @VirtualThreadExecutor
@@ -111,24 +118,51 @@ public class MemoryPressureService {
 
             switch (pattern) {
                 case 0:
-                    // String allocations (most common in real apps)
                     generateStringGarbage(bytesPerAlloc);
                     break;
                 case 1:
-                    // Byte array allocations
                     generateByteArrayGarbage(bytesPerAlloc);
                     break;
                 case 2:
-                    // Object allocations
-                    generateObjectGarbage(bytesPerAlloc / 64); // ~64 bytes per object
+                    generateObjectGarbage(bytesPerAlloc / 64);
                     break;
                 case 3:
-                    // Collection allocations
-                    generateCollectionGarbage(bytesPerAlloc / 100); // ~100 bytes per list item
+                    generateCollectionGarbage(bytesPerAlloc / 100);
                     break;
             }
 
+            // NEW: Create long-lived objects inside the loop for higher impact
+            if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
+                // 0.1% chance in EXTREME (20 objects/iteration = 200MB/s)
+                // 0.02% chance in HIGH (1 object/iteration = 10MB/s)
+                int chance = (mode == AllocationMode.EXTREME) ? 10 : 2;
+                if (ThreadLocalRandom.current().nextInt(10000) < chance) {
+                    byte[] longLived = new byte[1024 * 1024]; // 1MB object
+                    ThreadLocalRandom.current().nextBytes(longLived); // Prevent optimization
+                    tenuredObjects.add(longLived);
+                    tenuredBytesAllocated.addAndGet(1024 * 1024);
+                }
+            }
+
             totalBytesAllocated += bytesPerAlloc;
+        }
+
+        // Maintain target size - remove oldest when limit reached
+        if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
+            while (tenuredBytesAllocated.get() > TENURED_TARGET_MB * 1024L * 1024L) {
+                if (!tenuredObjects.isEmpty()) {
+                    tenuredObjects.remove(0);
+                    tenuredBytesAllocated.addAndGet(-1024 * 1024);
+                } else {
+                    break;
+                }
+            }
+        } else if (mode == AllocationMode.OFF || mode == AllocationMode.LOW) {
+            // Clear tenured objects when stress is reduced
+            if (!tenuredObjects.isEmpty()) {
+                tenuredObjects.clear();
+                tenuredBytesAllocated.set(0);
+            }
         }
     }
 
@@ -172,13 +206,21 @@ public class MemoryPressureService {
             double mbPerSec = (totalBytesAllocated / (1024.0 * 1024.0)) / elapsedSeconds;
 
             LOGGER.info(String.format(
-                "Memory Pressure Stats - Mode: %s | Allocated: %.2f MB | Rate: %.2f MB/sec",
-                currentMode, totalBytesAllocated / (1024.0 * 1024.0), mbPerSec
+                "Memory Pressure Stats - Mode: %s | Allocated: %.2f MB/sec | Tenured: %d MB (%d objects)",
+                currentMode, mbPerSec, getTenuredObjectsMB(), getTenuredObjectCount()
             ));
 
             totalBytesAllocated = 0;
             lastStatsTime = now;
         }
+    }
+    
+    public long getTenuredObjectsMB() {
+        return tenuredBytesAllocated.get() / (1024 * 1024);
+    }
+
+    public int getTenuredObjectCount() {
+        return tenuredObjects.size();
     }
 
     @PreDestroy

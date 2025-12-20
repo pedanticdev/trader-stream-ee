@@ -1,0 +1,155 @@
+{
+  "dashboard": {
+    "title": "JVM Performance Comparison - C4 vs G1GC",
+    "tags": ["jvm", "gc", "performance", "comparison"],
+    "timezone": "browser",
+    "editable": true,
+    "panels": [
+      {
+        "id": 1,
+        "title": "GC Pause Time Comparison (P99)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, rate(jvm_gc_collection_time_ms[5m])) by (jvm_type, gc)",
+            "legendFormat": "{{jvm_type}} - {{gc}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "custom": {
+              "axisLabel": "Pause Time (ms)"
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byRegexp", "options": ".*azul-c4.*"},
+              "properties": [
+                {"id": "color", "value": {"mode": "fixed", "fixedColor": "green"}}
+              ]
+            },
+            {
+              "matcher": {"id": "byRegexp", "options": ".*g1.*"},
+              "properties": [
+                {"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "title": "GC Collection Count Rate",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(jvm_gc_collection_count[5m]) by (jvm_type, gc)",
+            "legendFormat": "{{jvm_type}} - {{gc}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "custom": {
+              "axisLabel": "Collections/sec"
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Heap Memory Usage",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "jvm_memory_heap_used by (jvm_type, instance) / jvm_memory_heap_max * 100",
+            "legendFormat": "{{jvm_type}} - {{instance}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "custom": {
+              "axisLabel": "Heap Usage %"
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Thread Count",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "jvm_threads_current by (jvm_type, instance)",
+            "legendFormat": "{{jvm_type}} - {{instance}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "axisLabel": "Thread Count"
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "GC Pause Time Distribution (Heatmap)",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "rate(jvm_gc_collection_time_ms[1m]) by (jvm_type, le)",
+            "legendFormat": "{{jvm_type}}",
+            "refId": "A",
+            "format": "heatmap"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Performance Summary",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, rate(jvm_gc_collection_time_ms[5m])) by (jvm_type)",
+            "legendFormat": "{{jvm_type}} P99",
+            "refId": "A"
+          },
+          {
+            "expr": "max(jvm_gc_collection_time_ms) by (jvm_type)",
+            "legendFormat": "{{jvm_type}} Max",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 10, "color": "yellow"},
+                {"value": 50, "color": "red"}
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "refresh": "5s",
+    "time": {"from": "now-30m", "to": "now"}
+  }
+}
