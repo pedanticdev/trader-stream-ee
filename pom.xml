@@ -316,6 +316,51 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+
+            <!-- Spotless for code formatting -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <java>
+                        <googleJavaFormat>
+                            <version>1.17.0</version>
+                            <style>GOOGLE</style>
+                        </googleJavaFormat>
+                        <removeUnusedImports/>
+                        <trimTrailingWhitespace/>
+                        <endWithNewline/>
+                    </java>
+                    <json>
+                        <includes>
+                            <include>src/**/*.json</include>
+                            <include>monitoring/**/*.json</include>
+                        </includes>
+                        <jackson>
+                            <version>2.15.2</version>
+                            <features>
+                                <INDENT_OUTPUT>true</INDENT_OUTPUT>
+                            </features>
+                        </jackson>
+                    </json>
+
+                    <markdown>
+                        <includes>
+                            <include>**/*.md</include>
+                        </includes>
+                        <flexmark/>
+                    </markdown>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>compile</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
     
