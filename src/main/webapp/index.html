@@ -411,11 +411,16 @@
                 <div class="status-indicator" id="statusIndicator"></div>
                 <span id="statusText">Disconnected</span>
                 <span id="modeDisplay" class="status-mode"></span>
+                <span id="instanceDisplay" class="status-mode" style="margin-left: 15px; color: #1976d2; font-weight: 600;"></span>
             </div>
             <div class="stats">
                 <div class="stat-group">
-                    <div class="stat"><div class="stat-value backend" id="backendRate">0</div><div class="stat-label">Backend Msg/sec</div></div>
-                    <div class="stat"><div class="stat-value backend" id="backendTotal">0</div><div class="stat-label">Total Generated</div></div>
+                    <div class="stat"><div class="stat-value backend" id="backendRate">0</div><div class="stat-label">Local Msg/sec</div></div>
+                    <div class="stat"><div class="stat-value backend" id="backendTotal">0</div><div class="stat-label">Local Total</div></div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat"><div class="stat-value backend" id="clusterTotal">0</div><div class="stat-label">Cluster Total</div></div>
+                    <div class="stat"><div class="stat-value backend" id="clusterRate">0</div><div class="stat-label">Cluster Msg/sec</div></div>
                 </div>
                 <div class="stat-group">
                     <div class="stat"><div class="stat-value" id="messageRate">0</div><div class="stat-label">UI Msg/sec</div></div>
@@ -957,6 +962,38 @@
                 .catch(error => console.error('Error fetching pressure status:', error));
         }
 
+        let lastClusterTotal = 0;
+        let lastClusterTime = Date.now();
+
+        function pollInstanceStatus() {
+            fetch(window.location.pathname + 'api/status')
+                .then(response => response.json())
+                .then(status => {
+                    // Update instance name
+                    if (status.instance) {
+                        document.getElementById('instanceDisplay').textContent = '[' + status.instance + ']';
+                    }
+
+                    // Update cluster total and calculate rate
+                    if (status.publisher && status.publisher.clusterMessagesPublished !== undefined) {
+                        const clusterTotal = status.publisher.clusterMessagesPublished;
+                        document.getElementById('clusterTotal').textContent = clusterTotal.toLocaleString();
+
+                        // Calculate cluster message rate
+                        const now = Date.now();
+                        const timeDiff = (now - lastClusterTime) / 1000; // seconds
+                        const messageDiff = clusterTotal - lastClusterTotal;
+                        if (timeDiff > 0 && lastClusterTotal > 0) {
+                            const clusterRate = Math.round(messageDiff / timeDiff);
+                            document.getElementById('clusterRate').textContent = clusterRate.toLocaleString();
+                        }
+                        lastClusterTotal = clusterTotal;
+                        lastClusterTime = now;
+                    }
+                })
+                .catch(error => console.error('Error fetching instance status:', error));
+        }
+
         function flipCard(card) {
             card.classList.toggle('flipped');
         }
@@ -997,6 +1034,11 @@
                 if (window.pressureStatusInterval) clearInterval(window.pressureStatusInterval);
                 window.pressureStatusInterval = setInterval(pollPressureStatus, 3000);
                 pollPressureStatus(); // Initial poll
+
+                // Start instance status polling (every 2 seconds for cluster stats)
+                if (window.instanceStatusInterval) clearInterval(window.instanceStatusInterval);
+                window.instanceStatusInterval = setInterval(pollInstanceStatus, 2000);
+                pollInstanceStatus(); // Initial poll
             };
             ws.onclose=( )=>{
                 document.getElementById('statusIndicator').classList.remove('connected');
@@ -1083,6 +1125,7 @@
         
         window.addEventListener('load', () => {
             initCharts();
+            pollInstanceStatus(); // Get instance info immediately
             setTimeout(connect, 1000);
         });
     </script>

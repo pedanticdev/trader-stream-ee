@@ -15,6 +15,7 @@
         <jakartaee-api.version>11.0.0</jakartaee-api.version>
         <payara.version>7.2025.2</payara.version>
         <payara.home>payara6</payara.home>
+        <hazelcast.version>5.5.0</hazelcast.version>
         <aeron.version>1.46.7</aeron.version>
         <sbe.version>1.34.0</sbe.version>
     </properties>
@@ -46,6 +47,12 @@
         <dependency>
             <groupId>fish.payara.api</groupId>
             <artifactId>payara-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Hazelcast API for clustering support (Provided by Payara at runtime) -->
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- Aeron for high-throughput messaging -->
@@ -164,6 +171,7 @@
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
+            <!-- Swagger UI download disabled
             <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
@@ -184,10 +192,12 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.3.1</version>
                 <executions>
+                    <!-- Swagger UI copy disabled
                     <execution>
                         <id>copy-swagger-resources</id>
                         <phase>process-resources</phase>
@@ -207,6 +217,7 @@
                             </resources>
                         </configuration>
                     </execution>
+                    -->
                 </executions>
             </plugin>
             <!-- Maven Surefire Plugin for running tests -->

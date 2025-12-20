@@ -1,6 +1,12 @@
 package fish.payara.trader.websocket;
 
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.topic.ITopic;
+import com.hazelcast.topic.Message;
+import com.hazelcast.topic.MessageListener;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.websocket.Session;
 
 import java.io.IOException;
@@ -15,6 +21,10 @@ import java.util.logging.Logger;
  * Maintains a set of active WebSocket sessions and broadcasts
  * JSON messages to all connected clients.
  *
+ * In clustered mode, uses Hazelcast distributed topics to broadcast
+ * messages across all cluster members, ensuring all WebSocket clients
+ * receive data regardless of which instance they connect to.
+ *
  * Note: JSON string creation intentionally generates garbage
  * to stress-test Azul's Pauseless GC (C4).
  */
@@ -22,12 +32,43 @@ import java.util.logging.Logger;
 public class MarketDataBroadcaster {
 
     private static final Logger LOGGER = Logger.getLogger(MarketDataBroadcaster.class.getName());
+    private static final String TOPIC_NAME = "market-data-broadcast";
 
     private final Set<Session> sessions = ConcurrentHashMap.newKeySet();
+
+    @Inject
+    private HazelcastInstance hazelcastInstance;
+
+    private ITopic<String> clusterTopic;
 
     // Statistics
     private long messagesSent = 0;
     private long lastStatsTime = System.currentTimeMillis();
+
+    /**
+     * Initialize Hazelcast topic subscription for cluster-wide broadcasting
+     */
+    @PostConstruct
+    public void init() {
+        try {
+            if (hazelcastInstance != null) {
+                clusterTopic = hazelcastInstance.getTopic(TOPIC_NAME);
+                clusterTopic.addMessageListener(new MessageListener<String>() {
+                    @Override
+                    public void onMessage(Message<String> message) {
+                        // Broadcast to local WebSocket sessions only
+                        broadcastLocal(message.getMessageObject());
+                    }
+                });
+                LOGGER.info("Subscribed to Hazelcast topic: " + TOPIC_NAME + " (clustered mode)");
+            } else {
+                LOGGER.info("Hazelcast not available - running in standalone mode");
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to initialize Hazelcast topic subscription", e);
+            // Continue without clustering
+        }
+    }
 
     /**
      * Register a new WebSocket session
@@ -46,12 +87,37 @@ public class MarketDataBroadcaster {
     }
 
     /**
-     * Broadcast JSON message to all connected clients
+     * Broadcast JSON message to all connected clients across the cluster.
+     *
+     * In clustered mode, publishes to Hazelcast topic which distributes
+     * to all cluster members. Each member then broadcasts to its local
+     * WebSocket sessions.
+     *
+     * In standalone mode, broadcasts directly to local sessions.
      *
      * This method intentionally creates string allocations to
      * generate garbage and stress the garbage collector.
      */
     public void broadcast(String jsonMessage) {
+        if (clusterTopic != null) {
+            // Publish to cluster-wide topic
+            try {
+                clusterTopic.publish(jsonMessage);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Failed to publish to Hazelcast topic, falling back to local broadcast", e);
+                broadcastLocal(jsonMessage);
+            }
+        } else {
+            // Standalone mode - broadcast locally only
+            broadcastLocal(jsonMessage);
+        }
+    }
+
+    /**
+     * Broadcast message to local WebSocket sessions only.
+     * Called either in standalone mode or by Hazelcast topic listener.
+     */
+    private void broadcastLocal(String jsonMessage) {
         if (sessions.isEmpty()) {
             return;
         }
