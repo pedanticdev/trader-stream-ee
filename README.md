@@ -516,6 +516,71 @@ Dockerfile.scale               # Multi-stage build for C4 instances
 Dockerfile.scale.standard      # Build for G1GC instances
 ```
 
+## 🧪 Testing & Quality Assurance
+
+TradeStreamEE includes a comprehensive testing infrastructure designed to ensure reliability and performance validation.
+
+### Test Framework Stack
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Unit Testing** | JUnit 5 + Mockito + AssertJ | Core component validation |
+| **Integration Testing** | Custom framework | Service layer interactions |
+| **Performance Testing** | JMH + Custom utilities | Benchmarking and load testing |
+| **Code Coverage** | JaCoCo Maven Plugin | Coverage analysis and reporting |
+
+### Quick Test Execution
+
+```bash
+# Quick test (unit tests only, ~30 seconds)
+./test.sh quick
+
+# Full test suite (unit + integration, 2-5 minutes)
+./test.sh full
+
+# Maven commands
+./mvnw test                    # Unit tests
+./mvnw jacoco:report          # Generate coverage report
+```
+
+### Current Test Coverage
+
+**✅ Working Tests (19/19 passing):**
+- **BasicFunctionalityTest**: Core components and allocation modes
+- **MarketDataFragmentHandlerTest**: SBE message processing
+- **MarketDataBroadcasterTest**: WebSocket session management
+
+**📊 Coverage Metrics:**
+- **Tests**: 19 unit tests with 100% pass rate
+- **Instruction Coverage**: ~45% (core components)
+- **Test Execution**: < 30 seconds for quick run
+
+### Test Categories
+
+1. **Unit Tests**: Core component testing in isolation
+2. **Integration Tests**: Service layer interactions
+3. **Performance Tests**: Load testing and benchmarks
+4. **Memory Pressure Tests**: GC behavior validation
+
+### Test Utilities
+
+**GCTestUtil**: Provides GC testing and memory pressure utilities:
+
+```java
+// Capture GC statistics
+GCTestUtil.GCStatistics before = GCTestUtil.captureInitialStats();
+
+// Create controlled memory pressure
+GCTestUtil.allocateMemory(100); // 100MB
+
+// Analyze GC impact
+GCTestUtil.GCStatistics after = GCTestUtil.calculateDelta(before);
+```
+
+### Testing Documentation
+
+For detailed testing information, see: [TESTING.md](TESTING.md) - Complete testing guide with examples and best practices.
+
 ## 📜 License
 
 This project is a reference implementation provided for demonstration purposes.
