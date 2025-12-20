@@ -54,6 +54,10 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # Copy Hazelcast configuration
 COPY src/main/resources/hazelcast-config.xml /opt/payara/hazelcast-config.xml
 
+# Set unique cluster name for C4 environment and update discovery members
+RUN sed -i 's/payara-trader-cluster/payara-trader-c4/' /opt/payara/hazelcast-config.xml && \
+    sed -i 's/trader-stream-/trader-stream-c4-/' /opt/payara/hazelcast-config.xml
+
 # Run Payara Micro with the WAR
 # NOTE: --nohazelcast flag is REMOVED to enable clustering
 # Use custom Hazelcast configuration with split-brain protection

@@ -7,9 +7,12 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * REST endpoint for controlling memory pressure testing
@@ -21,6 +24,24 @@ public class MemoryPressureResource {
 
     @Inject
     private MemoryPressureService pressureService;
+
+    public enum StressScenario {
+        DEMO_BASELINE(AllocationMode.OFF, "Baseline - No artificial stress"),
+        DEMO_NORMAL(AllocationMode.LOW, "Normal Trading - Light load to show steady-state"),
+        DEMO_STRESS(AllocationMode.HIGH, "High Stress - Heavy allocation + burst patterns"),
+        DEMO_EXTREME(AllocationMode.EXTREME, "Extreme Stress - Maximum pressure + tenured pollution");
+
+        private final AllocationMode mode;
+        private final String description;
+
+        StressScenario(AllocationMode mode, String description) {
+            this.mode = mode;
+            this.description = description;
+        }
+
+        public AllocationMode getMode() { return mode; }
+        public String getDescription() { return description; }
+    }
 
     @GET
     @Path("/status")
@@ -64,6 +85,45 @@ public class MemoryPressureResource {
             error.put("validModes", new String[]{"OFF", "LOW", "MEDIUM", "HIGH", "EXTREME"});
             return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
         }
+    }
+
+    @POST
+    @Path("/scenario/{scenario}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response applyScenario(@PathParam("scenario") String scenarioName) {
+        try {
+            StressScenario scenario = StressScenario.valueOf(scenarioName.toUpperCase());
+            LOGGER.info("Applying scenario: " + scenario.name());
+
+            pressureService.setAllocationMode(scenario.getMode());
+
+            return Response.ok(Map.of(
+                "scenario", scenario.name(),
+                "description", scenario.getDescription(),
+                "mode", scenario.getMode(),
+                "status", "applied"
+            )).build();
+
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of("error", "Invalid scenario: " + scenarioName))
+                .build();
+        }
+    }
+
+    @GET
+    @Path("/scenarios")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response listScenarios() {
+        List<Map<String, String>> scenarios = Arrays.stream(StressScenario.values())
+            .map(s -> Map.of(
+                "name", s.name(),
+                "description", s.getDescription(),
+                "mode", s.getMode().toString()
+            ))
+            .collect(Collectors.toList());
+
+        return Response.ok(scenarios).build();
     }
 
     @GET

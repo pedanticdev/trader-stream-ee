@@ -29,7 +29,7 @@ ARG PAYARA_VERSION=7.2025.2
 ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/payara-micro/${PAYARA_VERSION}/payara-micro-${PAYARA_VERSION}.jar /opt/payara/payara-micro.jar
 
 # Copy WAR file from build stage
-COPY --from=build /app/target/*.war ROOT.war
+COPY --from=build /app/target/*.war trader-stream-ee.war
 
 EXPOSE 8080
 EXPOSE 5701
@@ -51,9 +51,14 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # Copy Hazelcast configuration
 COPY src/main/resources/hazelcast-config.xml /opt/payara/hazelcast-config.xml
 
+# Set unique cluster name for G1 environment and update discovery members
+RUN sed -i 's/payara-trader-cluster/payara-trader-g1/' /opt/payara/hazelcast-config.xml && \
+    sed -i 's/trader-stream-/trader-stream-g1-/' /opt/payara/hazelcast-config.xml
+
 # Run Payara Micro with the WAR
 # NOTE: --nohazelcast flag is REMOVED to enable clustering
 # Use custom Hazelcast configuration with split-brain protection
 CMD java ${JAVA_OPTS} -jar payara-micro.jar \
-    --deploy ROOT.war \
+    --deploy trader-stream-ee.war \
+    --contextroot trader-stream-ee \
     --hzconfigfile /opt/payara/hazelcast-config.xml

@@ -39,6 +39,9 @@ public class MarketDataBroadcaster {
     @Inject
     private HazelcastInstance hazelcastInstance;
 
+    @Inject
+    private fish.payara.trader.monitoring.SLAMonitorService slaMonitor;
+
     private ITopic<String> clusterTopic;
 
     // Statistics
@@ -122,24 +125,25 @@ public class MarketDataBroadcaster {
             return;
         }
 
-        // Iterate through all sessions and send the message
+        long startTime = System.currentTimeMillis();
+
         sessions.removeIf(session -> {
             if (!session.isOpen()) {
-                LOGGER.fine("Removing closed session: " + session.getId());
                 return true;
             }
-
             try {
-                // Send async to avoid blocking
                 session.getAsyncRemote().sendText(jsonMessage);
-                messagesSent++;
                 return false;
-
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Failed to send message to session: " + session.getId(), e);
-                return true;  // Remove problematic session
+                LOGGER.log(Level.WARNING, "Failed to send message", e);
+                return true;
             }
         });
+
+        long latency = System.currentTimeMillis() - startTime;
+        if (slaMonitor != null) {
+            slaMonitor.recordOperation(latency);
+        }
 
         logStatistics();
     }
