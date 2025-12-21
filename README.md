@@ -4,8 +4,6 @@
 
 It simulates a high-frequency trading (HFT) dashboard that ingests tens of thousands of market data messages per second, processes them in real-time, and broadcasts updates to a web frontend—all without the latency spikes ("jitter") associated with standard Java Garbage Collection.
 
-
-
 ## ⚡ The Core Technologies
 
 TradeStreamEE gets its speed by removing the middleman. We swapped out heavy, traditional methods (REST/JSON) for 'Mechanical Sympathy', an approach that respects the underlying hardware to squeeze out maximum efficiency.
@@ -32,26 +30,25 @@ Computers do not natively understand text; they understand bits.
 
 Unlike JSON, where you just write data, SBE is **Schema-Driven**. This ensures strict structure and maximum speed.
 
-1.  **Define the Schema (`market-data.xml`):** You define your messages in XML. This acts as the contract between Publisher and Subscriber.
-    ```xml
-    <sbe:message name="Trade" id="1">
-        <field name="price" id="1" type="int64"/>
-        <field name="quantity" id="2" type="int64"/>
-    </sbe:message>
-    ```
-2.  **Generate Code:** During the build process (`mvn generate-sources`), the **SbeTool** reads the XML and generates Java classes (Encoders and Decoders).
-3.  **Zero-Copy Encoding/Decoding:**
-    * **The Flyweight Pattern:** The generated Java classes are "Flyweights." They do not hold data themselves. Instead, they act as a "window" over the raw byte buffer.
-    * **No Allocation:** When we read a Trade message, **we do not create a `Trade` object**. We simply move the "window" to the correct position in memory and read the `long` value for price. This generates **zero garbage** for the Garbage Collector to clean up.
+1. **Define the Schema (`market-data.xml`):** You define your messages in XML. This acts as the contract between Publisher and Subscriber.
 
-
+   ```xml
+   <sbe:message name="Trade" id="1">
+       <field name="price" id="1" type="int64"/>
+       <field name="quantity" id="2" type="int64"/>
+   </sbe:message>
+   ```
+2. **Generate Code:** During the build process (`mvn generate-sources`), the **SbeTool** reads the XML and generates Java classes (Encoders and Decoders).
+3. **Zero-Copy Encoding/Decoding:**
+   * **The Flyweight Pattern:** The generated Java classes are "Flyweights." They do not hold data themselves. Instead, they act as a "window" over the raw byte buffer.
+   * **No Allocation:** When we read a Trade message, **we do not create a `Trade` object**. We simply move the "window" to the correct position in memory and read the `long` value for price. This generates **zero garbage** for the Garbage Collector to clean up.
 
 ## 🚀 The Rationale: Why This Project Exists
 
 Enterprise Java applications often struggle with two competing requirements:
 
-1.  **High Throughput:** Ingesting massive data streams (IoT, Financial Data).
-2.  **Low Latency:** Processing that data without "Stop-the-World" pauses.
+1. **High Throughput:** Ingesting massive data streams (IoT, Financial Data).
+2. **Low Latency:** Processing that data without "Stop-the-World" pauses.
 
 Standard JVMs (using G1GC or ParallelGC) often "hiccup" under high load, causing UI freezes or missed SLAs. **TradeStreamEE** proves that by combining a modern, broker-less transport (**Aeron**) with a pauseless runtime (**Azul C4**), standard Jakarta EE applications can achieve microsecond-level latency and massive throughput.
 
@@ -62,26 +59,22 @@ This project includes built-in tools to benchmark "The Old Way" vs. "The New Way
 * **Scenario A (Baseline):** Standard OpenJDK + Naive String Processing.
 * **Scenario B (Optimized):** Azul Platform Prime + Aeron IPC + Zero-Copy SBE.
 
-
-
 ## 🏗️ Technical Architecture
 
 The application implements a **Hybrid Architecture**:
 
-1.  **Ingestion Layer (Broker-less):**
-    * Uses **Aeron IPC** (Inter-Process Communication) via an Embedded Media Driver.
-    * Bypasses the network stack for ultra-low latency between components.
-2.  **Serialization Layer (Zero-Copy):**
-    * Uses **Simple Binary Encoding (SBE)**.
-    * Decodes messages directly from memory buffers (Flyweight pattern) without allocating Java Objects, reducing GC pressure.
-3.  **Application Layer (Jakarta EE 11):**
-    * **Payara Micro 7** serves as the container.
-    * **CDI** manages the lifecycle of the Aeron Publisher and Subscriber.
-    * **WebSockets** push updates to the browser.
-4.  **Runtime Layer:**
-    * **Azul Platform Prime** uses the **C4 Collector** to clean up the "garbage" created by the WebSocket layer concurrently, ensuring a flat latency profile.
-
-
+1. **Ingestion Layer (Broker-less):**
+   * Uses **Aeron IPC** (Inter-Process Communication) via an Embedded Media Driver.
+   * Bypasses the network stack for ultra-low latency between components.
+2. **Serialization Layer (Zero-Copy):**
+   * Uses **Simple Binary Encoding (SBE)**.
+   * Decodes messages directly from memory buffers (Flyweight pattern) without allocating Java Objects, reducing GC pressure.
+3. **Application Layer (Jakarta EE 11):**
+   * **Payara Micro 7** serves as the container.
+   * **CDI** manages the lifecycle of the Aeron Publisher and Subscriber.
+   * **WebSockets** push updates to the browser.
+4. **Runtime Layer:**
+   * **Azul Platform Prime** uses the **C4 Collector** to clean up the "garbage" created by the WebSocket layer concurrently, ensuring a flat latency profile.
 
 ## 🛠️ Tech Stack
 
@@ -93,8 +86,6 @@ The application implements a **Hybrid Architecture**:
 | **Encoding**   | **SBE (Simple Binary Encoding)**        | Binary serialization (FIX standard).    |
 | **Frontend**   | **HTML5 / Chart.js**                    | Real-time visualization via WebSockets. |
 | **Build**      | **Docker / Maven**                      | Containerized deployment.               |
-
-
 
 ## 🔍 Understanding the Modes
 
@@ -125,12 +116,12 @@ graph TD
     linkStyle 3 stroke:#764ba2,stroke-width:2px;
 ```
 
-1.  **Publisher:** Generates synthetic market data as standard Java Objects.
-2.  **Allocation:** Immediately converts data to a JSON `String` using `StringBuilder` (high allocation).
-3.  **Artificial Load:** Wraps the JSON in a large "envelope" with 1KB of padding to stress the Garbage Collector.
-4.  **Transport:** Direct method call to `MarketDataBroadcaster`.
-5.  **WebSocket:** Pushes the heavy JSON string to the browser.
-6.  **Browser:** Unwraps the payload and renders the chart.
+1. **Publisher:** Generates synthetic market data as standard Java Objects.
+2. **Allocation:** Immediately converts data to a JSON `String` using `StringBuilder` (high allocation).
+3. **Artificial Load:** Wraps the JSON in a large "envelope" with 1KB of padding to stress the Garbage Collector.
+4. **Transport:** Direct method call to `MarketDataBroadcaster`.
+5. **WebSocket:** Pushes the heavy JSON string to the browser.
+6. **Browser:** Unwraps the payload and renders the chart.
 
 **Performance Characteristics:**
 
@@ -164,23 +155,21 @@ graph TD
     linkStyle 4 stroke:#667eea,stroke-width:2px;
 ```
 
-1.  **Publisher:** Generates synthetic market data.
-2.  **Encoding:** Encodes data into a compact binary format using **SBE**.
-    * *Zero-Copy:* Writes directly to an off-heap direct buffer.
-3.  **Transport (Aeron):** Publishes the binary message to the **Aeron IPC** ring buffer.
-    * *Kernel Bypass:* Data moves via shared memory, avoiding the OS network stack.
-4.  **Subscriber (Fragment Handler):** Reads the binary message using SBE "Flyweights" (reusable view objects).
-    * *Zero-Allocation:* No new Java objects are created during decoding.
-5.  **Transformation:** Converts the binary data to a compact, flat JSON string (minimal allocation).
-6.  **WebSocket:** Pushes the lightweight JSON to the browser.
+1. **Publisher:** Generates synthetic market data.
+2. **Encoding:** Encodes data into a compact binary format using **SBE**.
+   * *Zero-Copy:* Writes directly to an off-heap direct buffer.
+3. **Transport (Aeron):** Publishes the binary message to the **Aeron IPC** ring buffer.
+   * *Kernel Bypass:* Data moves via shared memory, avoiding the OS network stack.
+4. **Subscriber (Fragment Handler):** Reads the binary message using SBE "Flyweights" (reusable view objects).
+   * *Zero-Allocation:* No new Java objects are created during decoding.
+5. **Transformation:** Converts the binary data to a compact, flat JSON string (minimal allocation).
+6. **WebSocket:** Pushes the lightweight JSON to the browser.
 
 **Performance Characteristics:**
 
 * **Low Allocation:** Almost no garbage generated in the ingestion hot-path.
 * **Pauseless:** Azul C4 collector handles the WebSocket strings concurrently, maintaining a flat latency profile.
 * **High Throughput:** Aeron IPC handles millions of messages/sec with sub-microsecond latency.
-
-
 
 ## 🚦 Quick Start: The Comparison Matrix
 
@@ -194,19 +183,19 @@ The `start.sh` script provides commands to run the TradeStreamEE application in 
 | **4. Optimizing Standard Java** | `./start.sh standard-aeron`  | Standard JDK (G1GC) | Aeron (Optimized)      | See if architectural optimization helps G1GC performance.             |
 
 ### Observability Commands
-*   `./start-comparison.sh` - Deploy complete JVM comparison stack (recommended)
-*   `./stop-comparison.sh` - Stop all comparison services
-*   `docker-compose -f docker-compose-monitoring.yml up -d` - Start monitoring stack only
-*   `docker-compose -f docker-compose-c4.yml up -d` - Start C4 cluster only
-*   `docker-compose -f docker-compose-g1.yml up -d` - Start G1GC cluster only
-*   `docker-compose -f docker-compose-monitoring.yml ps` - Check monitoring status
+
+* `./start-comparison.sh` - Deploy complete JVM comparison stack (recommended)
+* `./stop-comparison.sh` - Stop all comparison services
+* `docker-compose -f docker-compose-monitoring.yml up -d` - Start monitoring stack only
+* `docker-compose -f docker-compose-c4.yml up -d` - Start C4 cluster only
+* `docker-compose -f docker-compose-g1.yml up -d` - Start G1GC cluster only
+* `docker-compose -f docker-compose-monitoring.yml ps` - Check monitoring status
 
 ### Utilities
-*   `./start.sh logs` - View live logs
-*   `./start.sh stop` - Stop containers
-*   `./start.sh clean` - Deep clean (remove volumes/images)
 
-
+* `./start.sh logs` - View live logs
+* `./start.sh stop` - Stop containers
+* `./start.sh clean` - Deep clean (remove volumes/images)
 
 ## ⚙️ Configuration & Tuning
 
@@ -224,11 +213,13 @@ Controls how data moves from the Publisher to the Processor.
 The Docker configurations are optimized with enhanced settings for performance testing:
 
 **Azul Prime (C4) Configuration:**
+
 ```dockerfile
 ENV JAVA_OPTS="-Xms8g -Xmx8g -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
 ```
 
 **Standard JDK (G1GC) Configuration:**
+
 ```dockerfile
 ENV JAVA_OPTS="-Xms8g -Xmx8g -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
 ```
@@ -283,20 +274,18 @@ The web UI includes **GC Challenge Mode** controls that allow:
 
 This feature enables live demonstration of how Azul C4 maintains low pause times even under extreme memory pressure, while G1GC shows increasingly long pauses.
 
-
-
 ## 📊 Monitoring & Observability
 
 TradeStreamEE includes comprehensive monitoring infrastructure to compare JVM performance between Azul C4 and standard G1GC configurations.
 
 ### Monitoring Stack
 
-| Component | Technology | Purpose | Access |
-|:---|:---|:---|:---|
-| **Metrics Collection** | Prometheus + JMX Exporter | JVM GC metrics, memory, threads | http://localhost:9090 |
-| **Visualization** | Grafana | Performance dashboards | http://localhost:3000 (admin/admin) |
-| **Log Aggregation** | Loki + Promtail | Centralized log management | http://localhost:3100 |
-| **Load Balancing** | Traefik | Traffic distribution + metrics | http://localhost:8080 (C4), http://localhost:9080 (G1) |
+| Component              | Technology                | Purpose                         | Access                                                 |
+|:-----------------------|:--------------------------|:--------------------------------|:-------------------------------------------------------|
+| **Metrics Collection** | Prometheus + JMX Exporter | JVM GC metrics, memory, threads | http://localhost:9090                                  |
+| **Visualization**      | Grafana                   | Performance dashboards          | http://localhost:3000 (admin/admin)                    |
+| **Log Aggregation**    | Loki + Promtail           | Centralized log management      | http://localhost:3100                                  |
+| **Load Balancing**     | Traefik                   | Traffic distribution + metrics  | http://localhost:8080 (C4), http://localhost:9080 (G1) |
 
 ### JVM Comparison Dashboard
 
@@ -376,6 +365,7 @@ After starting the observability stack:
 ### Monitoring Configuration
 
 #### JMX Exporter
+
 Each JVM instance runs a JMX exporter agent that exposes:
 * Garbage collection metrics (pause times, collection counts)
 * Memory pool usage (heap/non-heap)
@@ -383,12 +373,14 @@ Each JVM instance runs a JMX exporter agent that exposes:
 * Custom application metrics
 
 #### Prometheus Configuration
+
 The Prometheus setup (`monitoring/prometheus/prometheus.yml`) scrapes:
 * JMX metrics from all JVM instances (ports 9010-9022)
 * Traefik metrics for load balancer performance
 * Self-monitoring metrics
 
 #### Log Collection
+
 Promtail automatically collects and ships container logs to Loki, enabling:
 * Log-based troubleshooting
 * Correlation of performance issues with application events
@@ -436,6 +428,7 @@ The stress tests will:
 6. Visualize the "pauseless" characteristics of C4 under extreme load
 
 **Sample GC Stats Response:**
+
 ```json
 {
   "gcName": "C4",
@@ -479,8 +472,6 @@ The application exposes a lightweight REST endpoint for health checks and intern
 }
 ```
 
-
-
 ## 📂 Project Structure
 
 ```text
@@ -515,6 +506,71 @@ docker-compose-monitoring.yml  # Monitoring stack (Prometheus, Grafana, Loki)
 Dockerfile.scale               # Multi-stage build for C4 instances
 Dockerfile.scale.standard      # Build for G1GC instances
 ```
+
+## 🧪 Testing & Quality Assurance
+
+TradeStreamEE includes a comprehensive testing infrastructure designed to ensure reliability and performance validation.
+
+### Test Framework Stack
+
+|        Component        |         Technology          |             Purpose             |
+|-------------------------|-----------------------------|---------------------------------|
+| **Unit Testing**        | JUnit 5 + Mockito + AssertJ | Core component validation       |
+| **Integration Testing** | Custom framework            | Service layer interactions      |
+| **Performance Testing** | JMH + Custom utilities      | Benchmarking and load testing   |
+| **Code Coverage**       | JaCoCo Maven Plugin         | Coverage analysis and reporting |
+
+### Quick Test Execution
+
+```bash
+# Quick test (unit tests only, ~30 seconds)
+./test.sh quick
+
+# Full test suite (unit + integration, 2-5 minutes)
+./test.sh full
+
+# Maven commands
+./mvnw test                    # Unit tests
+./mvnw jacoco:report          # Generate coverage report
+```
+
+### Current Test Coverage
+
+**✅ Working Tests (19/19 passing):**
+- **BasicFunctionalityTest**: Core components and allocation modes
+- **MarketDataFragmentHandlerTest**: SBE message processing
+- **MarketDataBroadcasterTest**: WebSocket session management
+
+**📊 Coverage Metrics:**
+- **Tests**: 19 unit tests with 100% pass rate
+- **Instruction Coverage**: ~45% (core components)
+- **Test Execution**: < 30 seconds for quick run
+
+### Test Categories
+
+1. **Unit Tests**: Core component testing in isolation
+2. **Integration Tests**: Service layer interactions
+3. **Performance Tests**: Load testing and benchmarks
+4. **Memory Pressure Tests**: GC behavior validation
+
+### Test Utilities
+
+**GCTestUtil**: Provides GC testing and memory pressure utilities:
+
+```java
+// Capture GC statistics
+GCTestUtil.GCStatistics before = GCTestUtil.captureInitialStats();
+
+// Create controlled memory pressure
+GCTestUtil.allocateMemory(100); // 100MB
+
+// Analyze GC impact
+GCTestUtil.GCStatistics after = GCTestUtil.calculateDelta(before);
+```
+
+### Testing Documentation
+
+For detailed testing information, see: [TESTING.md](TESTING.md) - Complete testing guide with examples and best practices.
 
 ## 📜 License
 

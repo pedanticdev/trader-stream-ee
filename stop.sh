@@ -2,10 +2,6 @@
 
 # Quick stop script
 
-if docker compose version &> /dev/null; then
-    docker compose down
-else
-    docker-compose down
-fi
+docker compose down 2>/dev/null || docker-compose down
 
 echo "✅ TradeStreamEE stopped"
