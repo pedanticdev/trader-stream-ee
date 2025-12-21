@@ -28,5 +28,17 @@ jobs:
       - name: Generate SBE sources
         run: ./mvnw generate-sources
 
-      - name: Run tests
-        run: ./mvnw test
+      - name: Run tests with JaCoCo
+        run: ./mvnw clean test jacoco:report -Pcoverage
+
+      - name: Check coverage thresholds
+        run: |
+          COVERAGE=$(grep -oP '(?<=Total.*?">).*?(?=%</td>)' target/site/jacoco/index.html | head -1)
+          echo "Coverage: $COVERAGE%"
+
+          if (( $(echo "$COVERAGE < 15" | bc -l) )); then
+            echo "❌ Coverage ($COVERAGE%) is below minimum threshold (15%)"
+            exit 1
+          else
+            echo "✅ Coverage ($COVERAGE%) meets minimum threshold (15%)"
+          fi
