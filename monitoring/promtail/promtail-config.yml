@@ -1,0 +1,67 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://trader-loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Docker container logs for C4 instances
+  - job_name: docker-c4
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["jvm_type=azul-c4"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+      - source_labels: ['__meta_docker_container_label_jvm_type']
+        target_label: 'jvm_type'
+      - source_labels: ['__meta_docker_container_label_instance']
+        target_label: 'instance'
+
+  # Docker container logs for G1 instances
+  - job_name: docker-g1
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["jvm_type=eclipse-temurin-g1"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+      - source_labels: ['__meta_docker_container_label_jvm_type']
+        target_label: 'jvm_type'
+      - source_labels: ['__meta_docker_container_label_instance']
+        target_label: 'instance'
+
+  # GC log files (if writing to files)
+  - job_name: gc-logs-c4
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: gc-logs
+          jvm_type: azul-c4
+          __path__: /var/log/trader/c4-*/gc.log
+
+  - job_name: gc-logs-g1
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: gc-logs
+          jvm_type: eclipse-temurin-g1
+          __path__: /var/log/trader/g1-*/gc.log

@@ -1,0 +1,211 @@
+services:
+  # Traefik Load Balancer
+  traefik:
+    image: traefik:v3.6.5
+    container_name: trader-traefik
+    command:
+      # API and dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      # Providers
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=trader-stream-ee_trader-network"
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      # Access logs
+      - "--accesslog=true"
+      # Metrics
+      - "--metrics.prometheus=true"
+      # Health check
+      - "--ping=true"
+      # Debug logging
+      - "--log.level=DEBUG"
+    ports:
+      - "8080:80"      # Application traffic
+      - "8084:8080"    # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - trader-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Payara Micro Instance 1 (Publisher enabled for GC stress testing)
+  trader-stream-1:
+    image: trader-stream-ee:scale
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile.scale}
+    container_name: trader-stream-1
+    hostname: trader-stream-1
+    ports:
+      - "8081:8080"  # Direct access to instance-1
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=${MODE:-AERON}
+      - PAYARA_INSTANCE_NAME=instance-1
+      - HAZELCAST_MEMBER_NAME=trader-stream-1
+      - ENABLE_PUBLISHER=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trader-stream.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.trader-stream.entrypoints=web"
+      - "traefik.http.services.trader-stream.loadbalancer.server.port=8080"
+      # Health check
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.path=/trader-stream-ee/api/status"
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.timeout=10s"
+      # Sticky sessions for WebSocket (optional)
+      - "traefik.http.services.trader-stream.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.trader-stream.loadbalancer.sticky.cookie.name=trader-session"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/trader-stream-ee/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - trader-network
+    restart: unless-stopped
+
+  # Payara Micro Instance 2 (Publisher enabled for GC stress testing)
+  trader-stream-2:
+    image: trader-stream-ee:scale
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile.scale}
+    container_name: trader-stream-2
+    hostname: trader-stream-2
+    ports:
+      - "8082:8080"  # Direct access to instance-2
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=${MODE:-AERON}
+      - PAYARA_INSTANCE_NAME=instance-2
+      - HAZELCAST_MEMBER_NAME=trader-stream-2
+      - ENABLE_PUBLISHER=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trader-stream.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.trader-stream.entrypoints=web"
+      - "traefik.http.services.trader-stream.loadbalancer.server.port=8080"
+      # Health check
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.path=/trader-stream-ee/api/status"
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.timeout=10s"
+      # Sticky sessions for WebSocket (optional)
+      - "traefik.http.services.trader-stream.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.trader-stream.loadbalancer.sticky.cookie.name=trader-session"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/trader-stream-ee/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - trader-network
+    restart: unless-stopped
+
+  # Payara Micro Instance 3 (Publisher enabled for GC stress testing)
+  trader-stream-3:
+    image: trader-stream-ee:scale
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile.scale}
+    container_name: trader-stream-3
+    hostname: trader-stream-3
+    ports:
+      - "8083:8080"  # Direct access to instance-3
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=${MODE:-AERON}
+      - PAYARA_INSTANCE_NAME=instance-3
+      - HAZELCAST_MEMBER_NAME=trader-stream-3
+      - ENABLE_PUBLISHER=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trader-stream.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.trader-stream.entrypoints=web"
+      - "traefik.http.services.trader-stream.loadbalancer.server.port=8080"
+      # Health check
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.path=/trader-stream-ee/api/status"
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.timeout=10s"
+      # Sticky sessions for WebSocket (optional)
+      - "traefik.http.services.trader-stream.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.trader-stream.loadbalancer.sticky.cookie.name=trader-session"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/trader-stream-ee/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - trader-network
+    restart: unless-stopped
+
+  # Scalable Payara Micro Instances
+  # Use this service for dynamic scaling: docker compose -f docker-compose-scale.yml up -d --scale trader-stream=5
+  trader-stream:
+    image: trader-stream-ee:scale
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile.scale}
+    # Note: No container_name or hostname - allows multiple instances
+    expose:
+      - "8080"
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=${MODE:-AERON}
+      # Instance name will be auto-generated by Docker (e.g., trader-stream-1, trader-stream-2)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trader-stream.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.trader-stream.entrypoints=web"
+      - "traefik.http.services.trader-stream.loadbalancer.server.port=8080"
+      # Health check
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.path=/trader-stream-ee/api/status"
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.trader-stream.loadbalancer.healthcheck.timeout=10s"
+      # Sticky sessions for WebSocket
+      - "traefik.http.services.trader-stream.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.trader-stream.loadbalancer.sticky.cookie.name=trader-session"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/trader-stream-ee/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - trader-network
+    restart: unless-stopped
+    deploy:
+      replicas: 0  # Start with 0, use --scale to set desired count
+
+  # Optional: Hazelcast Management Center for cluster monitoring
+  # Uncomment to enable
+  # hazelcast-mc:
+  #   image: hazelcast/management-center:latest
+  #   container_name: hazelcast-mc
+  #   ports:
+  #     - "8082:8080"
+  #   networks:
+  #     - trader-network
+  #   environment:
+  #     - MC_INIT_CMD=./bin/mc-conf.sh cluster add --cluster-name=payara-cluster --member-addresses=trader-stream-1:5701,trader-stream-2:5701,trader-stream-3:5701
+
+networks:
+  trader-network:
+    driver: bridge

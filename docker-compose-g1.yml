@@ -1,0 +1,144 @@
+services:
+  traefik-g1:
+    image: traefik:v3.6.5
+    container_name: trader-traefik-g1
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`cluster`, `g1`)"
+      - "--entrypoints.web.address=:80"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+    ports:
+      - "9080:80"
+      - "9084:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - trader-network
+      - monitoring
+    labels:
+      - "jvm_type=eclipse-temurin-g1"
+    restart: unless-stopped
+
+  trader-stream-g1-1:
+    image: trader-stream-ee:g1
+    build:
+      context: .
+      dockerfile: Dockerfile.scale.standard
+    container_name: trader-stream-g1-1
+    hostname: trader-stream-g1-1
+    ports:
+      - "9081:8080"
+      - "9020:9010"  # JMX Exporter
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=AERON
+      - PAYARA_INSTANCE_NAME=g1-instance-1
+      - HAZELCAST_MEMBER_NAME=trader-stream-g1-1
+      - ENABLE_PUBLISHER=true
+      - JVM_TYPE=eclipse-temurin-g1
+      - JAVA_OPTS=-Xms4g -Xmx4g
+        -XX:+UseG1GC
+        -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -XX:+AlwaysPreTouch
+        -XX:+UseTransparentHugePages
+        -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
+        -Djava.net.preferIPv4Stack=true
+    volumes:
+      - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
+      - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
+      - ./monitoring/logs/g1-1:/opt/payara/logs
+    labels:
+      - "traefik.enable=true"
+      - "cluster=g1"
+      - "traefik.http.routers.trader-stream-g1.rule=PathPrefix(`/`)"
+      - "traefik.http.services.trader-stream-g1.loadbalancer.server.port=8080"
+      - "jvm_type=eclipse-temurin-g1"
+      - "instance=g1-1"
+    networks:
+      - trader-network
+      - monitoring
+    restart: unless-stopped
+
+  trader-stream-g1-2:
+    image: trader-stream-ee:g1
+    container_name: trader-stream-g1-2
+    hostname: trader-stream-g1-2
+    ports:
+      - "9082:8080"
+      - "9021:9010"
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=AERON
+      - PAYARA_INSTANCE_NAME=g1-instance-2
+      - HAZELCAST_MEMBER_NAME=trader-stream-g1-2
+      - ENABLE_PUBLISHER=false
+      - JVM_TYPE=eclipse-temurin-g1
+      - JAVA_OPTS=-Xms4g -Xmx4g
+        -XX:+UseG1GC
+        -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
+    volumes:
+      - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
+      - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
+      - ./monitoring/logs/g1-2:/opt/payara/logs
+    labels:
+      - "traefik.enable=true"
+      - "cluster=g1"
+      - "traefik.http.routers.trader-stream-g1.rule=PathPrefix(`/`)"
+      - "traefik.http.services.trader-stream-g1.loadbalancer.server.port=8080"
+      - "jvm_type=eclipse-temurin-g1"
+      - "instance=g1-2"
+    networks:
+      - trader-network
+      - monitoring
+    restart: unless-stopped
+
+  trader-stream-g1-3:
+    image: trader-stream-ee:g1
+    container_name: trader-stream-g1-3
+    hostname: trader-stream-g1-3
+    ports:
+      - "9083:8080"
+      - "9022:9010"
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=AERON
+      - PAYARA_INSTANCE_NAME=g1-instance-3
+      - HAZELCAST_MEMBER_NAME=trader-stream-g1-3
+      - ENABLE_PUBLISHER=false
+      - JVM_TYPE=eclipse-temurin-g1
+      - JAVA_OPTS=-Xms4g -Xmx4g
+        -XX:+UseG1GC
+        -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
+    volumes:
+      - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
+      - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
+      - ./monitoring/logs/g1-3:/opt/payara/logs
+    labels:
+      - "traefik.enable=true"
+      - "cluster=g1"
+      - "traefik.http.routers.trader-stream-g1.rule=PathPrefix(`/`)"
+      - "traefik.http.services.trader-stream-g1.loadbalancer.server.port=8080"
+      - "jvm_type=eclipse-temurin-g1"
+      - "instance=g1-3"
+    networks:
+      - trader-network
+      - monitoring
+    restart: unless-stopped
+
+networks:
+  trader-network:
+    external: true
+  monitoring:
+    external: true

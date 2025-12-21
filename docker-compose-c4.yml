@@ -1,0 +1,141 @@
+services:
+  traefik-c4:
+    image: traefik:v3.6.5
+    container_name: trader-traefik-c4
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`cluster`, `c4`)"
+      - "--entrypoints.web.address=:80"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+    ports:
+      - "8080:80"
+      - "8084:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - trader-network
+      - monitoring
+    labels:
+      - "jvm_type=azul-c4"
+    restart: unless-stopped
+
+  trader-stream-c4-1:
+    image: trader-stream-ee:c4
+    build:
+      context: .
+      dockerfile: Dockerfile.scale
+    container_name: trader-stream-c4-1
+    hostname: trader-stream-c4-1
+    ports:
+      - "8081:8080"
+      - "9010:9010"  # JMX Exporter
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=AERON
+      - PAYARA_INSTANCE_NAME=c4-instance-1
+      - HAZELCAST_MEMBER_NAME=trader-stream-c4-1
+      - ENABLE_PUBLISHER=true
+      - JVM_TYPE=azul-c4
+      - JAVA_OPTS=-Xms4g -Xmx4g
+        -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -XX:+AlwaysPreTouch
+        -XX:+UseTransparentHugePages
+        -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
+        -Djava.net.preferIPv4Stack=true
+    volumes:
+      - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
+      - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
+      - ./monitoring/logs/c4-1:/opt/payara/logs
+    labels:
+      - "traefik.enable=true"
+      - "cluster=c4"
+      - "traefik.http.routers.trader-stream-c4.rule=PathPrefix(`/`)"
+      - "traefik.http.services.trader-stream-c4.loadbalancer.server.port=8080"
+      - "jvm_type=azul-c4"
+      - "instance=c4-1"
+    networks:
+      - trader-network
+      - monitoring
+    restart: unless-stopped
+
+  trader-stream-c4-2:
+    image: trader-stream-ee:c4
+    container_name: trader-stream-c4-2
+    hostname: trader-stream-c4-2
+    ports:
+      - "8082:8080"
+      - "9011:9010"
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=AERON
+      - PAYARA_INSTANCE_NAME=c4-instance-2
+      - HAZELCAST_MEMBER_NAME=trader-stream-c4-2
+      - ENABLE_PUBLISHER=false
+      - JVM_TYPE=azul-c4
+      - JAVA_OPTS=-Xms4g -Xmx4g
+        -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
+    volumes:
+      - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
+      - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
+      - ./monitoring/logs/c4-2:/opt/payara/logs
+    labels:
+      - "traefik.enable=true"
+      - "cluster=c4"
+      - "traefik.http.routers.trader-stream-c4.rule=PathPrefix(`/`)"
+      - "traefik.http.services.trader-stream-c4.loadbalancer.server.port=8080"
+      - "jvm_type=azul-c4"
+      - "instance=c4-2"
+    networks:
+      - trader-network
+      - monitoring
+    restart: unless-stopped
+
+  trader-stream-c4-3:
+    image: trader-stream-ee:c4
+    container_name: trader-stream-c4-3
+    hostname: trader-stream-c4-3
+    ports:
+      - "8083:8080"
+      - "9012:9010"
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=AERON
+      - PAYARA_INSTANCE_NAME=c4-instance-3
+      - HAZELCAST_MEMBER_NAME=trader-stream-c4-3
+      - ENABLE_PUBLISHER=false
+      - JVM_TYPE=azul-c4
+      - JAVA_OPTS=-Xms4g -Xmx4g
+        -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
+    volumes:
+      - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
+      - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
+      - ./monitoring/logs/c4-3:/opt/payara/logs
+    labels:
+      - "traefik.enable=true"
+      - "cluster=c4"
+      - "traefik.http.routers.trader-stream-c4.rule=PathPrefix(`/`)"
+      - "traefik.http.services.trader-stream-c4.loadbalancer.server.port=8080"
+      - "jvm_type=azul-c4"
+      - "instance=c4-3"
+    networks:
+      - trader-network
+      - monitoring
+    restart: unless-stopped
+
+networks:
+  trader-network:
+    external: true
+  monitoring:
+    external: true

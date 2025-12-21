@@ -1,7 +1,8 @@
 package fish.payara.trader.gc;
 
+import com.sun.management.GarbageCollectionNotificationInfo;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -10,119 +11,148 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.management.Notification;
+import javax.management.NotificationEmitter;
+import javax.management.NotificationListener;
+import javax.management.openmbean.CompositeData;
 
 @ApplicationScoped
-public class GCStatsService {
+public class GCStatsService implements NotificationListener {
 
-    private static final Logger LOGGER = Logger.getLogger(GCStatsService.class.getName());
-    private static final int MAX_PAUSE_HISTORY = 1000;
+  private static final Logger LOGGER = Logger.getLogger(GCStatsService.class.getName());
+  private static final int MAX_PAUSE_HISTORY = 1000;
 
-    private final Map<String, ConcurrentLinkedDeque<Long>> pauseHistory = new HashMap<>();
-    private final Map<String, Long> lastCollectionCount = new HashMap<>();
-    private final Map<String, Long> lastCollectionTime = new HashMap<>();
+  private final Map<String, ConcurrentLinkedDeque<Long>> pauseHistory = new HashMap<>();
 
-    public List<GCStats> collectGCStats() {
-        List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
+  @PostConstruct
+  public void init() {
+    LOGGER.info("Initializing GC Notification Listener...");
+    List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+    for (GarbageCollectorMXBean gcBean : gcBeans) {
+      LOGGER.info("Registering listener for GC Bean: " + gcBean.getName());
+      if (gcBean instanceof NotificationEmitter) {
+        ((NotificationEmitter) gcBean).addNotificationListener(this, null, null);
+      }
+    }
+  }
 
-        List<GCStats> statsList = new ArrayList<>();
+  @Override
+  public void handleNotification(Notification notification, Object handback) {
+    if (notification
+        .getType()
+        .equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION)) {
+      GarbageCollectionNotificationInfo info =
+          GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData());
 
-        for (GarbageCollectorMXBean gcBean : gcBeans) {
-            String gcName = gcBean.getName();
-            long currentCount = gcBean.getCollectionCount();
-            long currentTime = gcBean.getCollectionTime();
+      String gcName = info.getGcName();
+      String gcAction = info.getGcAction();
+      String gcCause = info.getGcCause();
+      long duration = info.getGcInfo().getDuration();
 
-            GCStats stats = new GCStats();
-            stats.setGcName(gcName);
-            stats.setCollectionCount(currentCount);
-            stats.setCollectionTime(currentTime);
+      // FILTERING LOGIC:
+      // Azul C4 exposes "GPGC" (Concurrent Cycle) and "GPGC Pauses" (STW Pauses).
+      // We MUST ignore "GPGC" because it reports cycle time (hundreds of ms) which is NOT a pause.
+      if ("GPGC".equals(gcName)) {
+        return;
+      }
 
-            // Calculate pause duration since last check
-            Long prevCount = lastCollectionCount.get(gcName);
-            Long prevTime = lastCollectionTime.get(gcName);
+      // Also ignore other known concurrent cycle beans if they appear
+      if (gcName.contains("Cycles") && !gcName.contains("Pauses")) {
+        return;
+      }
 
-            if (prevCount != null && prevTime != null) {
-                long countDelta = currentCount - prevCount;
-                long timeDelta = currentTime - prevTime;
+      // Only record if duration > 0 (sub-millisecond pauses might show as 0 or 1)
+      // Storing all for fidelity.
 
-                if (countDelta > 0) {
-                    long avgPauseDuration = timeDelta / countDelta;
-                    stats.setLastPauseDuration(avgPauseDuration);
+      ConcurrentLinkedDeque<Long> history =
+          pauseHistory.computeIfAbsent(gcName, k -> new ConcurrentLinkedDeque<>());
 
-                    // Track pause history
-                    ConcurrentLinkedDeque<Long> history = pauseHistory.computeIfAbsent(
-                        gcName, k -> new ConcurrentLinkedDeque<>()
-                    );
+      history.addLast(duration);
+      while (history.size() > MAX_PAUSE_HISTORY) {
+        history.removeFirst();
+      }
 
-                    // Add new pauses (simplified - one entry per collection)
-                    for (int i = 0; i < countDelta; i++) {
-                        history.addLast(avgPauseDuration);
-                        if (history.size() > MAX_PAUSE_HISTORY) {
-                            history.removeFirst();
-                        }
-                    }
-                }
-            }
+      // Log significant pauses (> 10ms)
+      if (duration > 10) {
+        LOGGER.info(
+            String.format(
+                "GC Pause detected: %s | Action: %s | Cause: %s | Duration: %d ms",
+                gcName, gcAction, gcCause, duration));
+      }
+    }
+  }
 
-            // Update tracking
-            lastCollectionCount.put(gcName, currentCount);
-            lastCollectionTime.put(gcName, currentTime);
+  public List<GCStats> collectGCStats() {
+    List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+    MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+    MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
 
-            // Get recent pauses
-            ConcurrentLinkedDeque<Long> history = pauseHistory.get(gcName);
-            if (history != null && !history.isEmpty()) {
-                stats.setRecentPauses(new ArrayList<>(history).subList(
-                    Math.max(0, history.size() - 100), history.size()
-                ));
+    List<GCStats> statsList = new ArrayList<>();
 
-                // Calculate percentiles
-                List<Long> sortedPauses = history.stream()
-                    .sorted()
-                    .collect(Collectors.toList());
+    for (GarbageCollectorMXBean gcBean : gcBeans) {
+      String gcName = gcBean.getName();
 
-                stats.setPercentiles(calculatePercentiles(sortedPauses));
-            } else {
-                stats.setRecentPauses(Collections.emptyList());
-                stats.setPercentiles(new GCStats.PausePercentiles(0, 0, 0, 0, 0));
-            }
+      // Exclude concurrent cycle collectors from the public stats to avoid confusion
+      if ("GPGC".equals(gcName) || (gcName.contains("Cycles") && !gcName.contains("Pauses"))) {
+        continue;
+      }
 
-            // Memory stats
-            stats.setTotalMemory(heapUsage.getMax());
-            stats.setUsedMemory(heapUsage.getUsed());
-            stats.setFreeMemory(heapUsage.getMax() - heapUsage.getUsed());
+      GCStats stats = new GCStats();
+      stats.setGcName(gcName);
+      stats.setCollectionCount(gcBean.getCollectionCount());
+      stats.setCollectionTime(gcBean.getCollectionTime());
 
-            statsList.add(stats);
-        }
+      // Get recent pauses from accurate history
+      ConcurrentLinkedDeque<Long> history = pauseHistory.get(gcName);
+      if (history != null && !history.isEmpty()) {
+        List<Long> pauses = new ArrayList<>(history);
+        stats.setLastPauseDuration(pauses.get(pauses.size() - 1));
 
-        return statsList;
+        stats.setRecentPauses(pauses.subList(Math.max(0, pauses.size() - 100), pauses.size()));
+
+        // Calculate percentiles
+        List<Long> sortedPauses = pauses.stream().sorted().collect(Collectors.toList());
+
+        stats.setPercentiles(calculatePercentiles(sortedPauses));
+      } else {
+        stats.setLastPauseDuration(0);
+        stats.setRecentPauses(Collections.emptyList());
+        stats.setPercentiles(new GCStats.PausePercentiles(0, 0, 0, 0, 0));
+      }
+
+      // Memory stats
+      stats.setTotalMemory(heapUsage.getMax());
+      stats.setUsedMemory(heapUsage.getUsed());
+      stats.setFreeMemory(heapUsage.getMax() - heapUsage.getUsed());
+
+      statsList.add(stats);
     }
 
-    private GCStats.PausePercentiles calculatePercentiles(List<Long> sortedPauses) {
-        if (sortedPauses.isEmpty()) {
-            return new GCStats.PausePercentiles(0, 0, 0, 0, 0);
-        }
+    return statsList;
+  }
 
-        int size = sortedPauses.size();
-        return new GCStats.PausePercentiles(
-            percentile(sortedPauses, 0.50),
-            percentile(sortedPauses, 0.95),
-            percentile(sortedPauses, 0.99),
-            percentile(sortedPauses, 0.999),
-            sortedPauses.get(size - 1)
-        );
+  private GCStats.PausePercentiles calculatePercentiles(List<Long> sortedPauses) {
+    if (sortedPauses.isEmpty()) {
+      return new GCStats.PausePercentiles(0, 0, 0, 0, 0);
     }
 
-    private long percentile(List<Long> sortedValues, double percentile) {
-        int index = (int) Math.ceil(percentile * sortedValues.size()) - 1;
-        index = Math.max(0, Math.min(index, sortedValues.size() - 1));
-        return sortedValues.get(index);
-    }
+    int size = sortedPauses.size();
+    return new GCStats.PausePercentiles(
+        percentile(sortedPauses, 0.50),
+        percentile(sortedPauses, 0.95),
+        percentile(sortedPauses, 0.99),
+        percentile(sortedPauses, 0.999),
+        sortedPauses.get(size - 1));
+  }
 
-    public void resetStats() {
-        pauseHistory.clear();
-        lastCollectionCount.clear();
-        lastCollectionTime.clear();
-        LOGGER.info("GC statistics reset");
-    }
+  private long percentile(List<Long> sortedValues, double percentile) {
+    int index = (int) Math.ceil(percentile * sortedValues.size()) - 1;
+    index = Math.max(0, Math.min(index, sortedValues.size() - 1));
+    return sortedValues.get(index);
+  }
+
+  public void resetStats() {
+    pauseHistory.clear();
+    LOGGER.info("GC statistics reset");
+  }
 }

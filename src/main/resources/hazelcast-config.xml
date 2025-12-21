@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hazelcast xmlns="http://www.hazelcast.com/schema/config"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://www.hazelcast.com/schema/config
+           http://www.hazelcast.com/schema/config/hazelcast-config-5.3.xsd">
+
+    <!-- Cluster Configuration -->
+    <cluster-name>payara-trader-cluster</cluster-name>
+
+    <!-- Network Configuration -->
+    <network>
+        <port auto-increment="true">5701</port>
+
+        <!-- Join Configuration -->
+        <join>
+            <!-- Disable multicast for containerized environments -->
+            <multicast enabled="false"/>
+
+            <!-- TCP/IP discovery for Docker networking -->
+            <tcp-ip enabled="true">
+                <!-- Docker DNS-based discovery -->
+                <interface>trader-stream-1</interface>
+                <interface>trader-stream-2</interface>
+                <interface>trader-stream-3</interface>
+                <!-- Generic service instances will discover via network scan -->
+                <member-list>
+                    <member>trader-stream-1:5701</member>
+                    <member>trader-stream-2:5701</member>
+                    <member>trader-stream-3:5701</member>
+                </member-list>
+            </tcp-ip>
+
+            <!-- Auto-detection enabled for Docker DNS discovery -->
+            <auto-detection enabled="true"/>
+        </join>
+    </network>
+
+    <!-- Reliable Topic Configuration for Market Data Broadcasting -->
+    <reliable-topic name="market-data-broadcast">
+        <read-batch-size>10</read-batch-size>
+        <topic-overload-policy>BLOCK</topic-overload-policy>
+        <statistics-enabled>true</statistics-enabled>
+    </reliable-topic>
+
+    <!-- Management Center (optional) -->
+    <management-center scripting-enabled="false"/>
+
+    <!-- Metrics Configuration -->
+    <metrics enabled="true">
+        <management-center enabled="true">
+            <retention-seconds>5</retention-seconds>
+        </management-center>
+        <jmx enabled="true"/>
+    </metrics>
+
+    <!-- Properties -->
+    <properties>
+        <!-- Logging -->
+        <property name="hazelcast.logging.type">jdk</property>
+
+        <!-- Performance tuning -->
+        <property name="hazelcast.operation.thread.count">4</property>
+        <property name="hazelcast.io.thread.count">3</property>
+
+        <!-- Health monitoring -->
+        <property name="hazelcast.health.monitoring.level">NOISY</property>
+        <property name="hazelcast.health.monitoring.delay.seconds">30</property>
+
+        <!-- Diagnostics -->
+        <property name="hazelcast.diagnostics.enabled">false</property>
+
+        <!-- Merge policy -->
+        <property name="hazelcast.merge.first.run.delay.seconds">300</property>
+        <property name="hazelcast.merge.next.run.delay.seconds">120</property>
+    </properties>
+
+</hazelcast>

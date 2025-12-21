@@ -6,16 +6,12 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import jakarta.inject.Qualifier;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import jakarta.inject.Qualifier;
-
-/**
- * Qualifier for Virtual Thread ManagedExecutorService
- */
+/** Qualifier for Virtual Thread ManagedExecutorService */
 @Qualifier
 @Retention(RUNTIME)
 @Target({METHOD, FIELD, PARAMETER, TYPE})
-public @interface VirtualThreadExecutor {
-}
+public @interface VirtualThreadExecutor {}

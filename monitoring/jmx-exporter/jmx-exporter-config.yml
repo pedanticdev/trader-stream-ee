@@ -1,0 +1,57 @@
+# JMX Exporter Configuration for GC Metrics
+---
+startDelaySeconds: 0
+lowercaseOutputName: false
+lowercaseOutputLabelNames: false
+
+rules:
+  # GC Metrics
+  - pattern: 'java.lang<type=GarbageCollector, name=(.+)><>CollectionCount'
+    name: jvm_gc_collection_count
+    labels:
+      gc: "$1"
+      jvm_type: "$2"
+    type: COUNTER
+
+  - pattern: 'java.lang<type=GarbageCollector, name=(.+)><>CollectionTime'
+    name: jvm_gc_collection_time_ms
+    labels:
+      gc: "$1"
+    type: COUNTER
+
+  - pattern: 'java.lang<type=GarbageCollector, name=(.+)><>LastGcInfo'
+    name: jvm_gc_last_info
+    labels:
+      gc: "$1"
+    type: GAUGE
+
+  # Memory Metrics
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>(.+)'
+    name: jvm_memory_heap_$1
+    type: GAUGE
+
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>(.+)'
+    name: jvm_memory_nonheap_$1
+    type: GAUGE
+
+  - pattern: 'java.lang<type=MemoryPool, name=(.+)><Usage>(.+)'
+    name: jvm_memory_pool_$2
+    labels:
+      pool: "$1"
+    type: GAUGE
+
+  # Thread Metrics
+  - pattern: 'java.lang<type=Threading><>ThreadCount'
+    name: jvm_threads_current
+    type: GAUGE
+
+  - pattern: 'java.lang<type=Threading><>PeakThreadCount'
+    name: jvm_threads_peak
+    type: GAUGE
+
+  # Application-specific metrics (if using MicroProfile Metrics)
+  - pattern: 'fish.payara.trader<type=(.+), name=(.+)><>(.+)'
+    name: trader_$1_$3
+    labels:
+      metric: "$2"
+    type: GAUGE

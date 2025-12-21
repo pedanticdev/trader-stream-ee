@@ -1,0 +1,57 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'trader-stream-comparison'
+
+scrape_configs:
+  # Azul C4 Instances - JMX Metrics
+  - job_name: 'trader-c4-jmx'
+    static_configs:
+      - targets:
+          - 'trader-stream-c4-1:9010'
+          - 'trader-stream-c4-2:9010'
+          - 'trader-stream-c4-3:9010'
+        labels:
+          jvm_type: 'azul-c4'
+          cluster: 'c4-cluster'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'jvm_.*'
+        action: keep
+
+  # Eclipse Temurin G1GC Instances - JMX Metrics
+  - job_name: 'trader-g1-jmx'
+    static_configs:
+      - targets:
+          - 'trader-stream-g1-1:9010'
+          - 'trader-stream-g1-2:9010'
+          - 'trader-stream-g1-3:9010'
+        labels:
+          jvm_type: 'eclipse-temurin-g1'
+          cluster: 'g1-cluster'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'jvm_.*'
+        action: keep
+
+  # Traefik Metrics (Load Balancer)
+  - job_name: 'traefik-c4'
+    static_configs:
+      - targets:
+          - 'trader-traefik-c4:8080'
+        labels:
+          jvm_type: 'azul-c4'
+
+  - job_name: 'traefik-g1'
+    static_configs:
+      - targets:
+          - 'trader-traefik-g1:8080'
+        labels:
+          jvm_type: 'eclipse-temurin-g1'
+
+  # Prometheus Self-Monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+          - 'localhost:9090'
