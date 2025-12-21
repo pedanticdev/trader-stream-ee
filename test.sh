@@ -43,14 +43,18 @@ check_prerequisites() {
         exit 1
     fi
 
-    if ! command_exists mvn; then
-        print_error "Maven is not installed or not in PATH"
+    # Check for maven wrapper or installed maven
+    if [ ! -x "./mvnw" ] && ! command_exists mvn; then
+        print_error "Maven wrapper (mvnw) not found/executable and 'mvn' not in PATH"
         exit 1
     fi
 
-    JAVA_VERSION=$(java -version 2>&1 | head -n 1 | cut -d'"' -f2 | cut -d'.' -f1)
-    if [[ "$JAVA_VERSION" -lt "17" ]]; then
-        print_warning "Java 17+ recommended. Current version: $JAVA_VERSION"
+    # Robust Java version check
+    local java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
+    local major_version=$(echo "$java_version" | awk -F. '{if ($1 == 1) print $2; else print $1}')
+    
+    if [[ "$major_version" -lt 17 ]]; then
+        print_warning "Java 17+ recommended. Current version: $java_version"
     fi
 
     print_success "Prerequisites check completed"
@@ -115,8 +119,9 @@ generate_coverage_report() {
         print_success "Coverage report generated"
 
         if [ -f "target/site/jacoco/index.html" ]; then
-            local instruction_coverage=$(grep -A1 "Total" target/site/jacoco/index.html | grep -o '[0-9]*%' | head -1)
-            echo "Instruction Coverage: $instruction_coverage"
+            # Extract total coverage percentage more reliably
+            local instruction_coverage=$(grep -A1 "Total" target/site/jacoco/index.html | grep -oE '[0-9]+%' | head -1)
+            echo "Instruction Coverage: ${instruction_coverage:-N/A}"
 
             # Open coverage report in browser if available
             if command_exists xdg-open; then

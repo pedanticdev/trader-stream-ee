@@ -24,11 +24,13 @@ if ! docker compose version &> /dev/null && ! docker-compose --version &> /dev/n
 fi
 
 # Use docker compose (v2) or docker-compose (v1)
-if docker compose version &> /dev/null; then
-    DOCKER_COMPOSE="docker compose"
-else
-    DOCKER_COMPOSE="docker-compose"
-fi
+run_compose() {
+    if docker compose version &> /dev/null; then
+        docker compose "$@"
+    else
+        docker-compose "$@"
+    fi
+}
 
 echo "✅ Docker is installed"
 echo "✅ Docker Compose is installed"
@@ -44,7 +46,7 @@ case "$ACTION" in
         echo "🚀 [Azul Prime] Starting with AERON Architecture (Optimized)..."
         echo "   > Dockerfile (Azul) + MODE=AERON"
         echo ""
-        MODE=AERON $DOCKER_COMPOSE -f docker-compose.yml up -d --build --force-recreate
+        MODE=AERON run_compose -f docker-compose.yml up -d --build --force-recreate
         ;;
 
     azul-direct)
@@ -52,7 +54,7 @@ case "$ACTION" in
         echo "   > Dockerfile (Azul) + MODE=DIRECT"
         echo "   ℹ️  Observe how C4 handles high-allocation legacy code."
         echo ""
-        MODE=DIRECT $DOCKER_COMPOSE -f docker-compose.yml up -d --build --force-recreate
+        MODE=DIRECT run_compose -f docker-compose.yml up -d --build --force-recreate
         ;;
 
     # --- Standard OpenJDK (G1 GC) Scenarios ---
@@ -62,7 +64,7 @@ case "$ACTION" in
         echo "   > Dockerfile.standard (Temurin) + MODE=DIRECT"
         echo "   ℹ️  Baseline performance: High allocation on G1GC."
         echo ""
-        MODE=DIRECT $DOCKER_COMPOSE -f docker-compose-standard.yml up -d --build --force-recreate
+        MODE=DIRECT run_compose -f docker-compose-standard.yml up -d --build --force-recreate
         ;;
 
     standard-aeron)
@@ -70,7 +72,7 @@ case "$ACTION" in
         echo "   > Dockerfile.standard (Temurin) + MODE=AERON"
         echo "   ℹ️  Observe if off-heap transport helps G1GC."
         echo ""
-        MODE=AERON $DOCKER_COMPOSE -f docker-compose-standard.yml up -d --build --force-recreate
+        MODE=AERON run_compose -f docker-compose-standard.yml up -d --build --force-recreate
         ;;
 
     # --- Clustered Scenarios ---
@@ -80,7 +82,7 @@ case "$ACTION" in
         echo "   > Dockerfile.scale (Azul) + MODE=AERON + Nginx LB"
         echo "   ℹ️  Demonstrates horizontal scalability with Hazelcast clustering."
         echo ""
-        MODE=AERON DOCKERFILE=Dockerfile.scale $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --build --force-recreate
+        MODE=AERON DOCKERFILE=Dockerfile.scale run_compose -f docker-compose-scale.yml up -d --build --force-recreate
         echo ""
         echo "✅ Cluster started. Waiting for instances to be ready..."
         sleep 10
@@ -96,7 +98,7 @@ case "$ACTION" in
         echo "   > Dockerfile.scale.standard (Temurin) + MODE=AERON + Nginx LB"
         echo "   ℹ️  Compare cluster performance with G1GC."
         echo ""
-        MODE=AERON DOCKERFILE=Dockerfile.scale.standard $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --build --force-recreate
+        MODE=AERON DOCKERFILE=Dockerfile.scale.standard run_compose -f docker-compose-scale.yml up -d --build --force-recreate
         echo ""
         echo "✅ Cluster started. Waiting for instances to be ready..."
         sleep 10
@@ -112,7 +114,7 @@ case "$ACTION" in
         echo "   > Dockerfile.scale (Azul) + MODE=DIRECT + Traefik LB"
         echo "   ℹ️  Test cluster with high-allocation legacy mode."
         echo ""
-        MODE=DIRECT DOCKERFILE=Dockerfile.scale $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --build --force-recreate
+        MODE=DIRECT DOCKERFILE=Dockerfile.scale run_compose -f docker-compose-scale.yml up -d --build --force-recreate
         ;;
 
     cluster-dynamic)
@@ -126,9 +128,9 @@ case "$ACTION" in
         echo "   > Dockerfile.scale (Azul) + MODE=AERON + $INSTANCES scalable instances"
         echo "   ℹ️  Uses generic service for true dynamic scaling."
         echo ""
-        MODE=AERON DOCKERFILE=Dockerfile.scale $DOCKER_COMPOSE -f docker-compose-scale.yml build trader-stream
-        $DOCKER_COMPOSE -f docker-compose-scale.yml up -d traefik
-        $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --scale trader-stream=$INSTANCES --no-recreate trader-stream
+        MODE=AERON DOCKERFILE=Dockerfile.scale run_compose -f docker-compose-scale.yml build trader-stream
+        run_compose -f docker-compose-scale.yml up -d traefik
+        run_compose -f docker-compose-scale.yml up -d --scale trader-stream=$INSTANCES --no-recreate trader-stream
         echo ""
         echo "✅ Cluster started. Waiting for instances to be ready..."
         sleep 15
@@ -149,7 +151,7 @@ case "$ACTION" in
         INSTANCES=$2
         echo "   > Scaling to $INSTANCES instances (using generic trader-stream service)"
         echo "   > Note: This uses the scalable service, not the named instances (trader-stream-1/2/3)"
-        $DOCKER_COMPOSE -f docker-compose-scale.yml up -d --scale trader-stream=$INSTANCES --no-recreate
+        run_compose -f docker-compose-scale.yml up -d --scale trader-stream=$INSTANCES --no-recreate
         echo ""
         echo "✅ Scaled to $INSTANCES instances"
         sleep 10
@@ -162,9 +164,9 @@ case "$ACTION" in
 
     down|stop)
         echo "🛑 Stopping TradeStreamEE..."
-        $DOCKER_COMPOSE -f docker-compose.yml down
-        $DOCKER_COMPOSE -f docker-compose-standard.yml down
-        $DOCKER_COMPOSE -f docker-compose-scale.yml down
+        run_compose -f docker-compose.yml down
+        run_compose -f docker-compose-standard.yml down
+        run_compose -f docker-compose-scale.yml down
         echo "✅ Stopped"
         ;;
 
@@ -181,7 +183,7 @@ case "$ACTION" in
             if docker ps | grep -q "trader-stream-1"; then
                 # Cluster mode - show all instances
                 echo "Cluster mode detected - showing logs from all instances..."
-                $DOCKER_COMPOSE -f docker-compose-scale.yml logs -f
+                run_compose -f docker-compose-scale.yml logs -f
             else
                 # Single instance mode
                 docker logs -f trader-stream-ee
@@ -211,9 +213,9 @@ case "$ACTION" in
 
     clean)
         echo "🧹 Cleaning up..."
-        $DOCKER_COMPOSE -f docker-compose.yml down -v
-        $DOCKER_COMPOSE -f docker-compose-standard.yml down -v
-        $DOCKER_COMPOSE -f docker-compose-scale.yml down -v
+        run_compose -f docker-compose.yml down -v
+        run_compose -f docker-compose-standard.yml down -v
+        run_compose -f docker-compose-scale.yml down -v
         docker system prune -f
         echo "✅ Cleaned"
         ;;

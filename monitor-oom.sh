@@ -134,7 +134,8 @@ rotate_log_if_needed() {
     if [ -f "$LOG_FILE" ]; then
         local size=$(stat -f%z "$LOG_FILE" 2>/dev/null || stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)
         if [ "$size" -gt "$MAX_LOG_SIZE" ]; then
-            mv "$LOG_FILE" "${LOG_FILE}.old"
+            cp "$LOG_FILE" "${LOG_FILE}.old"
+            > "$LOG_FILE" # Truncate in place
             log_info "Rotated log file (size: $size bytes)"
         fi
     fi
@@ -172,20 +173,18 @@ check_container_oom() {
         return 1
     fi
 
-    # Check each OOM pattern
-    for pattern in "${OOM_PATTERNS[@]}"; do
-        if echo "$logs" | grep -q "$pattern"; then
-            found_oom=true
-            oom_pattern="$pattern"
-            break
-        fi
-    done
+    # Combine patterns for a single grep search (more efficient)
+    local combined_pattern=$(printf "|%s" "${OOM_PATTERNS[@]}")
+    combined_pattern="${combined_pattern:1}" # Remove leading pipe
 
-    if [ "$found_oom" = true ]; then
-        log_error "OOM detected in container '$container' - Pattern: '$oom_pattern'"
+    if echo "$logs" | grep -Eq "$combined_pattern"; then
+        found_oom=true
+        # Find the specific matching line for reporting
+        local matching_line=$(echo "$logs" | grep -E "$combined_pattern" | head -1)
+        log_error "OOM detected in container '$container' - Match: '$matching_line'"
 
-        # Extract and log the actual OOM error lines
-        local oom_lines=$(echo "$logs" | grep -A 3 "$oom_pattern" | head -10)
+        # Extract and log context around the error
+        local oom_lines=$(echo "$logs" | grep -B 1 -A 5 -E "$combined_pattern" | head -20)
         echo "$oom_lines" | while IFS= read -r line; do
             log "  | $line"
         done
