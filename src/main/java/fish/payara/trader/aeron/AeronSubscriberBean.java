@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * Aeron Ingress Singleton Bean Launches an embedded MediaDriver and subscribes to market data
@@ -43,11 +44,20 @@ public class AeronSubscriberBean {
 
   @Inject @VirtualThreadExecutor private ManagedExecutorService managedExecutorService;
 
+  @Inject
+  @ConfigProperty(name = "TRADER_INGESTION_MODE", defaultValue = "AERON")
+  private String ingestionMode;
+
   void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
-    managedExecutorService.submit(() -> init());
+    managedExecutorService.submit(this::init);
   }
 
   public void init() {
+    if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
+      LOGGER.info("Running in DIRECT mode - Skipping Aeron/MediaDriver initialization.");
+      return;
+    }
+
     LOGGER.info("Initializing Aeron Subscriber Bean...");
 
     try {

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azul C4 and Payara: High-Speed Financial Applications - TradeStreamEE Blog</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            margin-bottom: 40px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #1d4ed8;
+        }
+
+        .back-link svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .meta {
+            margin-top: 24px;
+            padding: 16px 24px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            font-size: 0.9em;
+        }
+
+        .meta-item svg {
+            width: 18px;
+            height: 18px;
+            color: #3b82f6;
+        }
+
+        article {
+            background: white;
+            padding: 48px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-top: 48px;
+            margin-bottom: 20px;
+            color: #1e293b;
+        }
+
+        h2:first-of-type {
+            margin-top: 0;
+        }
+
+        h3 {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            color: #334155;
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: #475569;
+        }
+
+        strong {
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        ul, ol {
+            margin: 16px 0;
+            padding-left: 32px;
+        }
+
+        li {
+            margin-bottom: 12px;
+            color: #475569;
+        }
+
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #dc2626;
+        }
+
+        pre {
+            background: transparent;
+            padding: 0;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 24px 0;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 20px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.7;
+            font-weight: 400;
+            border-radius: 8px;
+        }
+
+        .hljs {
+            background: #282c34 !important;
+        }
+
+        .highlight-block {
+            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 24px;
+            margin: 32px 0;
+            border-radius: 8px;
+        }
+
+        .highlight-block p {
+            margin: 0;
+            color: #1e40af;
+            font-size: 1.05em;
+        }
+
+        .highlight-block p:first-child {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .highlight-block strong {
+            color: #1e3a8a;
+        }
+
+        .cta-section {
+            margin-top: 48px;
+            padding: 32px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .cta-section h3 {
+            color: #1e293b;
+            margin-top: 0;
+            font-size: 1.4em;
+        }
+
+        .cta-section p {
+            color: #475569;
+        }
+
+        .cta-section a {
+            color: #3b82f6;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .cta-section a:hover {
+            color: #1d4ed8;
+        }
+
+        .cta-section ul {
+            color: #475569;
+        }
+
+        .cta-section li {
+            margin-bottom: 16px;
+        }
+
+        .cta-section strong {
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            article {
+                padding: 24px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            h2 {
+                font-size: 1.4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Dashboard
+            </a>
+            <h1>Azul C4 and Payara: The Ideal Base for High-Speed Financial Applications</h1>
+            <p class="subtitle">How Enterprise Java with pauseless garbage collection enables low-latency high-frequency trading systems</p>
+            <div class="meta">
+                <div class="meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    8 min read
+                </div>
+                <div class="meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    Azul C4, Payara Micro, Jakarta EE, HFT
+                </div>
+            </div>
+        </header>
+
+        <article>
+            <p>In high-frequency trading (HFT) and financial services, every microsecond counts. The difference between profit and loss often comes down to how quickly your system can process market data and execute trades. For years, Java has been viewed with skepticism in the world of low-latency finance, primarily due to its notorious "stop-the-world" garbage collection pauses that can wreck predictable performance.</p>
+
+            <p>But what if I told you that Java is now one of the best choices for latency-sensitive financial applications?</p>
+
+            <p>I developed TradeStreamEE, a sophisticated high-frequency trading dashboard to demonstrate that HFT is not only possible but also highly performant in Enterprise Java, particularly when combining Azul Platform Prime with the C4 garbage collector and Payara Micro. This technology stack changes Java's performance profile, offering measurable, real-world improvements that are now leading financial institutions to reconsider their current technology choices.</p>
+
+            <h2>The Evidence: 2GB/s Pressure, 1ms Latency</h2>
+
+            <p>We subjected TradeStreamEE to an extreme torture test: generating 2 Gigabytes of garbage per second while simultaneously processing market data.</p>
+
+            <p>In a standard OpenJDK environment using G1GC, this level of pressure typically results in "Stop-the-World" pauses lasting hundreds of milliseconds. The user interface freezes. Tickers jump. Traders lose money.</p>
+
+            <p>With Azul C4, the results were staggering. We queried the live application status while it was under this 2GB/s bombardment. Here is the raw JSON returned from our Payara endpoints:</p>
+
+            <pre><code class="language-json">{
+  "running": true,
+  "description": "2 GB/sec - Extreme pressure",
+  "bytesPerSecond": 2048000000,
+  "currentMode": "EXTREME",
+  "percentiles": {
+    "max": 1,
+    "p50": 0,
+    "p99": 1,
+    "p999": 1
+  }
+}</code></pre>
+
+            <div class="highlight-block">
+                <p>Read that again.</p>
+                <p>Allocating 2GB of data every second, the application's garbage collection pauses peaked at 1 millisecond. The 50th percentile (median) was 0ms. The SLA monitor reported zero violations over 10ms.</p>
+            </div>
+
+            <h2>Payara Micro: Enterprise Jakarta EE for Demanding Applications</h2>
+
+            <p>While Azul C4 eliminates Java's performance limitations, Payara Micro provides the enterprise-grade Jakarta EE runtime that makes sophisticated financial applications possible.</p>
+
+            <p>What makes Payara Micro well suited for financial services is its thoughtful balance of enterprise features and performance optimization. The platform weighs just 100MB and starts in seconds, making it perfect for the microservices architectures that dominate modern financial technology stacks. But do not be deceived by the small footprint. It packs the full power of Jakarta EE 11, featuring critical implementations like Jakarta CDI for dependency injection, WebSocket support for real-time communication, and Jakarta REST for RESTful APIs.</p>
+
+            <h3>Built-in Clustering with Hazelcast</h3>
+
+            <p>Using Hazelcast under the hood, Payara provides automatic data replication across cluster nodes. Through such deep integration, creating a cluster of Payara Micro instances is a breeze.</p>
+
+            <p>In our code, we didn't have to write complex distributed consensus logic. We simply injected the Hazelcast instance to track global throughput across the cluster:</p>
+
+            <pre><code class="language-java">// Payara + Hazelcast: Instant cluster-wide metrics without complex setup
+@Inject private HazelcastInstance hazelcastInstance;
+
+public void init() {
+    // This counter is automatically shared across all cluster nodes
+    // No extra infrastructure code required
+    clusterMessageCounter =
+        hazelcastInstance.getCPSubsystem().getAtomicLong("cluster-message-count");
+}</code></pre>
+
+            <p>This means financial firms can build highly available trading systems that can withstand node failures without losing market data or transaction state.</p>
+
+            <h2>Architecture Deep Dive Into TradeStreamEE</h2>
+
+            <p>The TradeStreamEE application serves as a perfect showcase for what's possible when you combine Azul C4 and Payara Micro. The architecture demonstrates thoughtful engineering that addresses the specific challenges of financial trading systems.</p>
+
+            <h3>The "Hero": Zero-Copy SBE</h3>
+
+            <p>At the core of the system is Aeron IPC with Simple Binary Encoding (SBE), technologies that enable zero-copy message processing. The approach is elegant: instead of creating new Java objects for every market data message, the system uses "flyweight" objects that act as windows over shared memory buffers. This eliminates object allocation entirely during the critical path of message processing.</p>
+
+            <pre><code class="language-java">// SBE Flyweight pattern - zero object allocation during processing
+private final TradeDecoder tradeDecoder = new TradeDecoder();
+private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+
+@Override
+public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
+    headerDecoder.wrap(buffer, offset);
+
+    // Move the "window" to the data without allocating a new object
+    tradeDecoder.wrap(buffer, offset + headerDecoder.encodedLength(),
+                     headerDecoder.blockLength(), headerDecoder.version());
+
+    // Extract data directly from the buffer
+    final long timestamp = tradeDecoder.timestamp();
+    final long price = tradeDecoder.price();
+    final long quantity = tradeDecoder.quantity();
+}</code></pre>
+
+            <h3>The "Villain": The Memory Pressure Service</h3>
+
+            <p>To prove the reliability of the system, we included a component designed specifically to break it. The <code>MemoryPressureService</code> generates massive amounts of random data to simulate extreme market volatility or memory leaks.</p>
+
+            <pre><code class="language-java">// The "Villain": Generating 2GB/sec of garbage to stress the JVM
+private void generateGarbage(AllocationMode mode) {
+    // 20,000 allocations per 100ms iteration = ~2GB/sec
+    for (int i = 0; i < mode.getAllocationsPerIteration(); i++) {
+        // Create 100KB byte array, touch it, and immediately discard it
+        byte[] garbage = new byte[1024 * 100];
+        ThreadLocalRandom.current().nextBytes(garbage); // Prevent optimization
+    }
+}</code></pre>
+
+            <p>Even with this "villain" running full throttle, the Azul C4 collector cleaned up the mess concurrently, ensuring the trading threads never stopped.</p>
+
+            <h2>The Business Impact</h2>
+
+            <p>The business implications of this technology combination extend far beyond technical performance metrics. For trading firms, predictable latency directly translates to competitive advantage in the market.</p>
+
+            <p>Perhaps more importantly, the operational complexity that has traditionally plagued Java performance tuning virtually disappears. The standard approach to Java latency problems involved teams of performance engineers spending months tuning JVM parameters (<code>-XX:NewRatio</code>, <code>-XX:SurvivorRatio</code>). With Azul C4 and Payara Micro, most of that complexity evaporates. C4 adapts automatically to workload patterns, eliminating the need for manual parameter tuning.</p>
+
+            <p>In our tests, a single Payara Micro instance effortlessly handled ingestion rates exceeding 30 million messages, with zero degradation in SLA compliance. This means financial firms can process more trades per second, handle higher client volumes without performance degradation, and maintain consistent service levels even during market stress events.</p>
+
+            <h2>Conclusion</h2>
+
+            <p>Azul C4 and Payara Micro fundamentally redefine the potential of Java for low-latency financial applications. This is more than an incremental gain; it's a paradigm shift.</p>
+
+            <p>By combining the operational maturity of Payara with the runtime supremacy of Azul Platform Prime, organizations can have their cake and eat it too. You can build maintainable, secure, and scalable Jakarta EE applications that meet the most demanding latency SLAs of the financial industry.</p>
+
+            <p>The question is no longer whether Java can handle low-latency financial workloads. With Azul C4 and Payara, it's now one of the best choices available.</p>
+
+            <div class="cta-section">
+                <h3>Ready to See It in Action?</h3>
+                <p>The theory is compelling, but the real proof is in the running system. I encourage you to:</p>
+                <ul>
+                    <li><strong>Explore the Code:</strong> <a href="https://github.com/pedanticdev/trader-stream-ee" target="_blank" rel="noopener">Check out the TradeStreamEE repository on GitHub</a> to see the complete implementation. The codebase demos best practices for low-latency Java development.</li>
+                    <li><strong>Try Payara Micro:</strong> <a href="https://payara.fish/downloads/" target="_blank" rel="noopener">Download Payara Micro</a> and experience the lightweight, enterprise-grade application server for yourself.</li>
+                    <li><strong>Try Payara Qube:</strong> <a href="https://payara.fish/qube" target="_blank" rel="noopener">Deploy to Payara Qube</a> (formerly Payara Cloud) for effortless cloud deployment without the infrastructure overhead.</li>
+                    <li><strong>Evaluate Azul Platform Prime:</strong> <a href="https://www.azul.com/products/prime/" target="_blank" rel="noopener">Request a trial of Azul Platform Prime</a> to see C4 garbage collection in action. The performance improvements are immediately noticeable, especially under memory pressure.</li>
+                    <li><strong>Run Your Own Tests:</strong> Use the built-in stress testing capabilities in TradeStreamEE to see how your applications perform under realistic load conditions.</li>
+                </ul>
+            </div>
+        </article>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

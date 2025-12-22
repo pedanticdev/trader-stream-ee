@@ -2,8 +2,6 @@ package fish.payara.trader.websocket;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.topic.ITopic;
-import com.hazelcast.topic.Message;
-import com.hazelcast.topic.MessageListener;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -51,12 +49,9 @@ public class MarketDataBroadcaster {
       if (hazelcastInstance != null) {
         clusterTopic = hazelcastInstance.getTopic(TOPIC_NAME);
         clusterTopic.addMessageListener(
-            new MessageListener<String>() {
-              @Override
-              public void onMessage(Message<String> message) {
-                // Broadcast to local WebSocket sessions only
-                broadcastLocal(message.getMessageObject());
-              }
+            message -> {
+              // Broadcast to local WebSocket sessions only
+              broadcastLocal(message.getMessageObject());
             });
         LOGGER.info("Subscribed to Hazelcast topic: " + TOPIC_NAME + " (clustered mode)");
       } else {
