@@ -396,6 +396,136 @@
             font-weight: 500;
             color: white;
         }
+
+        /* GC Comparison Panel */
+        .gc-comparison-panel {
+            background: white;
+            padding: 24px 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            margin-bottom: 24px;
+        }
+
+        .gc-comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 16px;
+        }
+
+        .gc-comparison-header h2 {
+            font-size: 1.5em;
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        .jvm-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95em;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+        .badge.azul { background: #dbeafe; color: #1e40af; }
+        .badge.standard { background: #dbeafe; color: #1e40af; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        .metric-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .metric-card h3 {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: 800;
+            color: #0f172a;
+            display: block;
+        }
+
+        .metric-unit {
+            font-size: 0.8em;
+            color: #94a3b8;
+        }
+
+        .status-indicator.excellent { color: #10b981; }
+        .status-indicator.good { color: #3b82f6; }
+        .status-indicator.warning { color: #f59e0b; }
+        .status-indicator.critical { color: #ef4444; font-weight: bold; }
+
+        /* Stress Scenario Buttons */
+        .stress-scenarios {
+            margin-bottom: 16px;
+            background: white;
+            padding: 16px 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .scenario-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .scenario-btn {
+            background: white;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            padding: 8px 16px;
+            font-size: 0.9em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 120px;
+        }
+
+        .scenario-btn:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
+        }
+
+        .scenario-btn.active {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #1d4ed8;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .scenario-btn .hint {
+            font-size: 0.7em;
+            font-weight: 400;
+            opacity: 0.8;
+            text-transform: none;
+        }
     </style>
 </head>
 <body>
@@ -411,11 +541,16 @@
                 <div class="status-indicator" id="statusIndicator"></div>
                 <span id="statusText">Disconnected</span>
                 <span id="modeDisplay" class="status-mode"></span>
+                <span id="instanceDisplay" class="status-mode" style="margin-left: 15px; color: #1976d2; font-weight: 600;"></span>
             </div>
             <div class="stats">
                 <div class="stat-group">
-                    <div class="stat"><div class="stat-value backend" id="backendRate">0</div><div class="stat-label">Backend Msg/sec</div></div>
-                    <div class="stat"><div class="stat-value backend" id="backendTotal">0</div><div class="stat-label">Total Generated</div></div>
+                    <div class="stat"><div class="stat-value backend" id="backendRate">0</div><div class="stat-label">Local Msg/sec</div></div>
+                    <div class="stat"><div class="stat-value backend" id="backendTotal">0</div><div class="stat-label">Local Total</div></div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat"><div class="stat-value backend" id="clusterTotal">0</div><div class="stat-label">Cluster Total</div></div>
+                    <div class="stat"><div class="stat-value backend" id="clusterRate">0</div><div class="stat-label">Cluster Msg/sec</div></div>
                 </div>
                 <div class="stat-group">
                     <div class="stat"><div class="stat-value" id="messageRate">0</div><div class="stat-label">UI Msg/sec</div></div>
@@ -423,6 +558,76 @@
                 </div>
             </div>
             <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+        </div>
+        
+        <!-- Stress Scenarios -->
+        <div class="stress-scenarios">
+            <h3 style="font-size: 1em; color: #64748b; font-weight: 600; text-transform: uppercase;">Demo Scenarios</h3>
+            <div class="scenario-buttons">
+                <button onclick="applyScenario('DEMO_BASELINE')" class="scenario-btn" id="btn-DEMO_BASELINE">
+                    📊 Baseline
+                    <span class="hint">No stress</span>
+                </button>
+
+                <button onclick="applyScenario('DEMO_NORMAL')" class="scenario-btn" id="btn-DEMO_NORMAL">
+                    📈 Normal
+                    <span class="hint">Light load</span>
+                </button>
+
+                <button onclick="applyScenario('DEMO_STRESS')" class="scenario-btn" id="btn-DEMO_STRESS">
+                    🔥 High Stress
+                    <span class="hint">Heavy + Burst</span>
+                </button>
+
+                <button onclick="applyScenario('DEMO_EXTREME')" class="scenario-btn" id="btn-DEMO_EXTREME">
+                    💥 Extreme
+                    <span class="hint">Max Pressure</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- GC Comparison Panel -->
+        <div class="gc-comparison-panel">
+            <div class="gc-comparison-header">
+                <h2>GC Performance Comparison</h2>
+                <div class="jvm-info">
+                    <span class="label">Instance:</span>
+                    <span id="instance-name" class="value" style="font-weight: 700; color: #2563eb;">Unknown</span>
+                    <span class="label" style="margin-left: 20px;">JVM:</span>
+                    <span id="jvm-name" class="value" style="font-weight: 600;">Detecting...</span>
+                    <span id="gc-type" class="badge">--</span>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Pause Time P99</h3>
+                    <span id="pause-p99" class="metric-value">-</span>
+                    <span class="metric-unit">ms</span>
+                    <div id="pause-p99-status" style="margin-top: 8px; font-weight: 600; font-size: 0.9em;"></div>
+                    <div id="pause-sample-size" style="font-size: 0.75em; color: #888; margin-top: 4px;"></div>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Pause Time Max</h3>
+                    <span id="pause-max" class="metric-value">-</span>
+                    <span class="metric-unit">ms</span>
+                    <div style="font-size: 0.75em; color: #888; margin-top: 4px;">All-time since startup</div>
+                </div>
+
+                <div class="metric-card">
+                    <h3>SLA Violations</h3>
+                    <span id="sla-violations" class="metric-value">-</span>
+                    <span class="metric-unit">pauses > 10ms</span>
+                    <div style="font-size: 0.75em; color: #888; margin-top: 4px;">Total since startup</div>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Allocation Rate</h3>
+                    <span id="alloc-rate" class="metric-value">-</span>
+                    <span class="metric-unit">MB/sec</span>
+                </div>
+            </div>
         </div>
         
         <div class="data-grid">
@@ -886,20 +1091,33 @@
         }
 
         function pollGCPauseStats() {
-            fetch('/api/gc/stats')
+            fetch('/trader-stream-ee/api/gc/stats')
                 .then(response => response.json())
                 .then(stats => {
                     if (stats && stats.length > 0) {
-                        const gcStat = stats[0];
+                        // Find the maximum pause duration across all collectors in this poll
+                        let maxPauseMs = 0;
+                        let activeCollectors = [];
 
-                        // Update collector name
-                        document.getElementById('gcPauseCollectorName').textContent = gcStat.gcName || '--';
+                        stats.forEach(gcStat => {
+                            const pause = gcStat.lastPauseDuration || 0;
+                            if (pause > maxPauseMs) {
+                                maxPauseMs = pause;
+                            }
+                            // Only list collectors that have actually performed a collection
+                            if (gcStat.collectionCount > 0) {
+                                activeCollectors.push(gcStat.gcName);
+                            }
+                        });
 
-                        // Update chart with last pause duration
+                        // Update collector names display (unique and simplified)
+                        const collectorNames = [...new Set(activeCollectors)].join(' / ');
+                        document.getElementById('gcPauseCollectorName').textContent = collectorNames || '--';
+
+                        // Update chart with the maximum pause duration detected
                         if (gcPauseChart) {
-                            const pauseMs = gcStat.lastPauseDuration || 0;
                             gcPauseChart.data.labels.push('');
-                            gcPauseChart.data.datasets[0].data.push(pauseMs);
+                            gcPauseChart.data.datasets[0].data.push(maxPauseMs);
 
                             if (gcPauseChart.data.labels.length > 50) {
                                 gcPauseChart.data.labels.shift();
@@ -924,7 +1142,7 @@
                 }
             });
 
-            fetch('/api/pressure/mode/' + mode, { method: 'POST' })
+            fetch('/trader-stream-ee/api/pressure/mode/' + mode, { method: 'POST' })
                 .then(response => response.json())
                 .then(result => {
                     if (clickedButton) {
@@ -947,7 +1165,7 @@
         }
 
         function pollPressureStatus() {
-            fetch('/api/pressure/status')
+            fetch('/trader-stream-ee/api/pressure/status')
                 .then(response => response.json())
                 .then(status => {
                     document.getElementById('pressureMode').textContent = status.currentMode || 'OFF';
@@ -955,6 +1173,136 @@
                     document.getElementById('pressureRate').textContent = rateMBps + ' MB/sec';
                 })
                 .catch(error => console.error('Error fetching pressure status:', error));
+        }
+
+        let lastClusterTotal = 0;
+        let lastClusterTime = Date.now();
+
+        function pollInstanceStatus() {
+            fetch(window.location.pathname + 'api/status')
+                .then(response => response.json())
+                .then(status => {
+                    // Update instance name
+                    if (status.instance) {
+                        document.getElementById('instanceDisplay').textContent = '[' + status.instance + ']';
+                    }
+
+                    // Update cluster total and calculate rate
+                    if (status.publisher && status.publisher.clusterMessagesPublished !== undefined) {
+                        const clusterTotal = status.publisher.clusterMessagesPublished;
+                        document.getElementById('clusterTotal').textContent = clusterTotal.toLocaleString();
+
+                        // Calculate cluster message rate
+                        const now = Date.now();
+                        const timeDiff = (now - lastClusterTime) / 1000; // seconds
+                        const messageDiff = clusterTotal - lastClusterTotal;
+                        if (timeDiff > 0 && lastClusterTotal > 0) {
+                            const clusterRate = Math.round(messageDiff / timeDiff);
+                            document.getElementById('clusterRate').textContent = clusterRate.toLocaleString();
+                        }
+                        lastClusterTotal = clusterTotal;
+                        lastClusterTime = now;
+                    }
+                })
+                .catch(error => console.error('Error fetching instance status:', error));
+        }
+
+        async function applyScenario(scenario) {
+            // Reset all buttons
+            document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Set active state on clicked button
+            const btn = document.getElementById('btn-' + scenario);
+            if (btn) btn.classList.add('active');
+
+            try {
+                const response = await fetch('/trader-stream-ee/api/pressure/scenario/' + scenario, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                console.log('Applied scenario:', result);
+                
+                // Also update the pressure mode display
+                pollPressureStatus();
+                
+                addLog('Scenario applied: ' + result.description);
+            } catch (error) {
+                console.error('Error applying scenario:', error);
+                addLog('Failed to apply scenario: ' + error.message);
+            }
+        }
+
+        async function pollGCComparison() {
+            try {
+                const response = await fetch('/trader-stream-ee/api/gc/comparison');
+                const data = await response.json();
+
+                // Update instance identification
+                const instanceName = data.instanceName || 'unknown';
+                document.getElementById('instance-name').textContent = instanceName;
+
+                // Color-code instance name by cluster
+                const instanceEl = document.getElementById('instance-name');
+                if (instanceName.includes('c4')) {
+                    instanceEl.style.color = '#10b981'; // green for C4
+                } else if (instanceName.includes('g1')) {
+                    instanceEl.style.color = '#10b981'; // same as c4
+                } else {
+                    instanceEl.style.color = '#2563eb'; // blue for unknown
+                }
+
+                // Update JVM info
+                document.getElementById('jvm-name').textContent = data.jvmName || 'Unknown';
+                const gcTypeEl = document.getElementById('gc-type');
+                if (data.isAzulC4) {
+                    gcTypeEl.textContent = 'Azul C4';
+                    gcTypeEl.className = 'badge azul';
+                } else {
+                    gcTypeEl.textContent = 'Standard G1'; // Assuming G1 if not Azul for now, or use data.gcCollectors
+                    gcTypeEl.className = 'badge standard';
+                }
+
+                // Update metrics
+                document.getElementById('pause-p99').textContent = (data.pauseP99Ms || 0).toFixed(2);
+                document.getElementById('pause-max').textContent = (data.pauseMaxMs || 0).toFixed(2);
+                document.getElementById('sla-violations').textContent = (data.slaViolations10ms || 0).toLocaleString();
+
+                // Show sample size for transparency
+                const sampleSize = data.pauseSampleSize || 0;
+                const totalPauses = data.totalPauseCount || 0;
+                document.getElementById('pause-sample-size').textContent =
+                    `${sampleSize.toLocaleString()} samples (${totalPauses.toLocaleString()} total pauses)`;
+                
+                // Allocation rate calculation (if available, or estimate)
+                // data.messageRate is available
+                // data.allocationMode can give us a hint
+                if (data.allocationMode) {
+                   // We might need to fetch status to get bytesPerSecond, or use what we have
+                   // For now let's leave it or fetch separate status if needed. 
+                   // Actually pollPressureStatus does this.
+                }
+
+                // Color-code P99 status
+                const p99Status = document.getElementById('pause-p99-status');
+                const p99 = data.pauseP99Ms || 0;
+                
+                if (p99 < 1) {
+                    p99Status.className = 'status-indicator excellent';
+                    p99Status.textContent = '✓ Excellent';
+                } else if (p99 < 10) {
+                    p99Status.className = 'status-indicator good';
+                    p99Status.textContent = '✓ Good';
+                } else if (p99 < 50) {
+                    p99Status.className = 'status-indicator warning';
+                    p99Status.textContent = '⚠ Degraded';
+                } else {
+                    p99Status.className = 'status-indicator critical';
+                    p99Status.textContent = '✗ Critical';
+                }
+
+            } catch (error) {
+                console.error('Failed to fetch GC comparison metrics:', error);
+            }
         }
 
         function flipCard(card) {
@@ -992,11 +1340,21 @@
                 if (window.gcPauseStatsInterval) clearInterval(window.gcPauseStatsInterval);
                 window.gcPauseStatsInterval = setInterval(pollGCPauseStats, 3000);
                 pollGCPauseStats(); // Initial poll
+                
+                // Start GC Comparison polling (every 2 seconds)
+                if (window.gcComparisonInterval) clearInterval(window.gcComparisonInterval);
+                window.gcComparisonInterval = setInterval(pollGCComparison, 2000);
+                pollGCComparison();
 
                 // Start memory pressure status polling (every 3 seconds)
                 if (window.pressureStatusInterval) clearInterval(window.pressureStatusInterval);
                 window.pressureStatusInterval = setInterval(pollPressureStatus, 3000);
                 pollPressureStatus(); // Initial poll
+
+                // Start instance status polling (every 2 seconds for cluster stats)
+                if (window.instanceStatusInterval) clearInterval(window.instanceStatusInterval);
+                window.instanceStatusInterval = setInterval(pollInstanceStatus, 2000);
+                pollInstanceStatus(); // Initial poll
             };
             ws.onclose=( )=>{
                 document.getElementById('statusIndicator').classList.remove('connected');
@@ -1007,6 +1365,7 @@
                 addLog('WebSocket disconnected. Attempting auto-reconnect in 3s...');
                 if (window.chartInterval) clearInterval(window.chartInterval);
                 if (window.gcStatsInterval) clearInterval(window.gcStatsInterval);
+                if (window.gcComparisonInterval) clearInterval(window.gcComparisonInterval);
                 setTimeout(connect, 3000);
             };
             ws.onerror=error=>addLog('WebSocket error: '+error);
@@ -1083,6 +1442,7 @@
         
         window.addEventListener('load', () => {
             initCharts();
+            pollInstanceStatus(); // Get instance info immediately
             setTimeout(connect, 1000);
         });
     </script>

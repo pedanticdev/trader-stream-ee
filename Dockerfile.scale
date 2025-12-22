@@ -1,0 +1,67 @@
+# Multi-stage Dockerfile for TradeStreamEE with Hazelcast Clustering
+# Uses Azul Platform Prime (Zing) for Pauseless Garbage Collection demonstration
+
+FROM azul/zulu-openjdk:21 AS build
+WORKDIR /app
+
+# Copy Maven wrapper and pom.xml first for better layer caching
+COPY mvnw .
+COPY mvnw.cmd .
+COPY .mvn .mvn
+COPY pom.xml .
+
+RUN ./mvnw dependency:go-offline -B
+
+COPY src ./src
+
+RUN ./mvnw clean package -DskipTests
+
+# Use Azul Platform Prime for C4 GC
+FROM azul/prime:21
+
+LABEL maintainer="TradeStreamEE"
+LABEL description="High-frequency trading dashboard with Aeron + SBE + Payara Micro + Azul C4 + Hazelcast Clustering"
+
+WORKDIR /opt/payara
+
+# Add Payara Micro from URL
+ARG PAYARA_VERSION=7.2025.2
+ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/payara-micro/${PAYARA_VERSION}/payara-micro-${PAYARA_VERSION}.jar /opt/payara/payara-micro.jar
+
+# Copy WAR file from build stage
+COPY --from=build /app/target/*.war trader-stream-ee.war
+
+EXPOSE 8080
+EXPOSE 5701
+
+# Default JVM Options for Azul Platform Prime
+# Note: Reduced heap size for multi-instance deployments
+# Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
+ENV JAVA_OPTS="-Xms4g \
+    -Xmx4g \
+    -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \
+    -XX:+UnlockDiagnosticVMOptions \
+    -XX:+UnlockExperimentalVMOptions \
+    -XX:+AlwaysPreTouch \
+    -XX:+UseTransparentHugePages \
+    -XX:-UseBiasedLocking \
+    -Djava.net.preferIPv4Stack=true"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --spider -q http://localhost:8080/trader-stream-ee/api/status || exit 1
+
+# Copy Hazelcast configuration
+COPY src/main/resources/hazelcast-config.xml /opt/payara/hazelcast-config.xml
+
+# Set unique cluster name for C4 environment and update discovery members
+RUN sed -i 's/payara-trader-cluster/payara-trader-c4/' /opt/payara/hazelcast-config.xml && \
+    sed -i 's/trader-stream-/trader-stream-c4-/' /opt/payara/hazelcast-config.xml
+
+# Run Payara Micro with the WAR
+# NOTE: --nohazelcast flag is REMOVED to enable clustering
+# Use custom Hazelcast configuration with split-brain protection
+CMD java ${JAVA_OPTS} -jar payara-micro.jar \
+    --deploy /opt/payara/trader-stream-ee.war \
+    --contextroot trader-stream-ee \
+    --hzconfigfile /opt/payara/hazelcast-config.xml

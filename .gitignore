@@ -29,3 +29,9 @@ docs/*
 *.md
 !README.md
 *.pdf
+*.jar
+monitoring/jmx-exporter/*.jar
+monitoring/logs/
+monitoring/prometheus/data/
+monitoring/grafana/data/
+monitoring/loki/data/
