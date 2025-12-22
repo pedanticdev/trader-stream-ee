@@ -21,7 +21,7 @@ public class MarketDataWebSocket {
   @Inject private MarketDataBroadcaster broadcaster;
 
   @Inject
-  @ConfigProperty(name = "TRADER_INGESTION_MODE", defaultValue = "AERON")
+  @ConfigProperty(name = "TRADER_INGESTION_MODE", defaultValue = "DIRECT")
   private String ingestionMode;
 
   @OnOpen
