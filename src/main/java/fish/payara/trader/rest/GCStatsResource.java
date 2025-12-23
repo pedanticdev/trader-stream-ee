@@ -76,12 +76,12 @@ public class GCStatsResource {
     // Identify which JVM is running
     String jvmVendor = System.getProperty("java.vm.vendor");
     String jvmName = System.getProperty("java.vm.name");
+    List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
     String gcName =
-        ManagementFactory.getGarbageCollectorMXBeans().stream()
-            .map(GarbageCollectorMXBean::getName)
-            .collect(Collectors.joining(", "));
+        gcBeans.stream().map(GarbageCollectorMXBean::getName).collect(Collectors.joining(", "));
 
-    boolean isAzulC4 = jvmVendor != null && jvmVendor.contains("Azul");
+    // More accurate check: C4 collector's MXBean is named "GPGC"
+    boolean isAzulC4 = gcBeans.stream().anyMatch(bean -> "GPGC".equals(bean.getName()));
 
     comparison.put("jvmVendor", jvmVendor);
     comparison.put("jvmName", jvmName);
@@ -91,6 +91,9 @@ public class GCStatsResource {
 
     // Current stress level
     comparison.put("allocationMode", memoryPressureService.getCurrentMode());
+    comparison.put(
+        "allocationRateMBps",
+        memoryPressureService.getCurrentMode().getBytesPerSecond() / (1024 * 1024));
     comparison.put("messageRate", publisher.getMessagesPublished());
 
     // GC Performance Metrics (keep old stats for backward compatibility)
