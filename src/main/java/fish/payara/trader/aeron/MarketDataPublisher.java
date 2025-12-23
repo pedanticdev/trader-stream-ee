@@ -54,8 +54,7 @@ public class MarketDataPublisher {
   private final MarketDepthEncoder marketDepthEncoder = new MarketDepthEncoder();
   private final HeartbeatEncoder heartbeatEncoder = new HeartbeatEncoder();
 
-  // Buffer for encoding messages
-  private final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_SIZE));
+  private UnsafeBuffer buffer;
 
   private final AtomicLong sequenceNumber = new AtomicLong(0);
   private final AtomicLong tradeIdGenerator = new AtomicLong(1000);
@@ -138,6 +137,9 @@ public class MarketDataPublisher {
       startPublishing();
       return;
     }
+
+    // Initialize buffer only if in AERON mode
+    this.buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_SIZE));
 
     try {
       // Wait for AeronSubscriberBean to be ready (both observers fire at roughly same time)
