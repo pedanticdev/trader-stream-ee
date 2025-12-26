@@ -79,7 +79,7 @@ case "$ACTION" in
 
     cluster|cluster-azul)
         echo "🚀 [Azul Prime Cluster] Starting 3-instance cluster with AERON..."
-        echo "   > Dockerfile.scale (Azul) + MODE=AERON + Nginx LB"
+        echo "   > Dockerfile.scale (Azul) + MODE=AERON + Traefik LB"
         echo "   ℹ️  Demonstrates horizontal scalability with Hazelcast clustering."
         echo ""
         MODE=AERON DOCKERFILE=Dockerfile.scale run_compose -f docker-compose-scale.yml up -d --build --force-recreate
@@ -95,7 +95,7 @@ case "$ACTION" in
 
     cluster-standard)
         echo "🚀 [Standard JDK Cluster] Starting 3-instance cluster with AERON..."
-        echo "   > Dockerfile.scale.standard (Temurin) + MODE=AERON + Nginx LB"
+        echo "   > Dockerfile.scale.standard (Temurin) + MODE=AERON + Traefik LB"
         echo "   ℹ️  Compare cluster performance with G1GC."
         echo ""
         MODE=AERON DOCKERFILE=Dockerfile.scale.standard run_compose -f docker-compose-scale.yml up -d --build --force-recreate

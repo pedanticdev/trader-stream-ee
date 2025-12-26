@@ -1,47 +1,30 @@
 # TradeStreamEE: High-Frequency Trading Reference Architecture
 
-**TradeStreamEE** is a technical demonstration application designed to showcase the "Pauseless Performance" symbiosis between **Payara Server Enterprise** (Jakarta EE) and **Azul Platform Prime** (High-Performance JVM).
+**TradeStreamEE** demonstrates how Jakarta EE applications can achieve low-latency, high-throughput performance by combining modern messaging (Aeron), efficient serialization (SBE), and a concurrent garbage collector (Azul C4).
 
-It simulates a high-frequency trading (HFT) dashboard that ingests tens of thousands of market data messages per second, processes them in real-time, and broadcasts updates to a web frontend—all without the latency spikes ("jitter") associated with standard Java Garbage Collection.
+It simulates a high-frequency trading dashboard that ingests tens of thousands of market data messages per second, processes them in real-time, and broadcasts updates to a web frontend—without the latency spikes associated with traditional Java garbage collection.
 
 ## ⚡ The Core Technologies
 
-TradeStreamEE gets its speed by removing the middleman. We swapped out heavy, traditional methods (REST/JSON) for 'Mechanical Sympathy', an approach that respects the underlying hardware to squeeze out maximum efficiency.
+TradeStreamEE achieves high performance by combining four key technologies:
 
-### 1\. What is Binary Encoding?
+### Aeron (Transport)
 
-Computers do not natively understand text; they understand bits.
+Ultra-low latency messaging that bypasses the network stack when components run on the same machine. Data moves directly through shared memory instead of through kernel networking.
 
-* **Text Encoding (JSON/XML):** Easy for humans (`{"price": 100}`), but expensive for computers. The CPU must parse every character, handle whitespace, and convert strings to numbers. This burns CPU cycles and creates massive amounts of temporary memory "garbage."
-* **Binary Encoding:** Stores data exactly as the machine represents it in memory (e.g., `100` is stored as 4 raw bytes). No parsing is required. This results in **deterministic latency** and significantly reduced CPU usage.
+### SBE (Serialization)
 
-### 2\. Aeron (The Transport)
+Simple Binary Encoding - the financial industry standard for high-frequency trading. Encodes data as compact binary rather than human-readable text, eliminating parsing overhead and reducing memory allocation.
 
-[Aeron](https://aeron.io/) is a peer-to-peer, broker-less transport protocol designed for **ultra-low latency** applications.
+### Payara Micro (Jakarta EE Runtime)
 
-* **Broker-Less:** There is no central server "middleman." The Publisher sends data directly to the Subscriber's memory address.
-* **IPC (Inter-Process Communication):** When components run on the same machine (like in this demo), Aeron bypasses the network stack entirely, writing data directly to shared memory (RAM).
+A cloud-native Jakarta EE 11 application server that provides Jakarta CDI for dependency injection, Jakarta WebSocket for real-time browser communication, and Jakarta REST for REST endpoints. Lightweight (~100MB) and fast-starting.
 
-### 3\. SBE (Simple Binary Encoding)
+### Azul Platform Prime (Runtime)
 
-[SBE](https://github.com/real-logic/simple-binary-encoding) is the standard for high-frequency financial trading (FIX SBE). It serves as the **Presentation Layer**, defining how business data (Trades, Quotes) is structured inside the Aeron buffers.
+A JVM with the C4 garbage collector that performs cleanup concurrently with application execution, avoiding the "stop-the-world" pauses that cause latency spikes in traditional JVMs.
 
-#### **How SBE Works**
-
-Unlike JSON, where you just write data, SBE is **Schema-Driven**. This ensures strict structure and maximum speed.
-
-1. **Define the Schema (`market-data.xml`):** You define your messages in XML. This acts as the contract between Publisher and Subscriber.
-
-   ```xml
-   <sbe:message name="Trade" id="1">
-       <field name="price" id="1" type="int64"/>
-       <field name="quantity" id="2" type="int64"/>
-   </sbe:message>
-   ```
-2. **Generate Code:** During the build process (`mvn generate-sources`), the **SbeTool** reads the XML and generates Java classes (Encoders and Decoders).
-3. **Zero-Copy Encoding/Decoding:**
-   * **The Flyweight Pattern:** The generated Java classes are "Flyweights." They do not hold data themselves. Instead, they act as a "window" over the raw byte buffer.
-   * **No Allocation:** When we read a Trade message, **we do not create a `Trade` object**. We simply move the "window" to the correct position in memory and read the `long` value for price. This generates **zero garbage** for the Garbage Collector to clean up.
+**How they work together:** Payara Micro manages the Aeron publisher/subscriber lifecycle via CDI. The publisher encodes market data into binary using SBE, sends it through Aeron's shared memory transport, and the subscriber decodes it without allocating Java objects. This minimal garbage generation lets C4's concurrent collection easily handle the cleanup, maintaining flat latency even at high throughput.
 
 ## 🚀 The Rationale: Why This Project Exists
 
@@ -54,10 +37,72 @@ Standard JVMs (using G1GC or ParallelGC) often "hiccup" under high load, causing
 
 ### The "A/B" Comparison
 
-This project includes built-in tools to benchmark "The Old Way" vs. "The New Way":
+This project enables side-by-side JVM comparison with identical architectural choices:
 
-* **Scenario A (Baseline):** Standard OpenJDK + Naive String Processing.
-* **Scenario B (Optimized):** Azul Platform Prime + Aeron IPC + Zero-Copy SBE.
+* **Both clusters** use **AERON IPC + Zero-Copy SBE** by default (optimized architecture)
+* **Both clusters** can optionally run **DIRECT mode** (naive string processing) via `TRADER_INGESTION_MODE` flag
+* **The key difference** is the JVM: Azul C4 (pauseless) vs Standard G1GC (stop-the-world)
+
+This isolates the GC as the variable, letting you see how the same application behaves under different garbage collectors.
+
+## 🚦 Quick Start
+
+### Primary Use Case: Side-by-Side JVM Comparison
+
+**Why this matters:** Most benchmarking tools run tests serially, start JVM A, test, shut down, start JVM B, test, then manually compare spreadsheets. That's not how real systems behave.
+
+TradeStreamEE deploys both JVMs simultaneously, enabling you to see real-time behavior differences under identical conditions.
+
+**The key point:** Both clusters run the **exact same WAR file**, same code, same configuration, same workload. The **only difference** is the JVM. This isolates the garbage collector as the sole variable, making the comparison fair and meaningful.
+
+```bash
+./start-comparison.sh all
+```
+
+**What this does:**
+
+1. Builds and deploys **Azul C4 cluster** (3 instances, ports 8080-8083)
+2. Builds and deploys **G1GC cluster** (3 instances, ports 9080-9083)
+3. Starts **Prometheus** for metrics collection
+4. Starts **Grafana** with pre-configured JVM comparison dashboards
+5. Starts **Loki/Promtail** for centralized logging
+
+**Then open both URLs in separate browser tabs:**
+
+- **C4 Cluster:** http://localhost:8080/trader-stream-ee/
+- **G1 Cluster:** http://localhost:9080/trader-stream-ee/
+
+**Watch the "GC Pause Time (Live)" chart** to see the difference:
+
+| Metric                   | Azul C4            | G1GC              | What You'll See                                                   |
+|:-------------------------|:-------------------|:------------------|:------------------------------------------------------------------|
+| **GC Pause Time (Live)** | Flatline           | Spikes            | C4 maintains consistent latency; G1GC shows stop-the-world pauses |
+| **Heap Usage**           | Smooth oscillation | Sawtooth patterns | Different collection strategies visualized in real-time           |
+| **Under Load**           | Barely moves       | Jitter increases  | Apply stress via UI and watch the gap widen                       |
+
+**Other options:**
+
+- `./start-comparison.sh` - Clusters only, no monitoring stack (faster for rapid development)
+- `./stop-comparison.sh` - Stop all comparison services
+
+---
+
+### Single-JVM Testing (start.sh)
+
+Use `./start.sh` for testing individual configurations or architectural modes. This runs ONE JVM at a time for focused testing.
+
+| Scenario                 | Command                      | JVM                 | Architecture      | Purpose                                                          |
+|:-------------------------|:-----------------------------|:--------------------|:------------------|:-----------------------------------------------------------------|
+| Modern Stack             | `./start.sh azul-aeron`      | Azul Prime (C4)     | Aeron (Optimized) | Peak performance with pauseless GC + zero-copy transport         |
+| Legacy Baseline          | `./start.sh standard-direct` | Standard JDK (G1GC) | Direct (Heavy)    | Baseline: high allocation on G1GC, expect jitter                 |
+| Fixing Legacy Code       | `./start.sh azul-direct`     | Azul Prime (C4)     | Direct (Heavy)    | Show how C4 stabilizes high-allocation apps without code changes |
+| Optimizing Standard Java | `./start.sh standard-aeron`  | Standard JDK (G1GC) | Aeron (Optimized) | Test if architectural optimization helps G1GC performance        |
+
+**Utilities:**
+
+- `./start.sh logs` - View live logs
+- `./start.sh stop` - Stop containers
+- `./start.sh clean` - Deep clean (remove volumes/images)
 
 ## 🏗️ Technical Architecture
 
@@ -89,113 +134,70 @@ The application implements a **Hybrid Architecture**:
 
 ## 🔍 Understanding the Modes
 
-This demo allows you to switch between two distinct ingestion pipelines to visualize the impact of architectural choices on JVM performance.
+This demo supports two ingestion architectures that you can use with **either JVM**. Set the `TRADER_INGESTION_MODE` environment variable (`AERON` or `DIRECT`) to switch between them.
+
+**Important:** Both Azul C4 and G1GC clusters can run either mode. This lets you test whether architectural optimization (AERON) helps G1GC performance, or how C4 handles high-allocation legacy code (DIRECT).
+
+```mermaid
+graph TD
+    subgraph DIRECT["DIRECT Mode (High Allocation)"]
+        D1[Publisher] --> D2["JSON + 1KB padding"]
+        D2 --> D3[Broadcaster]
+        D3 --> D4["WebSocket → Browser"]
+    end
+
+    subgraph AERON["AERON Mode (Zero-Copy, Default)"]
+        A1[Publisher] --> A2["SBE Binary"]
+        A2 --> A3["Aeron IPC"]
+        A3 --> A4["Fragment Handler"]
+        A4 --> A5[Broadcaster]
+        A5 --> A6["WebSocket → Browser"]
+    end
+
+    classDef heavy fill:#dc3545,stroke:#c82333,stroke-width:2px,color:#fff
+    classDef optimized fill:#28a745,stroke:#218838,stroke-width:2px,color:#fff
+
+    class D1,D2,D3,D4 heavy
+    class A1,A2,A3,A4,A5,A6 optimized
+```
 
 ### 1\. DIRECT Mode (The "Heavy" Path)
 
 **Goal:** Simulate a standard, naive enterprise application with high object allocation rates.
-**Runtime:** Standard OpenJDK (Eclipse Temurin 21) with G1GC.
+**Use for:** Stress-testing GC behavior under high allocation pressure.
 
-**Data Flow:**
+**How it works:**
 
-```mermaid
-graph TD
-    classDef purple fill:#667eea,stroke:#4a5be7,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef red fill:#dc3545,stroke:#c82333,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef lightgray fill:#f8f9fa,stroke:#ced4da,stroke-width:1px,color:#333333;
-    classDef darkgray fill:#6c757d,stroke:#5a6268,stroke-width:1px,color:#ffffff;
-
-    A[Publisher]:::purple -->|Generates POJOs| B(JSON Builder):::lightgray
-    B -->|Large String Allocation| C(Heavy JSON):::red
-    C -->|Direct Method Call| D[Broadcaster]:::purple
-    D -->|WebSocket Payload > 1KB| E[Browser]:::darkgray
-
-    linkStyle 0 stroke:#667eea,stroke-width:2px;
-    linkStyle 1 stroke:#dc3545,stroke-width:2px;
-    linkStyle 2 stroke:#667eea,stroke-width:2px;
-    linkStyle 3 stroke:#764ba2,stroke-width:2px;
-```
-
-1. **Publisher:** Generates synthetic market data as standard Java Objects.
-2. **Allocation:** Immediately converts data to a JSON `String` using `StringBuilder` (high allocation).
-3. **Artificial Load:** Wraps the JSON in a large "envelope" with 1KB of padding to stress the Garbage Collector.
-4. **Transport:** Direct method call to `MarketDataBroadcaster`.
-5. **WebSocket:** Pushes the heavy JSON string to the browser.
-6. **Browser:** Unwraps the payload and renders the chart.
+1. **Publisher** generates synthetic market data as POJOs
+2. **Allocation** converts data to JSON `String` using `StringBuilder` (high allocation)
+3. **Artificial Load** wraps JSON in 1KB padding to stress the Garbage Collector
+4. **Transport** via direct method call to `MarketDataBroadcaster`
+5. **WebSocket** pushes heavy JSON to browser
 
 **Performance Characteristics:**
 
-* **High Allocation Rate:** Gigabytes of temporary String objects created per second.
-* **GC Pressure:** Frequent "Stop-the-World" pauses from G1GC lead to "jitter" in the UI charts.
+- **High Allocation:** Gigabytes of temporary String objects per second
+- **GC Pressure:** Frequent pauses on G1GC; C4 handles it better but still creates work
 
-### 2\. AERON Mode (The "Optimized" Path)
+### 2\. AERON Mode (The "Optimized" Path, Default)
 
-**Goal:** Simulate a low-latency financial pipeline using off-heap memory and zero-copy semantics.
-**Runtime:** Azul Platform Prime (Zulu Prime 21) with C4 Pauseless GC.
+**Goal:** Low-latency financial pipeline using off-heap memory and zero-copy semantics.
+**Use for:** Production-grade performance with minimal GC impact.
 
-**Data Flow:**
+**How it works:**
 
-```mermaid
-graph TD
-    classDef green fill:#28a745,stroke:#218838,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef blue fill:#007bff,stroke:#0069d9,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef purple fill:#667eea,stroke:#4a5be7,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef darkgray fill:#6c757d,stroke:#5a6268,stroke-width:1px,color:#ffffff;
-
-    A[Publisher]:::purple -->|Generates POJOs| B(SBE Encoder):::green
-    B -->|Binary IPC| C{Aeron Ring Buffer}:::blue
-    C -->|Shared Memory| D(Fragment Handler):::green
-    D -->|Decode & JSON| E[Broadcaster]:::purple
-    E -->|WebSocket Payload| F[Browser]:::darkgray
-
-    linkStyle 0 stroke:#667eea,stroke-width:2px;
-    linkStyle 1 stroke:#28a745,stroke-width:2px;
-    linkStyle 2 stroke:#007bff,stroke-width:2px;
-    linkStyle 3 stroke:#28a745,stroke-width:2px;
-    linkStyle 4 stroke:#667eea,stroke-width:2px;
-```
-
-1. **Publisher:** Generates synthetic market data.
-2. **Encoding:** Encodes data into a compact binary format using **SBE**.
-   * *Zero-Copy:* Writes directly to an off-heap direct buffer.
-3. **Transport (Aeron):** Publishes the binary message to the **Aeron IPC** ring buffer.
-   * *Kernel Bypass:* Data moves via shared memory, avoiding the OS network stack.
-4. **Subscriber (Fragment Handler):** Reads the binary message using SBE "Flyweights" (reusable view objects).
-   * *Zero-Allocation:* No new Java objects are created during decoding.
-5. **Transformation:** Converts the binary data to a compact, flat JSON string (minimal allocation).
-6. **WebSocket:** Pushes the lightweight JSON to the browser.
+1. **Publisher** generates synthetic market data
+2. **SBE Encoder** writes binary format to off-heap direct buffer (zero-copy)
+3. **Aeron IPC** publishes to shared memory ring buffer (kernel bypass)
+4. **Fragment Handler** reads using SBE "Flyweights" (reusable views, no allocation)
+5. **Transformation** converts to compact JSON for WebSocket
+6. **WebSocket** pushes lightweight JSON to browser
 
 **Performance Characteristics:**
 
-* **Low Allocation:** Almost no garbage generated in the ingestion hot-path.
-* **Pauseless:** Azul C4 collector handles the WebSocket strings concurrently, maintaining a flat latency profile.
-* **High Throughput:** Aeron IPC handles millions of messages/sec with sub-microsecond latency.
-
-## 🚦 Quick Start: The Comparison Matrix
-
-The `start.sh` script provides commands to run the TradeStreamEE application in various configurations, allowing for a comprehensive comparison of JVM and architectural performance.
-
-| Scenario                        | Command                      | JVM                 | Ingestion Architecture | Goal                                                                  |
-|:--------------------------------|:-----------------------------|:--------------------|:-----------------------|:----------------------------------------------------------------------|
-| **1. Modern Stack**             | `./start.sh azul-aeron`      | Azul Prime (C4)     | Aeron (Optimized)      | Demonstrate peak performance: Pauseless GC + Zero-Copy Transport.     |
-| **2. Legacy Baseline**          | `./start.sh standard-direct` | Standard JDK (G1GC) | Direct (Heavy)         | Establish the baseline: High allocation on G1GC. Expect jitter.       |
-| **3. Fixing Legacy Code**       | `./start.sh azul-direct`     | Azul Prime (C4)     | Direct (Heavy)         | Show how C4 can stabilize a high-allocation app without code changes. |
-| **4. Optimizing Standard Java** | `./start.sh standard-aeron`  | Standard JDK (G1GC) | Aeron (Optimized)      | See if architectural optimization helps G1GC performance.             |
-
-### Observability Commands
-
-* `./start-comparison.sh` - Deploy complete JVM comparison stack (recommended)
-* `./stop-comparison.sh` - Stop all comparison services
-* `docker-compose -f docker-compose-monitoring.yml up -d` - Start monitoring stack only
-* `docker-compose -f docker-compose-c4.yml up -d` - Start C4 cluster only
-* `docker-compose -f docker-compose-g1.yml up -d` - Start G1GC cluster only
-* `docker-compose -f docker-compose-monitoring.yml ps` - Check monitoring status
-
-### Utilities
-
-* `./start.sh logs` - View live logs
-* `./start.sh stop` - Stop containers
-* `./start.sh clean` - Deep clean (remove volumes/images)
+- **Low Allocation:** Almost no garbage in the ingestion hot-path
+- **High Throughput:** Aeron IPC handles millions of messages/sec with sub-microsecond latency
+- **Both JVMs benefit** from reduced allocation, but C4 maintains flat latency profile
 
 ## ⚙️ Configuration & Tuning
 
@@ -210,30 +212,31 @@ Controls how data moves from the Publisher to the Processor.
 
 ### JVM Tuning & Configuration
 
-The Docker configurations are optimized with enhanced settings for performance testing:
+Heap size varies by deployment type:
 
-**Azul Prime (C4) Configuration:**
+| Deployment                            | Dockerfiles                                     | Heap Size | Reason                                                  |
+|:--------------------------------------|:------------------------------------------------|:----------|:--------------------------------------------------------|
+| **Single Instance** (`start.sh`)      | `Dockerfile`, `Dockerfile.standard`             | 8GB       | Full heap for maximum throughput                        |
+| **Clustered** (`start-comparison.sh`) | `Dockerfile.scale`, `Dockerfile.scale.standard` | 4GB       | Balanced for 3-instance deployments (~12GB per cluster) |
+
+**Common JVM options:**
 
 ```dockerfile
+# Azul Prime (C4) - 8GB single instance example
 ENV JAVA_OPTS="-Xms8g -Xmx8g -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
+
+# Standard JDK (G1GC) - 4GB cluster example
+ENV JAVA_OPTS="-Xms4g -Xmx4g -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
 ```
 
-**Standard JDK (G1GC) Configuration:**
+**Infrastructure improvements:**
 
-```dockerfile
-ENV JAVA_OPTS="-Xms8g -Xmx8g -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
-```
+- **Pre-touch Memory** (`-XX:+AlwaysPreTouch`): Pre-allocates heap pages to eliminate runtime allocation overhead
+- **Transparent Huge Pages** (`-XX:+UseTransparentHugePages`): Reduces TLB misses for large memory operations
+- **GC Logging**: Detailed event logging with decorators for analysis
+- **Rate-Limited Logging**: Prevents log flooding during high-throughput operations
 
-**Infrastructure Improvements:**
-
-* **8GB Heap Size**: Increased from 2GB to 8GB to handle extreme memory pressure testing
-* **Pre-touch Memory** (`-XX:+AlwaysPreTouch`): Pre-allocates heap pages to eliminate runtime allocation overhead
-* **Transparent Huge Pages** (`-XX:+UseTransparentHugePages`): Reduces TLB misses for large memory operations
-* **Enhanced GC Logging**: Detailed GC event logging with decorators for comprehensive analysis
-* **Rate-Limited Logging**: Prevents log flooding during high-throughput operations
-* **Maven Wrapper**: Ensures consistent build environments across platforms
-
-**Note:** We purposefully **do not** use `-XX:+UseZGC` in the Azul Prime image, as C4 is the native, optimized collector for Azul Platform Prime.
+**Note:** Azul Platform Prime uses C4 by default; we don't specify `-XX:+UseZGC` since C4 is the native, optimized collector for Azul Prime.
 
 ### GC Monitoring & Stress Testing
 
@@ -253,6 +256,7 @@ The application includes comprehensive GC monitoring and memory pressure testing
 **MemoryPressureService** provides controlled memory allocation to stress test GC performance:
 
 **Allocation Modes:**
+
 * **OFF**: No additional allocation
 * **LOW**: 1 MB/sec - Light pressure
 * **MEDIUM**: 10 MB/sec - Moderate pressure
@@ -260,6 +264,7 @@ The application includes comprehensive GC monitoring and memory pressure testing
 * **EXTREME**: 2 GB/sec - Extreme pressure
 
 Each mode allocates byte arrays in a background thread to create realistic memory pressure, allowing observation of:
+
 * C4's concurrent collection vs G1GC's "stop-the-world" pauses
 * Latency impact under increasing memory pressure
 * Throughput degradation patterns
@@ -267,6 +272,7 @@ Each mode allocates byte arrays in a background thread to create realistic memor
 #### GC Challenge Mode
 
 The web UI includes **GC Challenge Mode** controls that allow:
+
 * Real-time switching between allocation modes
 * Visual feedback showing current stress level
 * Side-by-side pause time visualization
@@ -276,200 +282,36 @@ This feature enables live demonstration of how Azul C4 maintains low pause times
 
 ## 📊 Monitoring & Observability
 
-TradeStreamEE includes comprehensive monitoring infrastructure to compare JVM performance between Azul C4 and standard G1GC configurations.
+When running `./start-comparison.sh all`, the following monitoring stack is deployed:
 
-### Monitoring Stack
+| Component             | Access                              | Purpose                       |
+|:----------------------|:------------------------------------|:------------------------------|
+| **Grafana Dashboard** | http://localhost:3000 (admin/admin) | JVM comparison dashboards     |
+| **Prometheus**        | http://localhost:9090               | Metrics collection            |
+| **Loki**              | http://localhost:3100               | Log aggregation               |
+| **C4 Application**    | http://localhost:8080 (Traefik LB)  | Azul C4 cluster (3 instances) |
+| **G1 Application**    | http://localhost:9080 (Traefik LB)  | G1GC cluster (3 instances)    |
 
-| Component              | Technology                | Purpose                         | Access                                                 |
-|:-----------------------|:--------------------------|:--------------------------------|:-------------------------------------------------------|
-| **Metrics Collection** | Prometheus + JMX Exporter | JVM GC metrics, memory, threads | http://localhost:9090                                  |
-| **Visualization**      | Grafana                   | Performance dashboards          | http://localhost:3000 (admin/admin)                    |
-| **Log Aggregation**    | Loki + Promtail           | Centralized log management      | http://localhost:3100                                  |
-| **Load Balancing**     | Traefik                   | Traffic distribution + metrics  | http://localhost:8080 (C4), http://localhost:9080 (G1) |
+**Direct instance access:**
 
-### JVM Comparison Dashboard
+- C4 instances: http://localhost:8081, http://localhost:8082, http://localhost:8083
+- G1 instances: http://localhost:9081, http://localhost:9082, http://localhost:9083
 
-The pre-configured Grafana dashboard provides:
+### Stress Testing
 
-* **GC Pause Time Comparison** - P99 latency comparison between C4 and G1GC
-* **GC Collection Count Rate** - Collection frequency analysis
-* **Heap Memory Usage** - Real-time memory utilization
-* **Thread Count** - Concurrent thread monitoring
-* **GC Pause Distribution** - Heatmap showing pause time patterns
-* **Performance Summary** - Key metrics with threshold alerts
-
-### Starting the Observability Stack
-
-#### Option 1: Automated Setup (Recommended)
-
-Use the provided `start-comparison.sh` script for complete automated deployment:
+Use the UI or API to apply memory pressure and observe GC behavior differences:
 
 ```bash
-# Deploy entire JVM comparison stack
-./start-comparison.sh
-```
-
-This script automatically:
-* Creates the monitoring directory structure
-* Downloads the JMX Prometheus exporter
-* Builds the application and Docker images
-* Creates required Docker networks
-* Starts the complete monitoring stack (Prometheus, Grafana, Loki)
-* Deploys both C4 and G1GC clusters with load balancers
-
-#### Option 2: Manual Setup
-
-For granular control, start components manually:
-
-```bash
-# Create required networks
-docker network create trader-network
-docker network create monitoring
-
-# Start monitoring infrastructure
-docker-compose -f docker-compose-monitoring.yml up -d
-
-# Start C4 cluster (Azul Prime)
-docker-compose -f docker-compose-c4.yml up -d
-
-# Start G1 cluster (Eclipse Temurin)
-docker-compose -f docker-compose-g1.yml up -d
-
-# View monitoring stack status
-docker-compose -f docker-compose-monitoring.yml ps
-```
-
-#### Stopping the Comparison
-
-Use the provided stop script:
-
-```bash
-# Stop all comparison services
-./stop-comparison.sh
-
-# Stop all comparison services and remove volumes
-./stop-comparison.sh --prune
-```
-
-### Access Points
-
-After starting the observability stack:
-
-* **Grafana Dashboard**: http://localhost:3000 (admin/admin)
-* **C4 Application**: http://localhost:8080 (via Traefik load balancer)
-* **G1 Application**: http://localhost:9080 (via Traefik load balancer)
-* **Prometheus**: http://localhost:9090
-* **Individual C4 instances**: http://localhost:8081, http://localhost:8082, http://localhost:8083
-* **Individual G1 instances**: http://localhost:9081, http://localhost:9082, http://localhost:9083
-
-### Monitoring Configuration
-
-#### JMX Exporter
-
-Each JVM instance runs a JMX exporter agent that exposes:
-* Garbage collection metrics (pause times, collection counts)
-* Memory pool usage (heap/non-heap)
-* Thread information
-* Custom application metrics
-
-#### Prometheus Configuration
-
-The Prometheus setup (`monitoring/prometheus/prometheus.yml`) scrapes:
-* JMX metrics from all JVM instances (ports 9010-9022)
-* Traefik metrics for load balancer performance
-* Self-monitoring metrics
-
-#### Log Collection
-
-Promtail automatically collects and ships container logs to Loki, enabling:
-* Log-based troubleshooting
-* Correlation of performance issues with application events
-* JVM type and instance label-based filtering
-
-### Stress Testing the Comparison
-
-After deploying the observability stack, you can stress test both JVM configurations to observe the performance differences:
-
-#### Memory Pressure API Endpoints
-
-```bash
-# Set allocation mode for memory pressure testing
+# Apply extreme memory pressure via API
 curl -X POST http://localhost:8080/api/pressure/mode/EXTREME    # C4 cluster
 curl -X POST http://localhost:9080/api/pressure/mode/EXTREME    # G1GC cluster
-
-# Available modes: OFF, LOW, MEDIUM, HIGH, EXTREME
 
 # Get current GC statistics
 curl http://localhost:8080/api/gc/stats
 curl http://localhost:9080/api/gc/stats
 
-# Reset GC statistics
-curl -X POST http://localhost:8080/api/gc/reset
-curl -X POST http://localhost:9080/api/gc/reset
-```
-
-#### UI-Based Testing
-
-The web interface provides interactive controls:
-
-* **GC Challenge Mode Panel**: Select allocation modes with visual buttons
-* **Real-time Pause Time Chart**: Shows GC pauses as they occur
-* **Backend Message Rate Display**: Monitor throughput impact
-* **Visual Feedback**: Immediate color-coded response to mode changes
-
-#### Expected Results
-
-The stress tests will:
-1. Generate controlled allocation rates (1 MB to 2 GB per second)
-2. Create realistic memory pressure scenarios
-3. Allow real-time comparison of pause times between C4 and G1GC
-4. Demonstrate C4's concurrent collection vs G1GC's "stop-the-world" pauses
-5. Show latency impact and throughput degradation patterns
-6. Visualize the "pauseless" characteristics of C4 under extreme load
-
-**Sample GC Stats Response:**
-
-```json
-{
-  "gcName": "C4",
-  "collectionCount": 1543,
-  "collectionTime": 8934,
-  "lastPauseDuration": 0.5,
-  "percentiles": {
-    "p50": 0.3,
-    "p95": 1.2,
-    "p99": 2.8,
-    "p999": 5.6,
-    "max": 12.4
-  },
-  "totalMemory": 8589934592,
-  "usedMemory": 3221225472,
-  "freeMemory": 5368709120
-}
-```
-
-## 📊 Application Metrics
-
-The application exposes a lightweight REST endpoint for health checks and internal metrics.
-
-**Check Status:**
-
-```bash
-./start.sh status
-```
-
-**Sample Output:**
-
-```json
-{
-  "application": "TradeStreamEE",
-  "subscriber": "Channel: aeron:ipc, Stream: 1001, Running: true",
-  "publisher": { "messagesPublished": 1543021 },
-  "runtime": {
-    "gcType": "GPGC",
-    "freeMemory": "1450 MB"
-  }
-}
+# Available modes: OFF, LOW, MEDIUM, HIGH, EXTREME
+# Allocation rates: 0 MB/s, 1 MB/s, 10 MB/s, 500 MB/s, 2 GB/s
 ```
 
 ## 📂 Project Structure
@@ -526,12 +368,14 @@ Dockerfile.scale.standard      # Build for G1GC instances
 ### Current Test Coverage
 
 **✅ Working Tests (160/160 passing):**
+
 - **Monitoring & GC**: Full coverage of SLA monitoring logic and GC notification handling.
 - **REST Resources**: Comprehensive tests for Memory Pressure and GC Stats endpoints.
 - **Core Logic**: Validated `AllocationMode` and concurrency configurations.
 - **WebSockets**: Verified `MarketDataBroadcaster` functionality and session management.
 
 **📊 Coverage Metrics:**
+
 - **Tests**: 160 unit tests with 100% pass rate
 - **Monitoring Coverage**: >90% (SLAMonitor, GCStatsService)
 - **REST API Coverage**: >85% (Resources and DTOs)
