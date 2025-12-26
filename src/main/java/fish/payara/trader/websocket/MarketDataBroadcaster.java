@@ -50,7 +50,6 @@ public class MarketDataBroadcaster {
         clusterTopic = hazelcastInstance.getTopic(TOPIC_NAME);
         clusterTopic.addMessageListener(
             message -> {
-              // Broadcast to local WebSocket sessions only
               broadcastLocal(message.getMessageObject());
             });
         LOGGER.info("Subscribed to Hazelcast topic: " + TOPIC_NAME + " (clustered mode)");
@@ -69,7 +68,6 @@ public class MarketDataBroadcaster {
     LOGGER.info("WebSocket session added. Total sessions: " + sessions.size());
   }
 
-  /** Unregister a WebSocket session */
   public void removeSession(Session session) {
     sessions.remove(session);
     LOGGER.info("WebSocket session removed. Total sessions: " + sessions.size());
@@ -88,7 +86,6 @@ public class MarketDataBroadcaster {
    */
   public void broadcast(String jsonMessage) {
     if (clusterTopic != null) {
-      // Publish to cluster-wide topic
       try {
         clusterTopic.publish(jsonMessage);
       } catch (Exception e) {
@@ -99,7 +96,6 @@ public class MarketDataBroadcaster {
         broadcastLocal(jsonMessage);
       }
     } else {
-      // Standalone mode - broadcast locally only
       broadcastLocal(jsonMessage);
     }
   }
@@ -145,7 +141,6 @@ public class MarketDataBroadcaster {
    * a heavier protocol or inefficient data packaging.
    */
   public void broadcastWithArtificialLoad(String jsonMessage) {
-    // Generate 1KB of padding to increase payload size and allocation
     String padding = "X".repeat(1024);
 
     // Wrap the original message in a new JSON structure

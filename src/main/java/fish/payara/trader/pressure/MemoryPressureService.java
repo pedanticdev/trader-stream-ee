@@ -30,9 +30,8 @@ public class MemoryPressureService {
   private long totalBytesAllocated = 0;
   private long lastStatsTime = System.currentTimeMillis();
 
-  // Long-lived objects that survive to tenured/old generation
   private final List<byte[]> tenuredObjects = new CopyOnWriteArrayList<>();
-  private static final int TENURED_TARGET_MB = 1024; // Target 1GB in old gen
+  private static final int TENURED_TARGET_MB = 1024;
   private final AtomicLong tenuredBytesAllocated = new AtomicLong(0);
 
   @Inject @VirtualThreadExecutor private ManagedExecutorService executorService;
@@ -78,13 +77,10 @@ public class MemoryPressureService {
                     break;
                   }
 
-                  // Generate garbage for this iteration
                   generateGarbage(mode);
 
-                  // Sleep 100ms between iterations (10 iterations/sec)
                   Thread.sleep(100);
 
-                  // Log stats every 5 seconds
                   logStats();
 
                 } catch (InterruptedException e) {
@@ -112,7 +108,6 @@ public class MemoryPressureService {
     int bytesPerAlloc = mode.getBytesPerAllocation();
 
     for (int i = 0; i < allocations; i++) {
-      // Mix different allocation patterns
       int pattern = i % 4;
 
       switch (pattern) {
@@ -130,14 +125,11 @@ public class MemoryPressureService {
           break;
       }
 
-      // NEW: Create long-lived objects inside the loop for higher impact
       if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
-        // 0.1% chance in EXTREME (20 objects/iteration = 200MB/s)
-        // 0.02% chance in HIGH (1 object/iteration = 10MB/s)
         int chance = (mode == AllocationMode.EXTREME) ? 10 : 2;
         if (ThreadLocalRandom.current().nextInt(10000) < chance) {
-          byte[] longLived = new byte[1024 * 1024]; // 1MB object
-          ThreadLocalRandom.current().nextBytes(longLived); // Prevent optimization
+          byte[] longLived = new byte[1024 * 1024];
+          ThreadLocalRandom.current().nextBytes(longLived);
           tenuredObjects.add(longLived);
           tenuredBytesAllocated.addAndGet(1024 * 1024);
         }
@@ -146,7 +138,6 @@ public class MemoryPressureService {
       totalBytesAllocated += bytesPerAlloc;
     }
 
-    // Maintain target size - remove oldest when limit reached
     if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
       while (tenuredBytesAllocated.get() > TENURED_TARGET_MB * 1024L * 1024L) {
         if (!tenuredObjects.isEmpty()) {
@@ -157,7 +148,6 @@ public class MemoryPressureService {
         }
       }
     } else if (mode == AllocationMode.OFF || mode == AllocationMode.LOW) {
-      // Clear tenured objects when stress is reduced
       if (!tenuredObjects.isEmpty()) {
         tenuredObjects.clear();
         tenuredBytesAllocated.set(0);
@@ -166,20 +156,16 @@ public class MemoryPressureService {
   }
 
   private void generateStringGarbage(int bytes) {
-    // Create strings via concatenation (generates intermediate garbage)
     StringBuilder sb = new StringBuilder(bytes);
     for (int i = 0; i < bytes / 10; i++) {
       sb.append("GARBAGE");
     }
     String garbage = sb.toString();
-    // String is now eligible for GC
   }
 
   private void generateByteArrayGarbage(int bytes) {
     byte[] garbage = new byte[bytes];
-    // Fill with random data to prevent compiler optimization
     ThreadLocalRandom.current().nextBytes(garbage);
-    // Array is now eligible for GC
   }
 
   private void generateObjectGarbage(int count) {
@@ -187,7 +173,6 @@ public class MemoryPressureService {
     for (int i = 0; i < count; i++) {
       garbage.add(new DummyObject(i, "data-" + i, System.nanoTime()));
     }
-    // List and objects are now eligible for GC
   }
 
   private void generateCollectionGarbage(int count) {
@@ -195,7 +180,6 @@ public class MemoryPressureService {
     for (int i = 0; i < count; i++) {
       garbage.add(ThreadLocalRandom.current().nextInt());
     }
-    // List is now eligible for GC
   }
 
   private void logStats() {
@@ -236,7 +220,6 @@ public class MemoryPressureService {
     return running;
   }
 
-  /** Dummy object for allocation testing */
   private static class DummyObject {
     private final int id;
     private final String data;

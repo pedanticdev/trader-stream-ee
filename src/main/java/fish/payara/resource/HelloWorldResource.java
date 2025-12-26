@@ -32,8 +32,8 @@ public class HelloWorldResource {
       })
   @Counted(name = "helloEndpointCount", description = "Count of calls to the hello endpoint")
   @Timed(name = "helloEndpointTime", description = "Time taken to execute the hello endpoint")
-  @Timeout(3000) // Timeout after 3 seconds
-  @Retry(maxRetries = 3) // Retry the request up to 3 times on failure
+  @Timeout(3000)
+  @Retry(maxRetries = 3)
   @Fallback(fallbackMethod = "fallbackMethod")
   public Response hello(
       @QueryParam("name")
@@ -50,7 +50,6 @@ public class HelloWorldResource {
   }
 
   public Response fallbackMethod(@QueryParam("name") String name) {
-    // Fallback logic when the hello method fails or exceeds retries
     return Response.ok("Fallback data").build();
   }
 }

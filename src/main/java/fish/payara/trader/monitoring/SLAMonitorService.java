@@ -10,21 +10,17 @@ public class SLAMonitorService {
 
   private static final Logger LOGGER = Logger.getLogger(SLAMonitorService.class.getName());
 
-  // SLA thresholds
   private static final long SLA_10MS = 10;
   private static final long SLA_50MS = 50;
   private static final long SLA_100MS = 100;
 
-  // Violation counters
   private final AtomicLong violationsOver10ms = new AtomicLong(0);
   private final AtomicLong violationsOver50ms = new AtomicLong(0);
   private final AtomicLong violationsOver100ms = new AtomicLong(0);
   private final AtomicLong totalOperations = new AtomicLong(0);
 
-  // Rolling window (last 5 minutes)
   private final ConcurrentHashMap<Long, Long> violationsByMinute = new ConcurrentHashMap<>();
 
-  /** Record an operation latency and check for SLA violations */
   public void recordOperation(long latencyMs) {
     totalOperations.incrementAndGet();
 
@@ -47,12 +43,10 @@ public class SLAMonitorService {
     long currentMinute = System.currentTimeMillis() / 60000;
     violationsByMinute.merge(currentMinute, 1L, Long::sum);
 
-    // Clean up old entries (> 5 minutes)
     long fiveMinutesAgo = currentMinute - 5;
     violationsByMinute.keySet().removeIf(minute -> minute < fiveMinutesAgo);
   }
 
-  /** Get SLA compliance statistics */
   public SLAStats getStats() {
     long total = totalOperations.get();
 
