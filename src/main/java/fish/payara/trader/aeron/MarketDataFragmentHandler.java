@@ -21,28 +21,23 @@ public class MarketDataFragmentHandler implements FragmentHandler {
 
   private static final Logger LOGGER = Logger.getLogger(MarketDataFragmentHandler.class.getName());
 
-  // SBE Message Header Decoder (reusable flyweight)
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
 
-  // SBE Message Decoders (reusable flyweights)
   private final TradeDecoder tradeDecoder = new TradeDecoder();
   private final QuoteDecoder quoteDecoder = new QuoteDecoder();
   private final MarketDepthDecoder marketDepthDecoder = new MarketDepthDecoder();
   private final OrderAckDecoder orderAckDecoder = new OrderAckDecoder();
   private final HeartbeatDecoder heartbeatDecoder = new HeartbeatDecoder();
 
-  // Statistics
   private long messagesProcessed = 0;
   private long messagesBroadcast = 0;
   private long lastLogTime = System.currentTimeMillis();
 
-  // Sampling: Only broadcast 1 in N messages to avoid overwhelming browser
   private static final int SAMPLE_RATE = 50;
   private long sampleCounter = 0;
 
   @Inject MarketDataBroadcaster broadcaster;
 
-  // Optimization: Reusable buffers to reduce allocation
   private final byte[] symbolBuffer = new byte[128];
   private final StringBuilder sb = new StringBuilder(1024);
 
@@ -105,14 +100,12 @@ public class MarketDataFragmentHandler implements FragmentHandler {
 
     tradeDecoder.wrap(buffer, offset, blockLength, version);
 
-    // Extract fields from SBE decoder
     final long timestamp = tradeDecoder.timestamp();
     final long tradeId = tradeDecoder.tradeId();
     final long price = tradeDecoder.price();
     final long quantity = tradeDecoder.quantity();
     final Side side = tradeDecoder.side();
 
-    // Extract variable-length symbol string using reusable buffer
     final int symbolLength = tradeDecoder.symbolLength();
     tradeDecoder.getSymbol(symbolBuffer, 0, symbolLength);
     final String symbol = new String(symbolBuffer, 0, symbolLength);
@@ -222,7 +215,6 @@ public class MarketDataFragmentHandler implements FragmentHandler {
     }
     sb.append("]");
 
-    // Must extract symbol after traversing groups in SBE for correct position in buffer
     final int symbolLength = marketDepthDecoder.symbolLength();
     marketDepthDecoder.getSymbol(symbolBuffer, 0, symbolLength);
     final String symbol = new String(symbolBuffer, 0, symbolLength);
@@ -232,7 +224,6 @@ public class MarketDataFragmentHandler implements FragmentHandler {
     broadcaster.broadcast(sb.toString());
   }
 
-  /** Process OrderAck message */
   private void processOrderAck(
       DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
     if (!shouldBroadcast) {
@@ -288,23 +279,20 @@ public class MarketDataFragmentHandler implements FragmentHandler {
     broadcaster.broadcast(sb.toString());
   }
 
-  /** Process Heartbeat message */
   private void processHeartbeat(DirectBuffer buffer, int offset, int blockLength, int version) {
     heartbeatDecoder.wrap(buffer, offset, blockLength, version);
 
     final long timestamp = heartbeatDecoder.timestamp();
     final long sequenceNumber = heartbeatDecoder.sequenceNumber();
 
-    // Log heartbeats but don't broadcast them
     if (LOGGER.isLoggable(Level.FINE)) {
       LOGGER.fine("Heartbeat: timestamp=" + timestamp + ", seq=" + sequenceNumber);
     }
   }
 
-  /** Log statistics periodically */
   private void logStatistics() {
     long now = System.currentTimeMillis();
-    if (now - lastLogTime > 5000) { // Log every 5 seconds
+    if (now - lastLogTime > 5000) {
       double elapsedSeconds = (now - lastLogTime) / 1000.0;
       LOGGER.info(
           String.format(

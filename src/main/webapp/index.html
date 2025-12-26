@@ -9,7 +9,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-
         :root {
             --bg-primary: #f8fafc;
             --bg-secondary: #ffffff;
@@ -30,7 +29,6 @@
             --card-bg: #1e293b;
         }
 
-
         * {
             margin: 0;
             padding: 0;
@@ -50,7 +48,6 @@
             max-width: 1600px;
             margin: 0 auto;
         }
-
 
         header {
             background: var(--bg-secondary);
@@ -95,7 +92,6 @@
             font-size: 0.95em;
             font-weight: 500;
         }
-
 
         .status-bar {
             background: var(--bg-secondary);
@@ -160,7 +156,6 @@
             }
         }
 
-
         .alert-warning {
             animation: flashWarning 1s ease-in-out infinite;
         }
@@ -200,7 +195,6 @@
         .stat-value.alert-critical {
             color: #ef4444;
         }
-
 
         .stats-panel {
             background: var(--bg-secondary);
@@ -246,7 +240,6 @@
 
         .stat-value.backend {
             color: #7c3aed;
-            /* Purple for backend stats */
         }
 
         .stat-label {
@@ -266,7 +259,6 @@
             border: 1px solid #90caf9;
         }
 
-
         .data-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -279,10 +271,227 @@
             }
         }
 
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 16px 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .subtitle {
+                font-size: 0.85em;
+            }
+
+            header > div:last-child {
+                flex-wrap: wrap;
+                width: 100%;
+                justify-content: flex-start;
+                gap: 8px;
+            }
+
+            header select,
+            header button,
+            header a {
+                flex: 1;
+                min-width: 100px;
+                padding: 8px 12px;
+                font-size: 0.85em;
+                text-align: center;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px 16px;
+            }
+
+            .status-item {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            #connectBtn {
+                width: 100%;
+            }
+
+            .stats-panel {
+                padding: 16px;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .stat-group {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 16px;
+                padding-right: 0;
+                gap: 16px;
+            }
+
+            .stat-group:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+            .stat-value {
+                font-size: 1.4em;
+                min-width: auto;
+            }
+
+            .stress-scenarios {
+                flex-direction: column;
+                padding: 12px 16px;
+                gap: 12px;
+            }
+
+            .scenario-buttons {
+                width: 100%;
+            }
+
+            .scenario-btn {
+                flex: 1;
+                min-width: 70px;
+                padding: 10px 12px;
+                font-size: 0.85em;
+            }
+
+            .gc-comparison-panel {
+                padding: 16px;
+            }
+
+            .gc-comparison-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .gc-comparison-header h2 {
+                font-size: 1.2em;
+            }
+
+            .jvm-info {
+                flex-wrap: wrap;
+                font-size: 0.85em;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .metric-card {
+                padding: 12px;
+            }
+
+            .metric-value {
+                font-size: 1.5em;
+            }
+
+            .gc-comparison-panel > div[style*="justify-content: space-between"] {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .gc-comparison-panel button {
+                width: 100%;
+            }
+
+            .card-header {
+                padding: 12px 16px;
+                font-size: 0.95em;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .card-body {
+                padding: 16px;
+                max-height: 300px;
+            }
+
+            .card-body.chart-body {
+                height: 250px;
+            }
+
+            .card-back {
+                padding: 20px;
+            }
+
+            .card-back h3 {
+                font-size: 1.2em;
+            }
+
+            .card-back p {
+                font-size: 0.9em;
+            }
+
+            .flip-hint {
+                display: none;
+            }
+
+            .message {
+                padding: 10px;
+                font-size: 0.75em;
+            }
+
+            button {
+                padding: 12px 16px;
+                font-size: 0.9em;
+                min-height: 44px;
+            }
+
+            .scenario-btn {
+                min-height: auto;
+            }
+
+            .chart-mode-label {
+                font-size: 0.75em;
+                padding: 3px 6px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .subtitle {
+                font-size: 0.8em;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metric-value {
+                font-size: 1.8em;
+            }
+
+            .stat-value {
+                font-size: 1.2em;
+            }
+
+            .card-body.chart-body {
+                height: 200px;
+            }
+        }
+
         .full-width {
             grid-column: 1 / -1;
         }
-
 
         .card-container {
             perspective: 1000px;
@@ -414,7 +623,6 @@
             height: 350px;
         }
 
-
         .message {
             padding: 14px;
             margin-bottom: 12px;
@@ -460,7 +668,6 @@
             color: #1976d2;
             font-weight: 700;
         }
-
 
         button {
             background: #1976d2;
@@ -510,7 +717,6 @@
             }
         }
 
-
         .chart-mode-label {
             background: rgba(255, 255, 255, 0.2);
             padding: 4px 10px;
@@ -519,7 +725,6 @@
             font-weight: 500;
             color: white;
         }
-
 
         .gc-comparison-panel {
             background: white;
@@ -570,7 +775,7 @@
 
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 24px;
         }
 
@@ -618,7 +823,6 @@
             color: #ef4444;
             font-weight: bold;
         }
-
 
         .stress-scenarios {
             margin-bottom: 16px;
@@ -673,1180 +877,1260 @@
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <div>
-                <h1>TradeStreamEE</h1>
-                <p class="subtitle">High-Frequency Trading Dashboard • Aeron + SBE + Payara Micro + Azul Platform Prime
-                </p>
-            </div>
-            <div style="display: flex; gap: 12px; align-items: center;">
-                <select id="pollingInterval" onchange="setPollingInterval(this.value)"
+<div class="container">
+    <header>
+        <div>
+            <h1>TradeStreamEE</h1>
+            <p class="subtitle">High-Frequency Trading Dashboard • Aeron + SBE + Payara Micro + Azul Platform Prime</p>
+            </p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <select id="pollingInterval" onchange="setPollingInterval(this.value)"
                     style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid #64748b; cursor: pointer; padding: 8px 12px; border-radius: 6px; font-family: inherit;">
-                    <option value="1000">Poll: 1s</option>
-                    <option value="2000" selected>Poll: 2s</option>
-                    <option value="5000">Poll: 5s</option>
-                    <option value="10000">Poll: 10s</option>
-                    <option value="30000">Poll: 30s</option>
-                </select>
-                <button onclick="toggleDarkMode()" class="nav-link"
+                <option value="1000">Poll: 1s</option>
+                <option value="2000" selected>Poll: 2s</option>
+                <option value="5000">Poll: 5s</option>
+                <option value="10000">Poll: 10s</option>
+                <option value="30000">Poll: 30s</option>
+            </select>
+            <button onclick="toggleDarkMode()" class="nav-link"
                     style="background: transparent; border: 1px solid #64748b; cursor: pointer; padding: 8px 16px;"
                     id="darkModeBtn">🌙 Dark</button>
-                <button onclick="exportStats('json')" class="nav-link"
+            <button onclick="exportStats('json')" class="nav-link"
                     style="background: transparent; border: 1px solid #3b82f6; cursor: pointer; padding: 8px 16px;">Export
-                    JSON</button>
-                <button onclick="exportStats('csv')" class="nav-link"
+                JSON</button>
+            <button onclick="exportStats('csv')" class="nav-link"
                     style="background: transparent; border: 1px solid #3b82f6; cursor: pointer; padding: 8px 16px;">Export
-                    CSV</button>
-                <a href="blog.html" class="nav-link">Read Blog</a>
-            </div>
-        </header>
-
-
-        <div class="stats-panel">
-            <div class="stats">
-                <div class="stat-group">
-                    <div class="stat">
-                        <div class="stat-value backend" id="backendRate">0</div>
-                        <div class="stat-label">Local Msg/sec</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value backend" id="backendTotal">0</div>
-                        <div class="stat-label">Local Total</div>
-                    </div>
-                </div>
-                <div class="stat-group">
-                    <div class="stat">
-                        <div class="stat-value backend" id="clusterTotal">0</div>
-                        <div class="stat-label">Cluster Total</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value backend" id="clusterRate">0</div>
-                        <div class="stat-label">Cluster Msg/sec</div>
-                    </div>
-                </div>
-                <div class="stat-group">
-                    <div class="stat">
-                        <div class="stat-value" id="messageRate">0</div>
-                        <div class="stat-label">UI Msg/sec</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value" id="messageCount">0</div>
-                        <div class="stat-label">UI Received</div>
-                    </div>
-                </div>
-            </div>
+                CSV</button>
+            <a href="blog.html" class="nav-link">Read Blog</a>
         </div>
+    </header>
 
-
-        <div class="status-bar">
-            <div class="status-item">
-                <div class="status-indicator" id="statusIndicator"></div>
-                <span id="statusText">Disconnected</span>
-                <div class="status-indicator" id="apiStatusIndicator" style="margin-left: 15px;"
-                    title="REST API Connection"></div>
-                <span id="lastUpdated" style="margin-left: 10px; font-size: 0.85em; color: #64748b;"></span>
-                <span id="modeDisplay" class="status-mode"></span>
-                <span id="instanceDisplay" class="status-mode"
-                    style="margin-left: 15px; color: #1976d2; font-weight: 600;"></span>
-            </div>
-            <button id="connectBtn" onclick="toggleConnection()">Connect</button>
-        </div>
-
-
-        <div class="stress-scenarios">
-            <h3 style="font-size: 1em; color: #64748b; font-weight: 600; text-transform: uppercase;">Demo Scenarios</h3>
-            <div class="scenario-buttons">
-                <button onclick="applyScenario('DEMO_BASELINE')" class="scenario-btn" id="btn-DEMO_BASELINE">
-                    📊 Baseline
-                    <span class="hint">No stress</span>
-                </button>
-
-                <button onclick="applyScenario('DEMO_NORMAL')" class="scenario-btn" id="btn-DEMO_NORMAL">
-                    📈 Normal
-                    <span class="hint">Light load</span>
-                </button>
-
-                <button onclick="applyScenario('DEMO_STRESS')" class="scenario-btn" id="btn-DEMO_STRESS">
-                    🔥 High Stress
-                    <span class="hint">Heavy + Burst</span>
-                </button>
-
-                <button onclick="applyScenario('DEMO_EXTREME')" class="scenario-btn" id="btn-DEMO_EXTREME">
-                    💥 Extreme
-                    <span class="hint">Max Pressure</span>
-                </button>
-            </div>
-        </div>
-
-
-        <div class="gc-comparison-panel">
-            <div class="gc-comparison-header">
-                <h2>GC Performance Comparison</h2>
-                <div class="jvm-info">
-                    <span class="label">Instance:</span>
-                    <span id="instance-name" class="value" style="font-weight: 700; color: #2563eb;">Unknown</span>
-                    <span class="label" style="margin-left: 20px;">JVM:</span>
-                    <span id="jvm-name" class="value" style="font-weight: 600;">Detecting...</span>
-                    <span id="gc-type" class="badge">--</span>
+    <div class="stats-panel">
+        <div class="stats">
+            <div class="stat-group">
+                <div class="stat">
+                    <div class="stat-value backend" id="backendRate">0</div>
+                    <div class="stat-label">Local Msg/sec</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value backend" id="backendTotal">0</div>
+                    <div class="stat-label">Local Total</div>
                 </div>
             </div>
-
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <h3>Pause Time P99</h3>
-                    <span id="pause-p99" class="metric-value">-</span>
-                    <span class="metric-unit">ms</span>
-                    <div id="pause-p99-status" style="margin-top: 8px; font-weight: 600; font-size: 0.9em;"></div>
-                    <div id="pause-sample-size" style="font-size: 0.75em; color: #888; margin-top: 4px;"></div>
+            <div class="stat-group">
+                <div class="stat">
+                    <div class="stat-value backend" id="clusterTotal">0</div>
+                    <div class="stat-label">Cluster Total</div>
                 </div>
-
-                <div class="metric-card">
-                    <h3>Pause Time Max</h3>
-                    <span id="pause-max" class="metric-value">-</span>
-                    <span class="metric-unit">ms</span>
-                    <div style="font-size: 0.75em; color: #888; margin-top: 4px;">All-time since startup</div>
-                </div>
-
-                <div class="metric-card">
-                    <h3>SLA Violations</h3>
-                    <span id="sla-violations" class="metric-value">-</span>
-                    <span class="metric-unit">pauses > 10ms</span>
-                    <div style="font-size: 0.75em; color: #888; margin-top: 4px;">Total since startup</div>
-                </div>
-
-                <div class="metric-card">
-                    <h3>Allocation Rate</h3>
-                    <span id="alloc-rate" class="metric-value">-</span>
-                    <span class="metric-unit">MB/sec</span>
+                <div class="stat">
+                    <div class="stat-value backend" id="clusterRate">0</div>
+                    <div class="stat-label">Cluster Msg/sec</div>
                 </div>
             </div>
-        </div>
-
-        <div class="data-grid">
-
-            <div class="card" onclick="flipCard(this)">
-                <div class="card-front">
-                    <div class="card-header">
-                        Hiccup Monitor
-                        <span class="chart-mode-label" id="chartModeLabel">Waiting...</span>
-                        <span class="flip-hint">Click to learn</span>
-                    </div>
-                    <div class="card-body" style="height: 200px; overflow: hidden;">
-                        <canvas id="hiccupChart"></canvas>
-                    </div>
+            <div class="stat-group">
+                <div class="stat">
+                    <div class="stat-value" id="messageRate">0</div>
+                    <div class="stat-label">UI Msg/sec</div>
                 </div>
-                <div class="card-back">
-                    <h3>Hiccup Monitor</h3>
-                    <p>Tracks inter-arrival time gaps between messages. Spikes indicate "Stop-the-World" GC pauses where
-                        the application freezes.</p>
-                    <p>With Azul C4's pauseless GC, you should see a flat line even at 100k+ msg/sec. Standard OpenJDK
-                        G1GC shows frequent spikes as it struggles to clean up heap.</p>
-                    <div class="tech-stack">
-                        <strong>Measured:</strong> Performance.now() delta between WebSocket messages
-                    </div>
-                </div>
-            </div>
-
-
-            <div class="card" onclick="flipCard(this)">
-                <div class="card-front">
-                    <div class="card-header">
-                        GC Statistics
-                        <span class="chart-mode-label" id="gcCollectorName">--</span>
-                        <span class="flip-hint">Click to learn</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="message">
-                            <div class="message-type">Collections</div>
-                            <div class="message-data">
-                                Total: <span class="highlight" id="gcCollectionCount">--</span><br>
-                                Delta: <span class="highlight" id="gcCollectionDelta">--</span>/sec
-                            </div>
-                        </div>
-                        <div class="message">
-                            <div class="message-type">Collection Time</div>
-                            <div class="message-data">
-                                Total: <span class="highlight" id="gcCollectionTime">--</span> ms<br>
-                                Avg: <span class="highlight" id="gcAvgTime">--</span> ms
-                            </div>
-                        </div>
-                        <div class="message">
-                            <div class="message-type">Heap Usage</div>
-                            <div class="message-data">
-                                <span class="highlight" id="heapUsed">--</span> / <span id="heapMax">--</span> MB<br>
-                                <span class="highlight" id="heapPercent">--</span>% utilized
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-back">
-                    <h3>GC Statistics</h3>
-                    <p>Real-time garbage collection metrics. Collection <strong>count</strong> matters less than
-                        <strong>pause duration</strong>.
-                    </p>
-                    <p><strong>G1GC:</strong> Fewer collections (48), but longer pauses (4ms avg). At 100k msg/sec, a
-                        4ms pause = 400 dropped messages.</p>
-                    <p><strong>Azul C4:</strong> More collections (500), but sub-millisecond pauses (0.1ms avg). Same
-                        load = only 10 dropped messages.</p>
-                    <p>C4 does work concurrently while G1GC batches cleanup into painful stops.</p>
-                    <div class="tech-stack">
-                        <strong>Source:</strong> /metrics endpoint (Prometheus format)<br>
-                        <strong>Key Metric:</strong> Avg pause time, not collection count
-                    </div>
-                </div>
-            </div>
-
-
-            <div class="card" onclick="flipCard(this)">
-                <div class="card-front">
-                    <div class="card-header">
-                        GC Challenge Mode
-                        <span class="chart-mode-label" id="pressureMode">OFF</span>
-                        <span class="flip-hint">Click to learn</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="message">
-                            <div class="message-type">Allocation Rate</div>
-                            <div class="message-data">
-                                <span class="highlight" id="pressureRate">0 MB/sec</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-                            <button onclick="event.stopPropagation(); setPressureMode('OFF')"
-                                style="flex: 1; background: #6c757d;">OFF</button>
-                            <button onclick="event.stopPropagation(); setPressureMode('LOW')"
-                                style="flex: 1; background: #28a745;">LOW</button>
-                            <button onclick="event.stopPropagation(); setPressureMode('MEDIUM')"
-                                style="flex: 1; background: #ffc107; color: #333;">MEDIUM</button>
-                            <button onclick="event.stopPropagation(); setPressureMode('HIGH')"
-                                style="flex: 1; background: #fd7e14;">HIGH</button>
-                            <button onclick="event.stopPropagation(); setPressureMode('EXTREME')"
-                                style="flex: 1; background: #dc3545;">EXTREME</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-back">
-                    <h3>GC Challenge Mode</h3>
-                    <p>Intentionally generates garbage to stress-test the GC under load. Watch how each collector
-                        responds.</p>
-                    <p><strong>Azul C4:</strong> Maintains low, consistent pause times even under EXTREME allocation
-                        pressure. Concurrent collection keeps up.</p>
-                    <p><strong>G1GC:</strong> Pause times spike as allocation rate increases. You'll see stuttering in
-                        message delivery and chart updates.</p>
-                    <p><strong>Rates:</strong> LOW=0.1MB/s, MEDIUM=0.5MB/s, HIGH=2MB/s, EXTREME=10MB/s</p>
-                    <div class="tech-stack">
-                        <strong>Technique:</strong> Mixed allocation patterns (Strings, arrays, objects,
-                        collections)<br>
-                        <strong>Inspired by:</strong> 1BRC stress testing
-                    </div>
-                </div>
-            </div>
-
-
-            <div class="card" onclick="flipCard(this)">
-                <div class="card-front">
-                    <div class="card-header">
-                        GC Pause Time (Live)
-                        <span class="chart-mode-label" id="gcPauseCollectorName">--</span>
-                        <span class="flip-hint">Click to learn</span>
-                    </div>
-                    <div class="card-body chart-body">
-                        <canvas id="gcPauseChart"></canvas>
-                    </div>
-                </div>
-                <div class="card-back">
-                    <h3>GC Pause Time Monitor</h3>
-                    <p>Real-time visualization of garbage collection pause times. Lower is better.</p>
-                    <p><strong>Azul C4 (Pauseless):</strong> Flat line near zero. Collections happen concurrently
-                        without stopping application threads.</p>
-                    <p><strong>G1GC (Stop-the-World):</strong> Visible spikes when GC pauses occur. Higher message rates
-                        = higher pause times.</p>
-                    <p>This chart demonstrates why C4 is ideal for latency-sensitive applications - predictable,
-                        consistent performance without pause spikes.</p>
-                    <div class="tech-stack">
-                        <strong>API:</strong> /api/gc/stats<br>
-                        <strong>Metric:</strong> Last pause duration (ms)<br>
-                        <strong>Update Rate:</strong> Every 3 seconds
-                    </div>
-                </div>
-            </div>
-
-
-            <div class="card full-width" style="margin-bottom: 20px;" onclick="flipCard(this)">
-                <div class="card-front">
-                    <div class="card-header">
-                        Real-Time Price Monitor (Live Feed)
-                        <span class="flip-hint">Click to learn</span>
-                    </div>
-                    <div class="card-body chart-body">
-                        <canvas id="priceChart"></canvas>
-                    </div>
-                </div>
-                <div class="card-back">
-                    <h3>Price Monitor</h3>
-                    <p>Displays the last 20 trade prices received via WebSocket. Updates in real-time as messages stream
-                        in.</p>
-                    <p>Watch for smooth, continuous updates with Aeron mode. Any stuttering indicates GC pauses blocking
-                        the ingestion pipeline.</p>
-                    <div class="tech-stack">
-                        <strong>Chart:</strong> Chart.js (Bar)<br>
-                        <strong>Updates:</strong> On each Trade message
-                    </div>
-                </div>
-            </div>
-
-
-            <div class="card" onclick="flipCard(this)">
-                <div class="card-front">
-                    <div class="card-header">Recent Trades</div>
-                    <div class="card-body" id="tradesContainer"></div>
-                </div>
-                <div class="card-back">
-                    <h3>Trade Messages</h3>
-                    <p>Shows the 5 most recent trade executions decoded from SBE binary format. Each trade includes
-                        timestamp, symbol, price, and quantity.</p>
-                    <div class="tech-stack">
-                        <strong>SBE Template:</strong> Trade (ID: 1)<br>
-                        <strong>Decoding:</strong> Zero-copy Flyweight pattern
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" onclick="flipCard(this)">
-                <div class="card-front">
-                    <div class="card-header">Market Quotes</div>
-                    <div class="card-body" id="quotesContainer"></div>
-                </div>
-                <div class="card-back">
-                    <h3>Quote Messages</h3>
-                    <p>Displays bid/ask spreads for active symbols. Generated synthetically by the publisher and encoded
-                        using SBE.</p>
-                    <div class="tech-stack">
-                        <strong>SBE Template:</strong> Quote (ID: 2)<br>
-                        <strong>Fields:</strong> Bid Price, Ask Price, Bid Size, Ask Size
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" onclick="flipCard(this)">
-                <div class="card-front">
-                    <div class="card-header">Market Depth</div>
-                    <div class="card-body" id="depthContainer"></div>
-                </div>
-                <div class="card-back">
-                    <h3>Market Depth</h3>
-                    <p>Level 2 order book data showing buy/sell orders at different price levels. Demonstrates SBE's
-                        ability to encode complex nested structures.</p>
-                    <div class="tech-stack">
-                        <strong>SBE Template:</strong> MarketDepth (ID: 3)<br>
-                        <strong>Structure:</strong> Repeating groups for each price level
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" onclick="flipCard(this)">
-                <div class="card-front">
-                    <div class="card-header">System Log</div>
-                    <div class="card-body" id="logContainer"></div>
-                </div>
-                <div class="card-back">
-                    <h3>System Log</h3>
-                    <p>Connection events and diagnostic messages. Logs WebSocket lifecycle and ingestion mode switches.
-                    </p>
-                    <div class="tech-stack">
-                        <strong>Purpose:</strong> Debugging and monitoring<br>
-                        <strong>Events:</strong> Connect, Disconnect, Mode changes
-                    </div>
+                <div class="stat">
+                    <div class="stat-value" id="messageCount">0</div>
+                    <div class="stat-label">UI Received</div>
                 </div>
             </div>
         </div>
     </div>
-    <script>
-        let ws = null, messageCount = 0, lastMessageTime = 0, messagesLastSecond = 0;
-        let lastGcCount = 0, lastGcPollTime = 0;
-        let priceChart = null;
-        let hiccupChart = null;
-        let gcPauseChart = null;
-        let lastRateUpdate = Date.now();
-        let maxGapInWindow = 0;
-
-        Chart.defaults.font.family = "'Inter', sans-serif";
-        Chart.defaults.color = '#333';
-        Chart.defaults.borderColor = 'rgba(0,0,0,0.1)';
-
-        function initCharts() {
-
-            const ctxPrice = document.getElementById('priceChart').getContext('2d');
-            priceChart = new Chart(ctxPrice, {
-                type: 'bar',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Trade Price',
-                        data: [],
-                        backgroundColor: '#667eea',
-                        borderColor: '#5a67d8',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { display: true, grid: { display: false }, ticks: { font: { size: 10 } } },
-                        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } } }
-                    }
-                }
-            });
-
-
-            const ctxHiccup = document.getElementById('hiccupChart').getContext('2d');
-            hiccupChart = new Chart(ctxHiccup, {
-                type: 'line',
-                data: {
-                    labels: Array(50).fill(''), // Pre-fill labels
-                    datasets: [{
-                        label: 'Pause Duration (ms)',
-                        data: Array(50).fill(0), // Pre-fill data
-                        borderColor: '#e74c3c',
-                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        fill: true,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { display: false }, // Hide X labels for cleaner look
-                        y: {
-                            beginAtZero: true,
-                            suggestedMax: 50,
-                            grid: { color: 'rgba(0,0,0,0.05)' },
-                            title: { display: true, text: 'Pause Duration (ms)', font: { size: 12, weight: 'bold' } }
-                        }
-                    }
-                }
-            });
-
-
-            const ctxGcPause = document.getElementById('gcPauseChart').getContext('2d');
-            gcPauseChart = new Chart(ctxGcPause, {
-                type: 'line',
-                data: {
-                    labels: Array(50).fill(''),
-                    datasets: [{
-                        label: 'GC Pause Time (ms)',
-                        data: Array(50).fill(0),
-                        borderColor: '#7c3aed',
-                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        fill: true,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { display: false },
-                        y: {
-                            beginAtZero: true,
-                            suggestedMax: 10,
-                            grid: { color: 'rgba(0,0,0,0.05)' },
-                            title: { display: true, text: 'Pause Duration (ms)', font: { size: 12, weight: 'bold' } }
-                        }
-                    }
-                }
-            });
-        }
-
-        function updateCharts() {
-
-            if (!hiccupChart) return;
 
-
-            const plotValue = maxGapInWindow > 10 ? maxGapInWindow : 0;
-
-            hiccupChart.data.labels.push('');
-            hiccupChart.data.datasets[0].data.push(plotValue);
-
-            if (hiccupChart.data.labels.length > 50) {
-                hiccupChart.data.labels.shift();
-                hiccupChart.data.datasets[0].data.shift();
-            }
-
-            hiccupChart.update('none');
-            maxGapInWindow = 0; // Reset for next window
-        }
-
-        function updatePriceChart(price) {
-            if (!priceChart) return;
-            const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            priceChart.data.labels.push(now);
-            priceChart.data.datasets[0].data.push(price);
-            if (priceChart.data.labels.length > 50) {
-                priceChart.data.labels.shift();
-                priceChart.data.datasets[0].data.shift();
-            }
-            priceChart.update('none');
-        }
-
-        function pollGCPauseStats() {
-            fetch(API_BASE + '/gc/stats')
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return response.json();
-                })
-                .then(stats => {
-                    if (stats && stats.length > 0) {
-
-                        let maxPauseMs = 0;
-                        let activeCollectors = [];
-                        let heapUsed = 0;
-                        let heapMax = 0;
-                        let totalCollectionCount = 0;
-                        let totalCollectionTime = 0;
-
-                        stats.forEach(gcStat => {
-                            const pause = gcStat.lastPauseDuration || 0;
-                            if (pause > maxPauseMs) {
-                                maxPauseMs = pause;
-                            }
-
-                            if (gcStat.collectionCount > 0) {
-                                activeCollectors.push(gcStat.gcName);
-                            }
-
-                            if (gcStat.usedMemory && gcStat.totalMemory) {
-                                heapUsed = gcStat.usedMemory;
-                                heapMax = gcStat.totalMemory;
-                            }
-
-
-                            totalCollectionCount += (gcStat.collectionCount || 0);
-                            totalCollectionTime += (gcStat.collectionTime || 0);
-                        });
-
-
-                        const now = Date.now();
-                        if (lastGcPollTime > 0) {
-                            const timeDiff = (now - lastGcPollTime) / 1000; // seconds
-                            const countDiff = totalCollectionCount - lastGcCount;
-
-                            if (timeDiff > 0 && countDiff >= 0) {
-                                const rate = countDiff / timeDiff;
-                                document.getElementById('gcCollectionDelta').textContent = rate.toFixed(1);
-                            }
-                        }
-                        lastGcCount = totalCollectionCount;
-                        lastGcPollTime = now;
-
-
-                        document.getElementById('gcCollectionCount').textContent = totalCollectionCount.toLocaleString();
-                        document.getElementById('gcCollectionTime').textContent = totalCollectionTime.toLocaleString();
-
-                        const avgTime = totalCollectionCount > 0 ? (totalCollectionTime / totalCollectionCount) : 0;
-                        document.getElementById('gcAvgTime').textContent = avgTime.toFixed(2);
-
-
-                        const heapUsedMB = heapUsed / (1024 * 1024);
-                        const heapMaxMB = heapMax / (1024 * 1024);
-                        const heapPercent = heapMax > 0 ? ((heapUsed / heapMax) * 100).toFixed(0) : 0;
-
-                        document.getElementById('heapUsed').textContent = (isFinite(heapUsedMB) ? heapUsedMB : 0).toFixed(0);
-                        document.getElementById('heapMax').textContent = (isFinite(heapMaxMB) ? heapMaxMB : 0).toFixed(0);
-                        document.getElementById('heapPercent').textContent = heapPercent;
-
-
-                        const heapPercentValue = parseFloat(heapPercent) || 0;
-                        checkAlert('heapPercent', heapPercentValue, ALERT_THRESHOLDS.heapPercent);
-
-
-                        const collectorNames = [...new Set(activeCollectors)].join(' / ');
-                        document.getElementById('gcPauseCollectorName').textContent = collectorNames || '--';
-                        document.getElementById('gcCollectorName').textContent = collectorNames || '--';
-
-
-                        if (gcPauseChart) {
-                            gcPauseChart.data.labels.push('');
-                            gcPauseChart.data.datasets[0].data.push(maxPauseMs);
-
-                            if (gcPauseChart.data.labels.length > 50) {
-                                gcPauseChart.data.labels.shift();
-                                gcPauseChart.data.datasets[0].data.shift();
-                            }
-
-                            gcPauseChart.update('none');
-                        }
-                    }
-                })
-                .catch(error => console.error('Error fetching GC pause stats:', error));
-        }
-
-        function setPressureMode(mode) {
-            // Find the button that was clicked
-            const buttons = document.querySelectorAll('[onclick*="setPressureMode"]');
-            let clickedButton = null;
-            buttons.forEach(btn => {
-                if (btn.textContent.trim() === mode) {
-                    clickedButton = btn;
-                    btn.classList.add('processing');
-                }
-            });
-
-            fetch(API_BASE + '/pressure/mode/' + mode, { method: 'POST' })
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return response.json();
-                })
-                .then(result => {
-                    if (clickedButton) {
-                        clickedButton.classList.remove('processing');
-                    }
-                    if (result.success) {
-                        addLog('Memory pressure mode set to: ' + mode);
-                        pollPressureStatus(); // Immediate update
-                    } else {
-                        addLog('Error setting pressure mode: ' + result.error);
-                    }
-                })
-                .catch(error => {
-                    if (clickedButton) {
-                        clickedButton.classList.remove('processing');
-                    }
-                    console.error('Error setting pressure mode:', error);
-                    addLog('Failed to set pressure mode: ' + error.message);
-                });
-        }
-
-        function pollPressureStatus() {
-            fetch(API_BASE + '/pressure/status')
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return response.json();
-                })
-                .then(status => {
-                    document.getElementById('pressureMode').textContent = status.currentMode || 'OFF';
-                    const bytesPerSecond = status.bytesPerSecond ?? 0;
-                    const rateMBps = isFinite(bytesPerSecond) ? (bytesPerSecond / (1024 * 1024)).toFixed(1) : '0';
-                    document.getElementById('pressureRate').textContent = rateMBps + ' MB/sec';
-                })
-                .catch(error => console.error('Error fetching pressure status:', error));
-        }
-
-
-        const API_BASE = '/' + window.location.pathname.split('/')[1] + '/api';
-
-
-        const ALERT_THRESHOLDS = {
-            p99Ms: { warning: 10, critical: 50 },
-            maxMs: { warning: 20, critical: 100 },
-            heapPercent: { warning: 75, critical: 90 },
-            slaViolations: { warning: 10, critical: 100 }
-        };
-
-
-        function checkAlert(elementId, value, threshold) {
-            const el = document.getElementById(elementId);
-            if (!el) return;
-
-            el.classList.remove('alert-warning', 'alert-critical');
-            if (value >= threshold.critical) {
-                el.classList.add('alert-critical');
-            } else if (value >= threshold.warning) {
-                el.classList.add('alert-warning');
-            }
-        }
-
-        let lastClusterTotal = 0;
-        let lastClusterTime = Date.now();
-        let apiHealthy = false;
-        let lastApiSuccess = null;
-
-        function updateApiStatus(healthy) {
-            apiHealthy = healthy;
-            const indicator = document.getElementById('apiStatusIndicator');
-            if (indicator) {
-                if (healthy) {
-                    indicator.classList.add('connected');
-                    indicator.title = 'REST API: Connected';
-                } else {
-                    indicator.classList.remove('connected');
-                    indicator.title = 'REST API: Disconnected';
-                }
-            }
-        }
-
-
-        function toggleDarkMode() {
-            const html = document.documentElement;
-            const btn = document.getElementById('darkModeBtn');
-            const isDark = html.classList.toggle('dark-theme');
-
-            // Update button text
-            btn.textContent = isDark ? '☀️ Light' : '🌙 Dark';
-
-            // Save preference
-            localStorage.setItem('darkMode', isDark);
-        }
-
-
-        function initDarkMode() {
-            const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const shouldBeDark = savedDarkMode || (savedDarkMode === null && prefersDark);
-
-            if (shouldBeDark) {
-                document.documentElement.classList.add('dark-theme');
-                document.getElementById('darkModeBtn').textContent = '☀️ Light';
-            }
-        }
-
-
-        let currentPollingInterval = 2000;
-
-        function setPollingInterval(intervalMs) {
-            intervalMs = parseInt(intervalMs);
-            if (isNaN(intervalMs) || intervalMs < 1000) return;
-
-            currentPollingInterval = intervalMs;
-
-
-            if (window.instanceStatusInterval) {
-                clearInterval(window.instanceStatusInterval);
-                window.instanceStatusInterval = setInterval(pollInstanceStatus, currentPollingInterval);
-            }
-
-
-            if (window.gcComparisonInterval) {
-                clearInterval(window.gcComparisonInterval);
-                window.gcComparisonInterval = setInterval(pollGCComparison, currentPollingInterval);
-            }
-
-
-            if (window.pressureStatusInterval) {
-                clearInterval(window.pressureStatusInterval);
-                window.pressureStatusInterval = setInterval(pollPressureStatus, Math.max(3000, currentPollingInterval));
-            }
-
-
-            localStorage.setItem('pollingInterval', intervalMs);
-
-            addLog(`Polling interval set to ${intervalMs / 1000}s`);
-        }
-
-
-        function initPollingInterval() {
-            const savedInterval = localStorage.getItem('pollingInterval');
-            if (savedInterval) {
-                const interval = parseInt(savedInterval);
-                if (!isNaN(interval) && interval >= 1000) {
-                    document.getElementById('pollingInterval').value = interval;
-                    setPollingInterval(interval);
+    <div class="status-bar">
+        <div class="status-item">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <span id="statusText">Disconnected</span>
+            <div class="status-indicator" id="apiStatusIndicator" style="margin-left: 15px;"
+                 title="REST API Connection"></div>
+            <span id="lastUpdated" style="margin-left: 10px; font-size: 0.85em; color: #64748b;"></span>
+            <span id="modeDisplay" class="status-mode"></span>
+            <span id="instanceDisplay" class="status-mode"
+                  style="margin-left: 15px; color: #1976d2; font-weight: 600;"></span>
+        </div>
+        <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+    </div>
+
+    <div class="stress-scenarios">
+        <h3 style="font-size: 1em; color: #64748b; font-weight: 600; text-transform: uppercase;">Demo Scenarios</h3>
+        <div class="scenario-buttons">
+            <button onclick="applyScenario('DEMO_BASELINE')" class="scenario-btn" id="btn-DEMO_BASELINE">
+                📊 Baseline
+                <span class="hint">No stress</span>
+            </button>
+
+            <button onclick="applyScenario('DEMO_NORMAL')" class="scenario-btn" id="btn-DEMO_NORMAL">
+                📈 Normal
+                <span class="hint">Light load</span>
+            </button>
+
+            <button onclick="applyScenario('DEMO_STRESS')" class="scenario-btn" id="btn-DEMO_STRESS">
+                🔥 High Stress
+                <span class="hint">Heavy + Burst</span>
+            </button>
+
+            <button onclick="applyScenario('DEMO_EXTREME')" class="scenario-btn" id="btn-DEMO_EXTREME">
+                💥 Extreme
+                <span class="hint">Max Pressure</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="gc-comparison-panel">
+        <div class="gc-comparison-header">
+            <h2>GC Performance Comparison</h2>
+            <div class="jvm-info">
+                <span class="label">Instance:</span>
+                <span id="instance-name" class="value" style="font-weight: 700; color: #2563eb;">Unknown</span>
+                <span class="label" style="margin-left: 20px;">JVM:</span>
+                <span id="jvm-name" class="value" style="font-weight: 600;">Detecting...</span>
+                <span id="gc-type" class="badge">--</span>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3 title="99th percentile of the last 500 GC pause events. Shows the worst 1% of recent pauses.">
+                    P99 Percentile
+                </h3>
+                <span id="pause-p99" class="metric-value">-</span>
+                <span class="metric-unit">ms</span>
+                <div id="pause-p99-samples" style="font-size: 0.85em; color: #64748b; margin-top: 4px; font-weight: 500;">
+                    (500 samples)
+                </div>
+                <div id="pause-p99-status" style="margin-top: 6px; font-weight: 600; font-size: 0.85em;"></div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Last GC Pause</h3>
+                <span id="pause-last" class="metric-value">-</span>
+                <span class="metric-unit">ms</span>
+                <div style="font-size: 0.85em; color: #64748b; margin-top: 4px;">Most recent pause</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Pause Time Max</h3>
+                <span id="pause-max" class="metric-value">-</span>
+                <span class="metric-unit">ms</span>
+                <div style="font-size: 0.85em; color: #64748b; margin-top: 4px;">All-time since startup</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>SLA Violations</h3>
+                <span id="sla-violations" class="metric-value">-</span>
+                <span class="metric-unit">pauses > 10ms</span>
+                <div style="font-size: 0.85em; color: #64748b; margin-top: 4px;">Total since startup</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Allocation Rate</h3>
+                <span id="alloc-rate" class="metric-value">-</span>
+                <span class="metric-unit">MB/sec</span>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 0 8px;">
+            <div style="font-size: 0.85em; color: #64748b;">
+                <span style="font-weight: 600;">P99 Window:</span>
+                <span style="margin-left: 4px;">500 pauses (rolling)</span>
+            </div>
+            <button onclick="resetPauseStats()" style="font-size: 0.85em; padding: 6px 16px; background: #6c757d;">
+                Reset Pause Stats
+            </button>
+        </div>
+    </div>
+
+    <div class="data-grid">
+        <div class="card" onclick="flipCard(this)">
+            <div class="card-front">
+                <div class="card-header">
+                    GC Pause Time (Live)
+                    <span class="chart-mode-label" id="gcPauseCollectorName">--</span>
+                    <span class="flip-hint">Click to learn</span>
+                </div>
+                <div class="card-body chart-body">
+                    <canvas id="gcPauseChart"></canvas>
+                </div>
+            </div>
+            <div class="card-back">
+                <h3>GC Pause Time Monitor</h3>
+                <p>Real-time visualization of garbage collection pause times. Lower is better.</p>
+                <p><strong>Azul C4 (Pauseless):</strong> Flat line near zero. Collections happen concurrently
+                    without stopping application threads.</p>
+                <p><strong>G1GC (Stop-the-World):</strong> Visible spikes when GC pauses occur. Higher message rates
+                    = higher pause times.</p>
+                <p>This chart demonstrates why C4 is ideal for latency-sensitive applications - predictable,
+                    consistent performance without pause spikes.</p>
+                <div class="tech-stack">
+                    <strong>API:</strong> /api/gc/stats<br>
+                    <strong>Metric:</strong> Last pause duration (ms)<br>
+                    <strong>Update Rate:</strong> Every 3 seconds
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="flipCard(this)">
+            <div class="card-front">
+                <div class="card-header">
+                    GC Statistics
+                    <span class="chart-mode-label" id="gcCollectorName">--</span>
+                    <span class="flip-hint">Click to learn</span>
+                </div>
+                <div class="card-body">
+                    <div class="message">
+                        <div class="message-type">Collections</div>
+                        <div class="message-data">
+                            Total: <span class="highlight" id="gcCollectionCount">--</span><br>
+                            Delta: <span class="highlight" id="gcCollectionDelta">--</span>/sec
+                        </div>
+                    </div>
+                    <div class="message">
+                        <div class="message-type">Collection Time</div>
+                        <div class="message-data">
+                            Total: <span class="highlight" id="gcCollectionTime">--</span> ms<br>
+                            Avg: <span class="highlight" id="gcAvgTime">--</span> ms
+                        </div>
+                    </div>
+                    <div class="message">
+                        <div class="message-type">Heap Usage</div>
+                        <div class="message-data">
+                            <span class="highlight" id="heapUsed">--</span> / <span id="heapMax">--</span> MB<br>
+                            <span class="highlight" id="heapPercent">--</span>% utilized
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-back">
+                <h3>GC Statistics</h3>
+                <p>Real-time garbage collection metrics. Collection <strong>count</strong> matters less than
+                    <strong>pause duration</strong>.
+                </p>
+                <p><strong>G1GC:</strong> Fewer collections (48), but longer pauses (4ms avg). At 100k msg/sec, a
+                    4ms pause = 400 dropped messages.</p>
+                <p><strong>Azul C4:</strong> More collections (500), but sub-millisecond pauses (0.1ms avg). Same
+                    load = only 10 dropped messages.</p>
+                <p>C4 does work concurrently while G1GC batches cleanup into painful stops.</p>
+                <div class="tech-stack">
+                    <strong>Source:</strong> /metrics endpoint (Prometheus format)<br>
+                    <strong>Key Metric:</strong> Avg pause time, not collection count
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="flipCard(this)">
+            <div class="card-front">
+                <div class="card-header">
+                    GC Challenge Mode
+                    <span class="chart-mode-label" id="pressureMode">OFF</span>
+                    <span class="flip-hint">Click to learn</span>
+                </div>
+                <div class="card-body">
+                    <div class="message">
+                        <div class="message-type">Allocation Rate</div>
+                        <div class="message-data">
+                            <span class="highlight" id="pressureRate">0 MB/sec</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                        <button onclick="event.stopPropagation(); setPressureMode('OFF')"
+                                style="flex: 1; background: #6c757d;">OFF</button>
+                        <button onclick="event.stopPropagation(); setPressureMode('LOW')"
+                                style="flex: 1; background: #28a745;">LOW</button>
+                        <button onclick="event.stopPropagation(); setPressureMode('MEDIUM')"
+                                style="flex: 1; background: #ffc107; color: #333;">MEDIUM</button>
+                        <button onclick="event.stopPropagation(); setPressureMode('HIGH')"
+                                style="flex: 1; background: #fd7e14;">HIGH</button>
+                        <button onclick="event.stopPropagation(); setPressureMode('EXTREME')"
+                                style="flex: 1; background: #dc3545;">EXTREME</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-back">
+                <h3>GC Challenge Mode</h3>
+                <p>Intentionally generates garbage to stress-test the GC under load. Watch how each collector
+                    responds.</p>
+                <p><strong>Azul C4:</strong> Maintains low, consistent pause times even under EXTREME allocation
+                    pressure. Concurrent collection keeps up.</p>
+                <p><strong>G1GC:</strong> Pause times spike as allocation rate increases. You'll see stuttering in
+                    message delivery and chart updates.</p>
+                <p><strong>Rates:</strong> LOW=0.1MB/s, MEDIUM=0.5MB/s, HIGH=2MB/s, EXTREME=10MB/s</p>
+                <div class="tech-stack">
+                    <strong>Technique:</strong> Mixed allocation patterns (Strings, arrays, objects,
+                    collections)<br>
+                    <strong>Inspired by:</strong> 1BRC stress testing
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="flipCard(this)">
+            <div class="card-front">
+                <div class="card-header">
+                    Hiccup Monitor
+                    <span class="chart-mode-label" id="chartModeLabel">Waiting...</span>
+                    <span class="flip-hint">Click to learn</span>
+                </div>
+                <div class="card-body" style="height: 200px; overflow: hidden;">
+                    <canvas id="hiccupChart"></canvas>
+                </div>
+            </div>
+            <div class="card-back">
+                <h3>Hiccup Monitor</h3>
+                <p>Tracks inter-arrival time gaps between messages. Spikes indicate "Stop-the-World" GC pauses where
+                    the application freezes.</p>
+                <p>With Azul C4's pauseless GC, you should see a flat line even at 100k+ msg/sec. Standard OpenJDK
+                    G1GC shows frequent spikes as it struggles to clean up heap.</p>
+                <div class="tech-stack">
+                    <strong>Measured:</strong> Performance.now() delta between WebSocket messages
+                </div>
+            </div>
+        </div>
+
+        <div class="card full-width" style="margin-bottom: 20px;" onclick="flipCard(this)">
+            <div class="card-front">
+                <div class="card-header">
+                    Real-Time Price Monitor (Live Feed)
+                    <span class="flip-hint">Click to learn</span>
+                </div>
+                <div class="card-body chart-body">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+            <div class="card-back">
+                <h3>Price Monitor</h3>
+                <p>Displays the last 20 trade prices received via WebSocket. Updates in real-time as messages stream
+                    in.</p>
+                <p>Watch for smooth, continuous updates with Aeron mode. Any stuttering indicates GC pauses blocking
+                    the ingestion pipeline.</p>
+                <div class="tech-stack">
+                    <strong>Chart:</strong> Chart.js (Bar)<br>
+                    <strong>Updates:</strong> On each Trade message
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="flipCard(this)">
+            <div class="card-front">
+                <div class="card-header">Recent Trades</div>
+                <div class="card-body" id="tradesContainer"></div>
+            </div>
+            <div class="card-back">
+                <h3>Trade Messages</h3>
+                <p>Shows the 5 most recent trade executions decoded from SBE binary format. Each trade includes
+                    timestamp, symbol, price, and quantity.</p>
+                <div class="tech-stack">
+                    <strong>SBE Template:</strong> Trade (ID: 1)<br>
+                    <strong>Decoding:</strong> Zero-copy Flyweight pattern
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="flipCard(this)">
+            <div class="card-front">
+                <div class="card-header">Market Quotes</div>
+                <div class="card-body" id="quotesContainer"></div>
+            </div>
+            <div class="card-back">
+                <h3>Quote Messages</h3>
+                <p>Displays bid/ask spreads for active symbols. Generated synthetically by the publisher and encoded
+                    using SBE.</p>
+                <div class="tech-stack">
+                    <strong>SBE Template:</strong> Quote (ID: 2)<br>
+                    <strong>Fields:</strong> Bid Price, Ask Price, Bid Size, Ask Size
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="flipCard(this)">
+            <div class="card-front">
+                <div class="card-header">Market Depth</div>
+                <div class="card-body" id="depthContainer"></div>
+            </div>
+            <div class="card-back">
+                <h3>Market Depth</h3>
+                <p>Level 2 order book data showing buy/sell orders at different price levels. Demonstrates SBE's
+                    ability to encode complex nested structures.</p>
+                <div class="tech-stack">
+                    <strong>SBE Template:</strong> MarketDepth (ID: 3)<br>
+                    <strong>Structure:</strong> Repeating groups for each price level
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="flipCard(this)">
+            <div class="card-front">
+                <div class="card-header">System Log</div>
+                <div class="card-body" id="logContainer"></div>
+            </div>
+            <div class="card-back">
+                <h3>System Log</h3>
+                <p>Connection events and diagnostic messages. Logs WebSocket lifecycle and ingestion mode switches.
+                </p>
+                <div class="tech-stack">
+                    <strong>Purpose:</strong> Debugging and monitoring<br>
+                    <strong>Events:</strong> Connect, Disconnect, Mode changes
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    let ws = null, messageCount = 0, lastMessageTime = 0, messagesLastSecond = 0;
+    let lastGcCount = 0, lastGcPollTime = 0;
+    let priceChart = null;
+    let hiccupChart = null;
+    let gcPauseChart = null;
+    let lastRateUpdate = Date.now();
+    let maxGapInWindow = 0;
+    let titleFlashInterval = null;
+    let originalTitle = 'TradeStreamEE - Market Data Dashboard';
+    let alertCount = 0;
+
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#333';
+    Chart.defaults.borderColor = 'rgba(0,0,0,0.1)';
+
+    function initCharts() {
+        const ctxPrice = document.getElementById('priceChart').getContext('2d');
+        priceChart = new Chart(ctxPrice, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Trade Price',
+                    data: [],
+                    backgroundColor: '#667eea',
+                    borderColor: '#5a67d8',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } } }
                 }
             }
-        }
-
-        function updateLastUpdated() {
-            const el = document.getElementById('lastUpdated');
-            if (el) {
-                if (lastApiSuccess) {
-                    const seconds = Math.floor((Date.now() - lastApiSuccess) / 1000);
-                    el.textContent = 'Updated ' + seconds + 's ago';
-                } else {
-                    el.textContent = 'No data yet';
-                }
-            }
-        }
-
-        function pollInstanceStatus() {
-            fetch(API_BASE + '/status')
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return response.json();
-                })
-                .then(status => {
-                    // Update API status and timestamp
-                    lastApiSuccess = Date.now();
-                    updateApiStatus(true);
-                    updateLastUpdated();
-
-                    // Update instance name
-                    if (status.instance) {
-                        document.getElementById('instanceDisplay').textContent = '[' + status.instance + ']';
-                    }
-
-                    // Update cluster total and calculate rate
-                    if (status.publisher && status.publisher.clusterMessagesPublished !== undefined) {
-                        const clusterTotal = status.publisher.clusterMessagesPublished ?? 0;
-                        document.getElementById('clusterTotal').textContent = clusterTotal.toLocaleString();
-
-                        // Calculate cluster message rate (with NaN protection)
-                        const now = Date.now();
-                        const timeDiff = (now - lastClusterTime) / 1000; // seconds
-                        const messageDiff = clusterTotal - (lastClusterTotal ?? 0);
-                        if (timeDiff > 0 && (lastClusterTotal ?? 0) > 0) {
-                            const clusterRate = Math.round(messageDiff / timeDiff);
-                            if (isFinite(clusterRate)) {
-                                document.getElementById('clusterRate').textContent = clusterRate.toLocaleString();
-                            }
-                        }
-                        lastClusterTotal = clusterTotal;
-                        lastClusterTime = now;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching instance status:', error);
-                    updateApiStatus(false);
-                });
-        }
-
-        async function applyScenario(scenario) {
-            // Reset all buttons
-            document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
-
-            // Set active state on clicked button
-            const btn = document.getElementById('btn-' + scenario);
-            if (btn) btn.classList.add('active');
-
-            try {
-                const response = await fetch(API_BASE + '/pressure/scenario/' + scenario, {
-                    method: 'POST'
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const result = await response.json();
-                console.log('Applied scenario:', result);
-
-                // Also update the pressure mode display
-                pollPressureStatus();
-
-                addLog('Scenario applied: ' + result.description);
-            } catch (error) {
-                console.error('Error applying scenario:', error);
-                addLog('Failed to apply scenario: ' + error.message);
-            }
-        }
-
-        async function pollGCComparison() {
-            try {
-                const response = await fetch(API_BASE + '/gc/comparison');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-
-                // Update instance identification
-                const instanceName = data.instanceName || 'unknown';
-                document.getElementById('instance-name').textContent = instanceName;
-
-                // Color-code instance name by cluster
-                const instanceEl = document.getElementById('instance-name');
-                if (instanceName.includes('c4')) {
-                    instanceEl.style.color = '#10b981'; // green for C4
-                } else if (instanceName.includes('g1')) {
-                    instanceEl.style.color = '#10b981'; // same as c4
-                } else {
-                    instanceEl.style.color = '#2563eb'; // blue for unknown
-                }
-
-                // Update JVM info
-                document.getElementById('jvm-name').textContent = data.jvmName || 'Unknown';
-                const gcTypeEl = document.getElementById('gc-type');
-                if (data.isAzulC4) {
-                    gcTypeEl.textContent = 'Azul C4';
-                    gcTypeEl.className = 'badge azul';
-                } else {
-                    gcTypeEl.textContent = 'Standard G1'; // Assuming G1 if not Azul for now, or use data.gcCollectors
-                    gcTypeEl.className = 'badge standard';
-                }
-
-                // Update metrics (with null/NaN protection)
-                const p99Ms = data.pauseP99Ms ?? 0;
-                const maxMs = data.pauseMaxMs ?? 0;
-                const violations = data.slaViolations10ms ?? 0;
-                const allocRate = data.allocationRateMBps ?? 0;
-
-                document.getElementById('pause-p99').textContent = (isFinite(p99Ms) ? p99Ms : 0).toFixed(2);
-                document.getElementById('pause-max').textContent = (isFinite(maxMs) ? maxMs : 0).toFixed(2);
-                document.getElementById('sla-violations').textContent = (isFinite(violations) ? violations : 0).toLocaleString();
-                document.getElementById('alloc-rate').textContent = (isFinite(allocRate) ? allocRate : 0).toFixed(0);
-
-                // Check alerts on GC pause metrics
-                checkAlert('pause-p99', isFinite(p99Ms) ? p99Ms : 0, ALERT_THRESHOLDS.p99Ms);
-                checkAlert('pause-max', isFinite(maxMs) ? maxMs : 0, ALERT_THRESHOLDS.maxMs);
-                checkAlert('sla-violations', isFinite(violations) ? violations : 0, ALERT_THRESHOLDS.slaViolations);
-
-
-                // Color-code P99 status
-                const p99Status = document.getElementById('pause-p99-status');
-                const p99 = isFinite(p99Ms) ? p99Ms : 0;
-
-                if (p99 < 1) {
-                    p99Status.className = 'status-indicator excellent';
-                    p99Status.textContent = '✓ Excellent';
-                } else if (p99 < 10) {
-                    p99Status.className = 'status-indicator good';
-                    p99Status.textContent = '✓ Good';
-                } else if (p99 < 50) {
-                    p99Status.className = 'status-indicator warning';
-                    p99Status.textContent = '⚠ Degraded';
-                } else {
-                    p99Status.className = 'status-indicator critical';
-                    p99Status.textContent = '✗ Critical';
-                }
-
-            } catch (error) {
-                console.error('Failed to fetch GC comparison metrics:', error);
-            }
-        }
-
-        function flipCard(card) {
-            card.classList.toggle('flipped');
-        }
-
-        function toggleConnection() { ws && ws.readyState === WebSocket.OPEN ? ws.close() : connect() }
-
-        function connect() {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const contextPath = window.location.pathname.replace(/\/[^\/]*\.html.*$/, '').replace(/\/$/, '');
-            const wsUrl = `${protocol}//${window.location.host}${contextPath}/market-data`;
-
-            addLog('Connecting to ' + wsUrl);
-            ws = new WebSocket(wsUrl);
-
-            ws.onopen = () => {
-                document.getElementById('statusIndicator').classList.add('connected');
-                document.getElementById('statusText').textContent = 'Connected';
-                document.getElementById('connectBtn').textContent = 'Disconnect';
-                addLog('WebSocket connected');
-                lastMessageTime = performance.now();
-                lastRateUpdate = Date.now(); // Reset rate timer
-
-                // Start hiccup chart update loop (e.g., every 100ms)
-                if (window.chartInterval) clearInterval(window.chartInterval);
-                window.chartInterval = setInterval(updateCharts, 100);
-
-                // Start GC pause stats polling (uses current polling interval)
-                if (window.gcPauseStatsInterval) clearInterval(window.gcPauseStatsInterval);
-                window.gcPauseStatsInterval = setInterval(pollGCPauseStats, currentPollingInterval);
-                pollGCPauseStats(); // Initial poll
-
-                // Start GC Comparison polling (uses current polling interval)
-                if (window.gcComparisonInterval) clearInterval(window.gcComparisonInterval);
-                window.gcComparisonInterval = setInterval(pollGCComparison, currentPollingInterval);
-                pollGCComparison();
-
-                // Start memory pressure status polling (uses current polling interval, min 3s)
-                if (window.pressureStatusInterval) clearInterval(window.pressureStatusInterval);
-                window.pressureStatusInterval = setInterval(pollPressureStatus, Math.max(3000, currentPollingInterval));
-                pollPressureStatus(); // Initial poll
-
-                // Start instance status polling (uses current polling interval)
-                if (window.instanceStatusInterval) clearInterval(window.instanceStatusInterval);
-                window.instanceStatusInterval = setInterval(pollInstanceStatus, currentPollingInterval);
-                pollInstanceStatus(); // Initial poll
-            };
-            ws.onclose = () => {
-                document.getElementById('statusIndicator').classList.remove('connected');
-                document.getElementById('statusText').textContent = 'Disconnected (Reconnecting...)';
-                document.getElementById('connectBtn').textContent = 'Connect';
-                document.getElementById('modeDisplay').textContent = '';
-                document.getElementById('chartModeLabel').textContent = 'Disconnected';
-                addLog('WebSocket disconnected. Attempting auto-reconnect in 3s...');
-                if (window.chartInterval) clearInterval(window.chartInterval);
-                if (window.gcComparisonInterval) clearInterval(window.gcComparisonInterval);
-                if (window.gcPauseStatsInterval) clearInterval(window.gcPauseStatsInterval);
-                setTimeout(connect, 3000);
-            };
-            ws.onerror = error => addLog('WebSocket error: ' + error);
-            ws.onmessage = event => {
-                let data = JSON.parse(event.data);
-                if (data.wrapped && data.data) {
-                    data = data.data;
-                }
-                handleMessage(data);
-            };
-        }
-
-        function handleMessage(data) {
-            const nowPerf = performance.now();
-            const gap = nowPerf - lastMessageTime;
-            lastMessageTime = nowPerf;
-
-            // Track max hiccup in current window
-            if (gap > maxGapInWindow) {
-                maxGapInWindow = gap;
-            }
-
-            messageCount++;
-            messagesLastSecond++;
-
-            const nowEpoch = Date.now();
-            if (nowEpoch - lastRateUpdate >= 1000) {
-                document.getElementById('messageCount').textContent = messageCount.toLocaleString();
-                document.getElementById('messageRate').textContent = messagesLastSecond.toLocaleString();
-                messagesLastSecond = 0;
-                lastRateUpdate = nowEpoch;
-            }
-
-            switch (data.type) {
-                case 'trade':
-                    addTrade(data);
-                    updatePriceChart(data.price);
-                    break;
-                case 'quote':
-                    addQuote(data);
-                    break;
-                case 'depth':
-                    addDepth(data);
-                    break;
-                case 'info':
-                    addLog(data.message);
-                    if (data.mode) {
-                        const modeText = 'Mode: ' + data.mode;
-                        document.getElementById('modeDisplay').textContent = modeText;
-                        document.getElementById('chartModeLabel').textContent = modeText;
-                    }
-                    break;
-                case 'stats':
-                    if (data.total != null && isFinite(data.total)) {
-                        document.getElementById('backendTotal').textContent = data.total.toLocaleString();
-                    }
-                    if (data.rate != null && isFinite(data.rate)) {
-                        document.getElementById('backendRate').textContent = parseInt(data.rate).toLocaleString();
-                    }
-                    break;
-            }
-        }
-
-        function formatTime(timestamp) {
-            if (!timestamp) return '';
-            const d = new Date(timestamp);
-            return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.' + d.getMilliseconds().toString().padStart(3, '0');
-        }
-
-        function addTrade(data) { const c = document.getElementById('tradesContainer'), m = document.createElement('div'); m.className = 'message trade'; m.innerHTML = `<div class="message-type">TRADE #${data.tradeId} <span style="float:right;font-size:0.8em;font-weight:normal;">${formatTime(data.timestamp)}</span></div><div class="message-data"><strong>${data.symbol}</strong> ${data.side} <span class="highlight">${data.quantity}</span> @ <span class="highlight">$${data.price.toFixed(2)}</span></div>`; c.insertBefore(m, c.firstChild); if (c.children.length > 20) c.removeChild(c.lastChild) }
-        function addQuote(data) { const c = document.getElementById('quotesContainer'), m = document.createElement('div'); m.className = 'message quote'; m.innerHTML = `<div class="message-type">${data.symbol} <span style="float:right;font-size:0.8em;font-weight:normal;">${formatTime(data.timestamp)}</span></div><div class="message-data">BID: <span class="highlight">${data.bid.size}</span> @ <span class="highlight">$${data.bid.price.toFixed(2)}</span><br>ASK: <span class="highlight">${data.ask.size}</span> @ <span class="highlight">$${data.ask.price.toFixed(2)}</span></div>`; c.insertBefore(m, c.firstChild); if (c.children.length > 20) c.removeChild(c.lastChild) }
-        function addDepth(data) { const c = document.getElementById('depthContainer'), m = document.createElement('div'); m.className = 'message depth'; let bids = data.bids.map(b => `${b.quantity}@$${b.price.toFixed(2)}`).join(', '), asks = data.asks.map(a => `${a.quantity}@$${a.price.toFixed(2)}`).join(', '); m.innerHTML = `<div class="message-type">${data.symbol} DEPTH <span style="float:right;font-size:0.8em;font-weight:normal;">${formatTime(data.timestamp)}</span></div><div class="message-data" style="font-size:0.75em;"><strong>BIDS:</strong> ${bids}<br><strong>ASKS:</strong> ${asks}</div>`; c.insertBefore(m, c.firstChild); if (c.children.length > 10) c.removeChild(c.lastChild) }
-        function addLog(message) { const c = document.getElementById('logContainer'), m = document.createElement('div'); m.className = 'message info'; m.innerHTML = `<div class="message-data">${new Date().toLocaleTimeString('en-US', { hour12: false })}: ${message}</div>`; c.insertBefore(m, c.firstChild); if (c.children.length > 30) c.removeChild(c.lastChild) }
-
-        // Gather current stats from DOM for export
-        function gatherCurrentStats() {
-            const now = new Date().toISOString();
-            return {
-                timestamp: now,
-                instance: document.getElementById('instanceDisplay')?.textContent?.replace(/[\[\]]/g, '') || 'unknown',
-                websocket: {
-                    status: document.getElementById('statusText')?.textContent || 'unknown',
-                    messageRate: parseInt(document.getElementById('messageRate')?.textContent?.replace(/,/g, '') || 0),
-                    messageCount: parseInt(document.getElementById('messageCount')?.textContent?.replace(/,/g, '') || 0)
-                },
-                backend: {
-                    localRate: parseInt(document.getElementById('backendRate')?.textContent?.replace(/,/g, '') || 0),
-                    localTotal: parseInt(document.getElementById('backendTotal')?.textContent?.replace(/,/g, '') || 0),
-                    clusterRate: parseInt(document.getElementById('clusterRate')?.textContent?.replace(/,/g, '') || 0),
-                    clusterTotal: parseInt(document.getElementById('clusterTotal')?.textContent?.replace(/,/g, '') || 0)
-                },
-                memory: {
-                    heapUsed: document.getElementById('heapUsed')?.textContent || '0',
-                    heapMax: document.getElementById('heapMax')?.textContent || '0',
-                    heapPercent: document.getElementById('heapPercent')?.textContent || '0'
-                },
-                gc: {
-                    collectorName: document.getElementById('gcCollectorName')?.textContent || 'unknown',
-                    collectionCount: document.getElementById('gcCollectionCount')?.textContent || '0',
-                    collectionsPerSec: document.getElementById('gcCollectionDelta')?.textContent || '0',
-                    totalCollectionTime: document.getElementById('gcCollectionTime')?.textContent || '0',
-                    avgTime: document.getElementById('gcAvgTime')?.textContent || '0'
-                },
-                gcPerformance: {
-                    p99Ms: document.getElementById('pause-p99')?.textContent || '0',
-                    maxMs: document.getElementById('pause-max')?.textContent || '0',
-                    slaViolations: document.getElementById('sla-violations')?.textContent?.replace(/,/g, '') || '0',
-                    allocRate: document.getElementById('alloc-rate')?.textContent || '0'
-                },
-                pressure: {
-                    mode: document.getElementById('pressureMode')?.textContent || 'OFF',
-                    rate: document.getElementById('pressureRate')?.textContent || '0'
-                }
-            };
-        }
-
-        // Export stats as JSON or CSV
-        function exportStats(format) {
-            const stats = gatherCurrentStats();
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-            let content, filename, mimeType;
-
-            if (format === 'json') {
-                content = JSON.stringify(stats, null, 2);
-                filename = `tradestream-stats-${timestamp}.json`;
-                mimeType = 'application/json';
-            } else if (format === 'csv') {
-                // Flatten the object for CSV
-                const flat = {
-                    timestamp: stats.timestamp,
-                    instance: stats.instance,
-                    websocket_status: stats.websocket.status,
-                    websocket_messageRate: stats.websocket.messageRate,
-                    websocket_messageCount: stats.websocket.messageCount,
-                    backend_localRate: stats.backend.localRate,
-                    backend_localTotal: stats.backend.localTotal,
-                    backend_clusterRate: stats.backend.clusterRate,
-                    backend_clusterTotal: stats.backend.clusterTotal,
-                    memory_heapUsed: stats.memory.heapUsed,
-                    memory_heapMax: stats.memory.heapMax,
-                    memory_heapPercent: stats.memory.heapPercent,
-                    gc_collectorName: stats.gc.collectorName,
-                    gc_collectionCount: stats.gc.collectionCount,
-                    gc_collectionsPerSec: stats.gc.collectionsPerSec,
-                    gc_totalCollectionTime: stats.gc.totalCollectionTime,
-                    gc_avgTime: stats.gc.avgTime,
-                    gcPerformance_p99Ms: stats.gcPerformance.p99Ms,
-                    gcPerformance_maxMs: stats.gcPerformance.maxMs,
-                    gcPerformance_slaViolations: stats.gcPerformance.slaViolations,
-                    gcPerformance_allocRate: stats.gcPerformance.allocRate,
-                    pressure_mode: stats.pressure.mode,
-                    pressure_rate: stats.pressure.rate
-                };
-                content = Object.keys(flat).join(',') + '\n' + Object.values(flat).join(',');
-                filename = `tradestream-stats-${timestamp}.csv`;
-                mimeType = 'text/csv';
-            }
-
-            // Create download link and trigger download
-            const blob = new Blob([content], { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            addLog(`Stats exported as ${format.toUpperCase()}: ${filename}`);
-        }
-
-        window.addEventListener('load', () => {
-            initDarkMode(); // Initialize dark mode preference
-            initPollingInterval(); // Initialize polling interval preference
-            initCharts();
-            pollInstanceStatus(); // Get instance info immediately
-            updateLastUpdated(); // Initialize timestamp display
-            setInterval(updateLastUpdated, 1000); // Update "Updated Xs ago" every second
-            setTimeout(connect, 1000);
         });
-    </script>
+
+        const ctxHiccup = document.getElementById('hiccupChart').getContext('2d');
+        hiccupChart = new Chart(ctxHiccup, {
+            type: 'line',
+            data: {
+                labels: Array(50).fill(''),
+                datasets: [{
+                    label: 'Pause Duration (ms)',
+                    data: Array(50).fill(0),
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: 50,
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        title: { display: true, text: 'Pause Duration (ms)', font: { size: 12, weight: 'bold' } }
+                    }
+                }
+            }
+        });
+
+        const ctxGcPause = document.getElementById('gcPauseChart').getContext('2d');
+        gcPauseChart = new Chart(ctxGcPause, {
+            type: 'line',
+            data: {
+                labels: Array(50).fill(''),
+                datasets: [{
+                    label: 'GC Pause Time (ms)',
+                    data: Array(50).fill(0),
+                    borderColor: '#7c3aed',
+                    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: 10,
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        title: { display: true, text: 'Pause Duration (ms)', font: { size: 12, weight: 'bold' } }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateCharts() {
+        if (!hiccupChart) return;
+
+        const plotValue = maxGapInWindow > 10 ? maxGapInWindow : 0;
+
+        hiccupChart.data.labels.push('');
+        hiccupChart.data.datasets[0].data.push(plotValue);
+
+        if (hiccupChart.data.labels.length > 50) {
+            hiccupChart.data.labels.shift();
+            hiccupChart.data.datasets[0].data.shift();
+        }
+
+        hiccupChart.update('none');
+        maxGapInWindow = 0;
+    }
+
+    function updatePriceChart(price) {
+        if (!priceChart) return;
+        const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        priceChart.data.labels.push(now);
+        priceChart.data.datasets[0].data.push(price);
+        if (priceChart.data.labels.length > 50) {
+            priceChart.data.labels.shift();
+            priceChart.data.datasets[0].data.shift();
+        }
+        priceChart.update('none');
+    }
+
+    function pollGCPauseStats() {
+        fetch(API_BASE + '/gc/stats')
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(stats => {
+                if (stats && stats.length > 0) {
+                    let maxPauseMs = 0;
+                    let activeCollectors = [];
+                    let heapUsed = 0;
+                    let heapMax = 0;
+                    let totalCollectionCount = 0;
+                    let totalCollectionTime = 0;
+
+                    stats.forEach(gcStat => {
+                        const pause = gcStat.lastPauseDuration || 0;
+                        if (pause > maxPauseMs) {
+                            maxPauseMs = pause;
+                        }
+                        if (gcStat.collectionCount > 0) {
+                            activeCollectors.push(gcStat.gcName);
+                        }
+                        if (gcStat.usedMemory && gcStat.totalMemory) {
+                            heapUsed = gcStat.usedMemory;
+                            heapMax = gcStat.totalMemory;
+                        }
+
+                        totalCollectionCount += (gcStat.collectionCount || 0);
+                        totalCollectionTime += (gcStat.collectionTime || 0);
+                    });
+
+                    const now = Date.now();
+                    if (lastGcPollTime > 0) {
+                const timeDiff = (now - lastGcPollTime) / 1000;
+                        const countDiff = totalCollectionCount - lastGcCount;
+
+                        if (timeDiff > 0 && countDiff >= 0) {
+                            const rate = countDiff / timeDiff;
+                            document.getElementById('gcCollectionDelta').textContent = rate.toFixed(1);
+                        }
+                    }
+                    lastGcCount = totalCollectionCount;
+                    lastGcPollTime = now;
+
+                    document.getElementById('gcCollectionCount').textContent = totalCollectionCount.toLocaleString();
+                    document.getElementById('gcCollectionTime').textContent = totalCollectionTime.toLocaleString();
+
+                    const avgTime = totalCollectionCount > 0 ? (totalCollectionTime / totalCollectionCount) : 0;
+                    document.getElementById('gcAvgTime').textContent = avgTime.toFixed(2);
+
+                    const heapUsedMB = heapUsed / (1024 * 1024);
+                    const heapMaxMB = heapMax / (1024 * 1024);
+                    const heapPercent = heapMax > 0 ? ((heapUsed / heapMax) * 100).toFixed(0) : 0;
+
+                    document.getElementById('heapUsed').textContent = (isFinite(heapUsedMB) ? heapUsedMB : 0).toFixed(0);
+                    document.getElementById('heapMax').textContent = (isFinite(heapMaxMB) ? heapMaxMB : 0).toFixed(0);
+                    document.getElementById('heapPercent').textContent = heapPercent;
+
+                    const heapPercentValue = parseFloat(heapPercent) || 0;
+                    checkAlert('heapPercent', heapPercentValue, ALERT_THRESHOLDS.heapPercent);
+
+                    const collectorNames = [...new Set(activeCollectors)].join(' / ');
+                    document.getElementById('gcPauseCollectorName').textContent = collectorNames || '--';
+                    document.getElementById('gcCollectorName').textContent = collectorNames || '--';
+
+                    if (gcPauseChart) {
+                        gcPauseChart.data.labels.push('');
+                        gcPauseChart.data.datasets[0].data.push(maxPauseMs);
+
+                        if (gcPauseChart.data.labels.length > 50) {
+                            gcPauseChart.data.labels.shift();
+                            gcPauseChart.data.datasets[0].data.shift();
+                        }
+
+                        gcPauseChart.update('none');
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching GC pause stats:', error));
+    }
+
+    function setPressureMode(mode) {
+        const buttons = document.querySelectorAll('[onclick*="setPressureMode"]');
+        let clickedButton = null;
+        buttons.forEach(btn => {
+            if (btn.textContent.trim() === mode) {
+                clickedButton = btn;
+                btn.classList.add('processing');
+            }
+        });
+
+        fetch(API_BASE + '/pressure/mode/' + mode, { method: 'POST' })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(result => {
+                if (clickedButton) {
+                    clickedButton.classList.remove('processing');
+                }
+                if (result.success) {
+                    addLog('Memory pressure mode set to: ' + mode);
+                    pollPressureStatus();
+                } else {
+                    addLog('Error setting pressure mode: ' + result.error);
+                }
+            })
+            .catch(error => {
+                if (clickedButton) {
+                    clickedButton.classList.remove('processing');
+                }
+                console.error('Error setting pressure mode:', error);
+                addLog('Failed to set pressure mode: ' + error.message);
+            });
+    }
+
+    function pollPressureStatus() {
+        fetch(API_BASE + '/pressure/status')
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(status => {
+                document.getElementById('pressureMode').textContent = status.currentMode || 'OFF';
+                const bytesPerSecond = status.bytesPerSecond ?? 0;
+                const rateMBps = isFinite(bytesPerSecond) ? (bytesPerSecond / (1024 * 1024)).toFixed(1) : '0';
+                document.getElementById('pressureRate').textContent = rateMBps + ' MB/sec';
+            })
+            .catch(error => console.error('Error fetching pressure status:', error));
+    }
+
+    const API_BASE = '/' + window.location.pathname.split('/')[1] + '/api';
+
+    const ALERT_THRESHOLDS = {
+        p99Ms: { warning: 10, critical: 50 },
+        maxMs: { warning: 20, critical: 100 },
+        heapPercent: { warning: 75, critical: 90 },
+        slaViolations: { warning: 10, critical: 100 }
+    };
+
+    function checkAlert(elementId, value, threshold) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        const wasCritical = el.classList.contains('alert-critical');
+        el.classList.remove('alert-warning', 'alert-critical');
+
+        if (value >= threshold.critical) {
+            el.classList.add('alert-critical');
+            if (!wasCritical && document.hidden) {
+                alertCount++;
+                updateTabTitle();
+                updateFavicon('alert');
+                flashTabTitle(`CRITICAL: ${elementId} = ${value}`);
+            }
+        } else if (value >= threshold.warning) {
+            el.classList.add('alert-warning');
+        }
+    }
+
+    let lastClusterTotal = 0;
+    let lastClusterTime = Date.now();
+    let apiHealthy = false;
+    let lastApiSuccess = null;
+
+    function updateApiStatus(healthy) {
+        apiHealthy = healthy;
+        const indicator = document.getElementById('apiStatusIndicator');
+        if (indicator) {
+            if (healthy) {
+                indicator.classList.add('connected');
+                indicator.title = 'REST API: Connected';
+            } else {
+                indicator.classList.remove('connected');
+                indicator.title = 'REST API: Disconnected';
+            }
+        }
+    }
+
+    function toggleDarkMode() {
+        const html = document.documentElement;
+        const btn = document.getElementById('darkModeBtn');
+        const isDark = html.classList.toggle('dark-theme');
+
+        btn.textContent = isDark ? '☀️ Light' : '🌙 Dark';
+
+        localStorage.setItem('darkMode', isDark);
+    }
+
+    function initDarkMode() {
+        const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const shouldBeDark = savedDarkMode || (savedDarkMode === null && prefersDark);
+
+        if (shouldBeDark) {
+            document.documentElement.classList.add('dark-theme');
+            document.getElementById('darkModeBtn').textContent = '☀️ Light';
+        }
+    }
+
+    function updateFavicon(status) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = status === 'connected' ? '#10b981' :
+            status === 'alert' ? '#ef4444' : '#64748b';
+        ctx.beginPath();
+        ctx.arc(16, 16, 14, 0, 2 * Math.PI);
+        ctx.fill();
+
+        if (status === 'alert') {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('!', 16, 16);
+        }
+
+        const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = canvas.toDataURL();
+        document.getElementsByTagName('head')[0].appendChild(link);
+    }
+
+    function updateTabTitle() {
+        if (titleFlashInterval) return;
+
+        const isConnected = ws && ws.readyState === WebSocket.OPEN;
+        const messageRate = document.getElementById('messageRate')?.textContent || '0';
+        const status = isConnected ? '✓' : '✗';
+
+        if (document.hidden && alertCount > 0) {
+            document.title = `(${alertCount}) TradeStreamEE | Alerts`;
+        } else {
+            document.title = `TradeStreamEE ${status} | ${messageRate} msg/s`;
+        }
+    }
+
+    function flashTabTitle(message, duration = 5000) {
+        if (titleFlashInterval) clearInterval(titleFlashInterval);
+
+        let visible = true;
+        titleFlashInterval = setInterval(() => {
+            document.title = visible ? `⚠ ${message}` : originalTitle;
+            visible = !visible;
+        }, 1000);
+
+        setTimeout(() => {
+            clearInterval(titleFlashInterval);
+            titleFlashInterval = null;
+            updateTabTitle();
+        }, duration);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            alertCount = 0;
+            updateTabTitle();
+        }
+    });
+
+    let currentPollingInterval = 2000;
+
+    function setPollingInterval(intervalMs) {
+        intervalMs = parseInt(intervalMs);
+        if (isNaN(intervalMs) || intervalMs < 1000) return;
+
+        currentPollingInterval = intervalMs;
+
+        if (window.instanceStatusInterval) {
+            clearInterval(window.instanceStatusInterval);
+            window.instanceStatusInterval = setInterval(pollInstanceStatus, currentPollingInterval);
+        }
+
+        if (window.gcComparisonInterval) {
+            clearInterval(window.gcComparisonInterval);
+            window.gcComparisonInterval = setInterval(pollGCComparison, currentPollingInterval);
+        }
+
+        if (window.pressureStatusInterval) {
+            clearInterval(window.pressureStatusInterval);
+            window.pressureStatusInterval = setInterval(pollPressureStatus, Math.max(3000, currentPollingInterval));
+        }
+
+        localStorage.setItem('pollingInterval', intervalMs);
+
+        addLog(`Polling interval set to ${intervalMs / 1000}s`);
+    }
+
+    function initPollingInterval() {
+        const savedInterval = localStorage.getItem('pollingInterval');
+        if (savedInterval) {
+            const interval = parseInt(savedInterval);
+            if (!isNaN(interval) && interval >= 1000) {
+                document.getElementById('pollingInterval').value = interval;
+                setPollingInterval(interval);
+            }
+        }
+    }
+
+    function updateLastUpdated() {
+        const el = document.getElementById('lastUpdated');
+        if (el) {
+            if (lastApiSuccess) {
+                const seconds = Math.floor((Date.now() - lastApiSuccess) / 1000);
+                el.textContent = 'Updated ' + seconds + 's ago';
+            } else {
+                el.textContent = 'No data yet';
+            }
+        }
+    }
+
+    function pollInstanceStatus() {
+        fetch(API_BASE + '/status')
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(status => {
+                lastApiSuccess = Date.now();
+                updateApiStatus(true);
+                updateLastUpdated();
+
+                if (status.instance) {
+                    document.getElementById('instanceDisplay').textContent = '[' + status.instance + ']';
+                }
+
+                if (status.publisher && status.publisher.clusterMessagesPublished !== undefined) {
+                    const clusterTotal = status.publisher.clusterMessagesPublished ?? 0;
+                    document.getElementById('clusterTotal').textContent = clusterTotal.toLocaleString();
+
+                    const now = Date.now();
+                    const timeDiff = (now - lastClusterTime) / 1000;
+                    const messageDiff = clusterTotal - (lastClusterTotal ?? 0);
+                    if (timeDiff > 0 && (lastClusterTotal ?? 0) > 0) {
+                        const clusterRate = Math.round(messageDiff / timeDiff);
+                        if (isFinite(clusterRate)) {
+                            document.getElementById('clusterRate').textContent = clusterRate.toLocaleString();
+                        }
+                    }
+                    lastClusterTotal = clusterTotal;
+                    lastClusterTime = now;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching instance status:', error);
+                updateApiStatus(false);
+            });
+    }
+
+    async function applyScenario(scenario) {
+        document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
+
+        const btn = document.getElementById('btn-' + scenario);
+        if (btn) btn.classList.add('active');
+
+        try {
+            const response = await fetch(API_BASE + '/pressure/scenario/' + scenario, {
+                method: 'POST'
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const result = await response.json();
+            console.log('Applied scenario:', result);
+
+            pollPressureStatus();
+
+            addLog('Scenario applied: ' + result.description);
+        } catch (error) {
+            console.error('Error applying scenario:', error);
+            addLog('Failed to apply scenario: ' + error.message);
+        }
+    }
+
+    async function pollGCComparison() {
+        try {
+            const response = await fetch(API_BASE + '/gc/comparison');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+
+            const instanceName = data.instanceName || 'unknown';
+            document.getElementById('instance-name').textContent = instanceName;
+
+            const instanceEl = document.getElementById('instance-name');
+            if (instanceName.includes('c4')) {
+                instanceEl.style.color = '#10b981';
+            } else if (instanceName.includes('g1')) {
+                instanceEl.style.color = '#10b981';
+            } else {
+                instanceEl.style.color = '#2563eb';
+            }
+
+            document.getElementById('jvm-name').textContent = data.jvmName || 'Unknown';
+            const gcTypeEl = document.getElementById('gc-type');
+            if (data.isAzulC4) {
+                gcTypeEl.textContent = 'Azul C4';
+                gcTypeEl.className = 'badge azul';
+            } else {
+                gcTypeEl.textContent = 'Standard G1';
+                gcTypeEl.className = 'badge standard';
+            }
+
+            const p99Ms = data.pauseP99Ms ?? 0;
+            const maxMs = data.pauseMaxMs ?? 0;
+            const violations = data.slaViolations10ms ?? 0;
+            const allocRate = data.allocationRateMBps ?? 0;
+            const sampleSize = data.pauseSampleSize ?? 0;
+
+            let lastPauseMs = 0;
+            if (data.gcStats && data.gcStats.length > 0) {
+                data.gcStats.forEach(stat => {
+                    if (stat.lastPauseDuration > lastPauseMs) {
+                        lastPauseMs = stat.lastPauseDuration;
+                    }
+                });
+            }
+
+            document.getElementById('pause-p99').textContent = (isFinite(p99Ms) ? p99Ms : 0).toFixed(2);
+            document.getElementById('pause-last').textContent = (isFinite(lastPauseMs) ? lastPauseMs : 0).toFixed(2);
+            document.getElementById('pause-max').textContent = (isFinite(maxMs) ? maxMs : 0).toFixed(2);
+            document.getElementById('sla-violations').textContent = (isFinite(violations) ? violations : 0).toLocaleString();
+            document.getElementById('alloc-rate').textContent = (isFinite(allocRate) ? allocRate : 0).toFixed(1);
+
+            const p99SamplesEl = document.getElementById('pause-p99-samples');
+            if (p99SamplesEl) {
+                p99SamplesEl.textContent = `(${sampleSize} samples)`;
+            }
+
+            checkAlert('pause-p99', isFinite(p99Ms) ? p99Ms : 0, ALERT_THRESHOLDS.p99Ms);
+            checkAlert('pause-max', isFinite(maxMs) ? maxMs : 0, ALERT_THRESHOLDS.maxMs);
+            checkAlert('sla-violations', isFinite(violations) ? violations : 0, ALERT_THRESHOLDS.slaViolations);
+
+
+            const p99Status = document.getElementById('pause-p99-status');
+            const p99 = isFinite(p99Ms) ? p99Ms : 0;
+
+            if (p99 < 1) {
+                p99Status.className = 'status-indicator excellent';
+                p99Status.textContent = '✓ Excellent';
+            } else if (p99 < 10) {
+                p99Status.className = 'status-indicator good';
+                p99Status.textContent = '✓ Good';
+            } else if (p99 < 50) {
+                p99Status.className = 'status-indicator warning';
+                p99Status.textContent = '⚠ Degraded';
+            } else {
+                p99Status.className = 'status-indicator critical';
+                p99Status.textContent = '✗ Critical';
+            }
+
+        } catch (error) {
+            console.error('Failed to fetch GC comparison metrics:', error);
+        }
+    }
+
+    async function resetPauseStats() {
+        try {
+            const response = await fetch(API_BASE + '/gc/pauses/reset', { method: 'POST' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const result = await response.json();
+            console.log('Reset pause stats:', result);
+
+            pollGCComparison();
+            addLog('GC pause statistics reset');
+        } catch (error) {
+            console.error('Error resetting pause stats:', error);
+            addLog('Failed to reset pause stats: ' + error.message);
+        }
+    }
+
+    function flipCard(card) {
+        card.classList.toggle('flipped');
+    }
+
+    function toggleConnection() { ws && ws.readyState === WebSocket.OPEN ? ws.close() : connect() }
+
+    function connect() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const contextPath = window.location.pathname.replace(/\/[^\/]*\.html.*$/, '').replace(/\/$/, '');
+        const wsUrl = `${protocol}//${window.location.host}${contextPath}/market-data`;
+
+        addLog('Connecting to ' + wsUrl);
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            document.getElementById('statusIndicator').classList.add('connected');
+            document.getElementById('statusText').textContent = 'Connected';
+            document.getElementById('connectBtn').textContent = 'Disconnect';
+            addLog('WebSocket connected');
+            lastMessageTime = performance.now();
+            lastRateUpdate = Date.now();
+
+            updateFavicon('connected');
+            updateTabTitle();
+
+            if (window.chartInterval) clearInterval(window.chartInterval);
+            window.chartInterval = setInterval(updateCharts, 100);
+
+            if (window.gcPauseStatsInterval) clearInterval(window.gcPauseStatsInterval);
+            window.gcPauseStatsInterval = setInterval(pollGCPauseStats, currentPollingInterval);
+            pollGCPauseStats();
+
+            if (window.gcComparisonInterval) clearInterval(window.gcComparisonInterval);
+            window.gcComparisonInterval = setInterval(pollGCComparison, currentPollingInterval);
+            pollGCComparison();
+
+            if (window.pressureStatusInterval) clearInterval(window.pressureStatusInterval);
+            window.pressureStatusInterval = setInterval(pollPressureStatus, Math.max(3000, currentPollingInterval));
+            pollPressureStatus();
+
+            if (window.instanceStatusInterval) clearInterval(window.instanceStatusInterval);
+            window.instanceStatusInterval = setInterval(pollInstanceStatus, currentPollingInterval);
+            pollInstanceStatus();
+
+            if (window.tabTitleInterval) clearInterval(window.tabTitleInterval);
+            window.tabTitleInterval = setInterval(updateTabTitle, 1000);
+        };
+        ws.onclose = () => {
+            document.getElementById('statusIndicator').classList.remove('connected');
+            document.getElementById('statusText').textContent = 'Disconnected (Reconnecting...)';
+            document.getElementById('connectBtn').textContent = 'Connect';
+            document.getElementById('modeDisplay').textContent = '';
+            document.getElementById('chartModeLabel').textContent = 'Disconnected';
+            addLog('WebSocket disconnected. Attempting auto-reconnect in 3s...');
+
+            updateFavicon('disconnected');
+            updateTabTitle();
+            if (window.tabTitleInterval) clearInterval(window.tabTitleInterval);
+
+            if (window.chartInterval) clearInterval(window.chartInterval);
+            if (window.gcComparisonInterval) clearInterval(window.gcComparisonInterval);
+            if (window.gcPauseStatsInterval) clearInterval(window.gcPauseStatsInterval);
+            setTimeout(connect, 3000);
+        };
+        ws.onerror = error => addLog('WebSocket error: ' + error);
+        ws.onmessage = event => {
+            let data = JSON.parse(event.data);
+            if (data.wrapped && data.data) {
+                data = data.data;
+            }
+            handleMessage(data);
+        };
+    }
+
+    function handleMessage(data) {
+        const nowPerf = performance.now();
+        const gap = nowPerf - lastMessageTime;
+        lastMessageTime = nowPerf;
+
+        if (gap > maxGapInWindow) {
+            maxGapInWindow = gap;
+        }
+
+        messageCount++;
+        messagesLastSecond++;
+
+        const nowEpoch = Date.now();
+        if (nowEpoch - lastRateUpdate >= 1000) {
+            document.getElementById('messageCount').textContent = messageCount.toLocaleString();
+            document.getElementById('messageRate').textContent = messagesLastSecond.toLocaleString();
+            messagesLastSecond = 0;
+            lastRateUpdate = nowEpoch;
+        }
+
+        switch (data.type) {
+            case 'trade':
+                addTrade(data);
+                updatePriceChart(data.price);
+                break;
+            case 'quote':
+                addQuote(data);
+                break;
+            case 'depth':
+                addDepth(data);
+                break;
+            case 'info':
+                addLog(data.message);
+                if (data.mode) {
+                    const modeText = 'Mode: ' + data.mode;
+                    document.getElementById('modeDisplay').textContent = modeText;
+                    document.getElementById('chartModeLabel').textContent = modeText;
+                }
+                break;
+            case 'stats':
+                if (data.total != null && isFinite(data.total)) {
+                    document.getElementById('backendTotal').textContent = data.total.toLocaleString();
+                }
+                if (data.rate != null && isFinite(data.rate)) {
+                    document.getElementById('backendRate').textContent = parseInt(data.rate).toLocaleString();
+                }
+                break;
+        }
+    }
+
+    function formatTime(timestamp) {
+        if (!timestamp) return '';
+        const d = new Date(timestamp);
+        return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.' + d.getMilliseconds().toString().padStart(3, '0');
+    }
+
+    function addTrade(data) { const c = document.getElementById('tradesContainer'), m = document.createElement('div'); m.className = 'message trade'; m.innerHTML = `<div class="message-type">TRADE #${data.tradeId} <span style="float:right;font-size:0.8em;font-weight:normal;">${formatTime(data.timestamp)}</span></div><div class="message-data"><strong>${data.symbol}</strong> ${data.side} <span class="highlight">${data.quantity}</span> @ <span class="highlight">$${data.price.toFixed(2)}</span></div>`; c.insertBefore(m, c.firstChild); if (c.children.length > 20) c.removeChild(c.lastChild) }
+    function addQuote(data) { const c = document.getElementById('quotesContainer'), m = document.createElement('div'); m.className = 'message quote'; m.innerHTML = `<div class="message-type">${data.symbol} <span style="float:right;font-size:0.8em;font-weight:normal;">${formatTime(data.timestamp)}</span></div><div class="message-data">BID: <span class="highlight">${data.bid.size}</span> @ <span class="highlight">$${data.bid.price.toFixed(2)}</span><br>ASK: <span class="highlight">${data.ask.size}</span> @ <span class="highlight">$${data.ask.price.toFixed(2)}</span></div>`; c.insertBefore(m, c.firstChild); if (c.children.length > 20) c.removeChild(c.lastChild) }
+    function addDepth(data) { const c = document.getElementById('depthContainer'), m = document.createElement('div'); m.className = 'message depth'; let bids = data.bids.map(b => `${b.quantity}@$${b.price.toFixed(2)}`).join(', '), asks = data.asks.map(a => `${a.quantity}@$${a.price.toFixed(2)}`).join(', '); m.innerHTML = `<div class="message-type">${data.symbol} DEPTH <span style="float:right;font-size:0.8em;font-weight:normal;">${formatTime(data.timestamp)}</span></div><div class="message-data" style="font-size:0.75em;"><strong>BIDS:</strong> ${bids}<br><strong>ASKS:</strong> ${asks}</div>`; c.insertBefore(m, c.firstChild); if (c.children.length > 10) c.removeChild(c.lastChild) }
+    function addLog(message) { const c = document.getElementById('logContainer'), m = document.createElement('div'); m.className = 'message info'; m.innerHTML = `<div class="message-data">${new Date().toLocaleTimeString('en-US', { hour12: false })}: ${message}</div>`; c.insertBefore(m, c.firstChild); if (c.children.length > 30) c.removeChild(c.lastChild) }
+
+    function gatherCurrentStats() {
+        const now = new Date().toISOString();
+        return {
+            timestamp: now,
+            instance: document.getElementById('instanceDisplay')?.textContent?.replace(/[\[\]]/g, '') || 'unknown',
+            websocket: {
+                status: document.getElementById('statusText')?.textContent || 'unknown',
+                messageRate: parseInt(document.getElementById('messageRate')?.textContent?.replace(/,/g, '') || 0),
+                messageCount: parseInt(document.getElementById('messageCount')?.textContent?.replace(/,/g, '') || 0)
+            },
+            backend: {
+                localRate: parseInt(document.getElementById('backendRate')?.textContent?.replace(/,/g, '') || 0),
+                localTotal: parseInt(document.getElementById('backendTotal')?.textContent?.replace(/,/g, '') || 0),
+                clusterRate: parseInt(document.getElementById('clusterRate')?.textContent?.replace(/,/g, '') || 0),
+                clusterTotal: parseInt(document.getElementById('clusterTotal')?.textContent?.replace(/,/g, '') || 0)
+            },
+            memory: {
+                heapUsed: document.getElementById('heapUsed')?.textContent || '0',
+                heapMax: document.getElementById('heapMax')?.textContent || '0',
+                heapPercent: document.getElementById('heapPercent')?.textContent || '0'
+            },
+            gc: {
+                collectorName: document.getElementById('gcCollectorName')?.textContent || 'unknown',
+                collectionCount: document.getElementById('gcCollectionCount')?.textContent || '0',
+                collectionsPerSec: document.getElementById('gcCollectionDelta')?.textContent || '0',
+                totalCollectionTime: document.getElementById('gcCollectionTime')?.textContent || '0',
+                avgTime: document.getElementById('gcAvgTime')?.textContent || '0'
+            },
+            gcPerformance: {
+                p99Ms: document.getElementById('pause-p99')?.textContent || '0',
+                maxMs: document.getElementById('pause-max')?.textContent || '0',
+                slaViolations: document.getElementById('sla-violations')?.textContent?.replace(/,/g, '') || '0',
+                allocRate: document.getElementById('alloc-rate')?.textContent || '0'
+            },
+            pressure: {
+                mode: document.getElementById('pressureMode')?.textContent || 'OFF',
+                rate: document.getElementById('pressureRate')?.textContent || '0'
+            }
+        };
+    }
+
+    function exportStats(format) {
+        const stats = gatherCurrentStats();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+        let content, filename, mimeType;
+
+        if (format === 'json') {
+            content = JSON.stringify(stats, null, 2);
+            filename = `tradestream-stats-${timestamp}.json`;
+            mimeType = 'application/json';
+        } else if (format === 'csv') {
+            const flat = {
+                timestamp: stats.timestamp,
+                instance: stats.instance,
+                websocket_status: stats.websocket.status,
+                websocket_messageRate: stats.websocket.messageRate,
+                websocket_messageCount: stats.websocket.messageCount,
+                backend_localRate: stats.backend.localRate,
+                backend_localTotal: stats.backend.localTotal,
+                backend_clusterRate: stats.backend.clusterRate,
+                backend_clusterTotal: stats.backend.clusterTotal,
+                memory_heapUsed: stats.memory.heapUsed,
+                memory_heapMax: stats.memory.heapMax,
+                memory_heapPercent: stats.memory.heapPercent,
+                gc_collectorName: stats.gc.collectorName,
+                gc_collectionCount: stats.gc.collectionCount,
+                gc_collectionsPerSec: stats.gc.collectionsPerSec,
+                gc_totalCollectionTime: stats.gc.totalCollectionTime,
+                gc_avgTime: stats.gc.avgTime,
+                gcPerformance_p99Ms: stats.gcPerformance.p99Ms,
+                gcPerformance_maxMs: stats.gcPerformance.maxMs,
+                gcPerformance_slaViolations: stats.gcPerformance.slaViolations,
+                gcPerformance_allocRate: stats.gcPerformance.allocRate,
+                pressure_mode: stats.pressure.mode,
+                pressure_rate: stats.pressure.rate
+            };
+            content = Object.keys(flat).join(',') + '\n' + Object.values(flat).join(',');
+            filename = `tradestream-stats-${timestamp}.csv`;
+            mimeType = 'text/csv';
+        }
+
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        addLog(`Stats exported as ${format.toUpperCase()}: ${filename}`);
+    }
+
+    window.addEventListener('load', () => {
+        initDarkMode();
+        initPollingInterval();
+        initCharts();
+        pollInstanceStatus();
+        updateLastUpdated();
+        setInterval(updateLastUpdated, 1000);
+
+        updateFavicon('disconnected');
+        updateTabTitle();
+
+        setTimeout(connect, 1000);
+    });
+</script>
 </body>
 
 </html>

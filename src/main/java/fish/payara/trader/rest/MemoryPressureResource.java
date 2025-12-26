@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-/** REST endpoint for controlling memory pressure testing */
 @Path("/pressure")
 public class MemoryPressureResource {
 
@@ -49,7 +48,6 @@ public class MemoryPressureResource {
   @Produces(MediaType.APPLICATION_JSON)
   public Response getStatus() {
     AllocationMode currentMode = pressureService.getCurrentMode();
-    LOGGER.fine(String.format("GET /api/pressure/status - Current mode: %s", currentMode.name()));
 
     Map<String, Object> status = new HashMap<>();
     status.put("currentMode", currentMode.name());

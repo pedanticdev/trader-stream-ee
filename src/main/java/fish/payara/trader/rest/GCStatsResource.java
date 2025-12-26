@@ -73,15 +73,14 @@ public class GCStatsResource {
     }
     comparison.put("instanceName", instanceName);
 
-    // Identify which JVM is running
     String jvmVendor = System.getProperty("java.vm.vendor");
     String jvmName = System.getProperty("java.vm.name");
     List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
     String gcName =
         gcBeans.stream().map(GarbageCollectorMXBean::getName).collect(Collectors.joining(", "));
 
-    // More accurate check: C4 collector's MXBean is named "GPGC"
-    boolean isAzulC4 = gcBeans.stream().anyMatch(bean -> "GPGC".equals(bean.getName()));
+    boolean isAzulC4 =
+        jvmVendor != null && (jvmVendor.contains("Azul") || jvmName.contains("Zing"));
 
     comparison.put("jvmVendor", jvmVendor);
     comparison.put("jvmName", jvmName);
@@ -89,18 +88,15 @@ public class GCStatsResource {
     comparison.put("isAzulC4", isAzulC4);
     comparison.put("heapSizeMB", Runtime.getRuntime().maxMemory() / (1024 * 1024));
 
-    // Current stress level
     comparison.put("allocationMode", memoryPressureService.getCurrentMode());
     comparison.put(
         "allocationRateMBps",
         memoryPressureService.getCurrentMode().getBytesPerSecond() / (1024 * 1024));
     comparison.put("messageRate", publisher.getMessagesPublished());
 
-    // GC Performance Metrics (keep old stats for backward compatibility)
     List<GCStats> stats = gcStatsService.collectGCStats();
     comparison.put("gcStats", stats);
 
-    // Critical comparison metrics - USE ACCURATE GC PAUSE MONITOR
     fish.payara.trader.monitoring.GCPauseMonitor.GCPauseStats pauseStats =
         gcPauseMonitor.getStats();
     comparison.put("pauseP50Ms", pauseStats.p50Ms);
@@ -112,11 +108,10 @@ public class GCStatsResource {
     comparison.put("totalPauseCount", pauseStats.totalPauseCount);
     comparison.put("totalPauseTimeMs", pauseStats.totalPauseTimeMs);
 
-    // SLA violation tracking (accurate counts since startup/reset)
     comparison.put("slaViolations10ms", pauseStats.violationsOver10ms);
     comparison.put("slaViolations50ms", pauseStats.violationsOver50ms);
     comparison.put("slaViolations100ms", pauseStats.violationsOver100ms);
-    comparison.put("pauseSampleSize", pauseStats.sampleSize); // For transparency
+    comparison.put("pauseSampleSize", pauseStats.sampleSize);
 
     return Response.ok(comparison).build();
   }
@@ -125,7 +120,6 @@ public class GCStatsResource {
   @Path("/stats")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getGCStats() {
-    LOGGER.fine("GET /api/gc/stats - Collecting GC statistics");
     List<GCStats> stats = gcStatsService.collectGCStats();
     LOGGER.info(String.format("GET /api/gc/stats - Returned %d GC collector stats", stats.size()));
     return Response.ok(stats).build();

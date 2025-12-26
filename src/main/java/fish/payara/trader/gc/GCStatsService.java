@@ -72,7 +72,6 @@ public class GCStatsService implements NotificationListener {
         history.removeFirst();
       }
 
-      // Log significant pauses (> 10ms)
       if (duration > 10) {
         LOGGER.info(
             String.format(
@@ -102,7 +101,6 @@ public class GCStatsService implements NotificationListener {
       stats.setCollectionCount(gcBean.getCollectionCount());
       stats.setCollectionTime(gcBean.getCollectionTime());
 
-      // Get recent pauses from accurate history
       ConcurrentLinkedDeque<Long> history = pauseHistory.get(gcName);
       if (history != null && !history.isEmpty()) {
         List<Long> pauses = new ArrayList<>(history);
@@ -110,7 +108,6 @@ public class GCStatsService implements NotificationListener {
 
         stats.setRecentPauses(pauses.subList(Math.max(0, pauses.size() - 100), pauses.size()));
 
-        // Calculate percentiles
         List<Long> sortedPauses = pauses.stream().sorted().collect(Collectors.toList());
 
         stats.setPercentiles(calculatePercentiles(sortedPauses));
@@ -120,7 +117,6 @@ public class GCStatsService implements NotificationListener {
         stats.setPercentiles(new GCStats.PausePercentiles(0, 0, 0, 0, 0));
       }
 
-      // Memory stats
       stats.setTotalMemory(heapUsage.getMax());
       stats.setUsedMemory(heapUsage.getUsed());
       stats.setFreeMemory(heapUsage.getMax() - heapUsage.getUsed());
