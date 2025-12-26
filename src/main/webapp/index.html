@@ -279,6 +279,238 @@
             }
         }
 
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            /* Header */
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 16px 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .subtitle {
+                font-size: 0.85em;
+            }
+
+            header > div:last-child {
+                flex-wrap: wrap;
+                width: 100%;
+                justify-content: flex-start;
+                gap: 8px;
+            }
+
+            header select,
+            header button,
+            header a {
+                flex: 1;
+                min-width: 100px;
+                padding: 8px 12px;
+                font-size: 0.85em;
+                text-align: center;
+            }
+
+            /* Status Bar */
+            .status-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px 16px;
+            }
+
+            .status-item {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            #connectBtn {
+                width: 100%;
+            }
+
+            /* Stats Panel */
+            .stats-panel {
+                padding: 16px;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .stat-group {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 16px;
+                padding-right: 0;
+                gap: 16px;
+            }
+
+            .stat-group:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+            .stat-value {
+                font-size: 1.4em;
+                min-width: auto;
+            }
+
+            /* Stress Scenarios */
+            .stress-scenarios {
+                flex-direction: column;
+                padding: 12px 16px;
+                gap: 12px;
+            }
+
+            .scenario-buttons {
+                width: 100%;
+            }
+
+            .scenario-btn {
+                flex: 1;
+                min-width: 70px;
+                padding: 10px 12px;
+                font-size: 0.85em;
+            }
+
+            /* GC Comparison Panel */
+            .gc-comparison-panel {
+                padding: 16px;
+            }
+
+            .gc-comparison-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .gc-comparison-header h2 {
+                font-size: 1.2em;
+            }
+
+            .jvm-info {
+                flex-wrap: wrap;
+                font-size: 0.85em;
+            }
+
+            /* Metrics Grid */
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .metric-card {
+                padding: 12px;
+            }
+
+            .metric-value {
+                font-size: 1.5em;
+            }
+
+            /* Controls row in GC panel */
+            .gc-comparison-panel > div[style*="justify-content: space-between"] {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .gc-comparison-panel button {
+                width: 100%;
+            }
+
+            /* Cards */
+            .card-header {
+                padding: 12px 16px;
+                font-size: 0.95em;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .card-body {
+                padding: 16px;
+                max-height: 300px;
+            }
+
+            .card-body.chart-body {
+                height: 250px;
+            }
+
+            .card-back {
+                padding: 20px;
+            }
+
+            .card-back h3 {
+                font-size: 1.2em;
+            }
+
+            .card-back p {
+                font-size: 0.9em;
+            }
+
+            /* Hide flip hint on mobile (no hover) */
+            .flip-hint {
+                display: none;
+            }
+
+            /* Messages */
+            .message {
+                padding: 10px;
+                font-size: 0.75em;
+            }
+
+            /* Buttons */
+            button {
+                padding: 12px 16px;
+                font-size: 0.9em;
+                min-height: 44px;
+            }
+
+            .scenario-btn {
+                min-height: auto;
+            }
+
+            /* Chart labels */
+            .chart-mode-label {
+                font-size: 0.75em;
+                padding: 3px 6px;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .subtitle {
+                font-size: 0.8em;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metric-value {
+                font-size: 1.8em;
+            }
+
+            .stat-value {
+                font-size: 1.2em;
+            }
+
+            .card-body.chart-body {
+                height: 200px;
+            }
+        }
+
         .full-width {
             grid-column: 1 / -1;
         }
