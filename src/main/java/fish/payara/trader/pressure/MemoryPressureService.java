@@ -1,12 +1,13 @@
 package fish.payara.trader.pressure;
 
 import fish.payara.trader.concurrency.VirtualThreadExecutor;
+import fish.payara.trader.pressure.patterns.AllocationPattern;
+import fish.payara.trader.pressure.patterns.HFTPatternRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.concurrent.ManagedExecutorService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
@@ -34,7 +35,15 @@ public class MemoryPressureService {
   private static final int TENURED_TARGET_MB = 1024;
   private final AtomicLong tenuredBytesAllocated = new AtomicLong(0);
 
+  // Burst coordination for simulating market events (flash crashes, news releases, etc.)
+  private volatile long lastBurstTime = 0;
+  private static final long BURST_INTERVAL_MS = 5000; // 5 seconds
+  private static final int BURST_MULTIPLIER = 3; // 3x normal allocation rate during bursts
+
   @Inject @VirtualThreadExecutor private ManagedExecutorService executorService;
+
+  // HFT allocation patterns (order books, ticks, depth snapshots)
+  @Inject private HFTPatternRegistry patternRegistry;
 
   @PostConstruct
   public void init() {
@@ -104,40 +113,50 @@ public class MemoryPressureService {
   }
 
   private void generateGarbage(AllocationMode mode) {
-    int allocations = mode.getAllocationsPerIteration();
+    int baseAllocations = mode.getAllocationsPerIteration();
     int bytesPerAlloc = mode.getBytesPerAllocation();
 
-    for (int i = 0; i < allocations; i++) {
-      int pattern = i % 4;
-
-      switch (pattern) {
-        case 0:
-          generateStringGarbage(bytesPerAlloc);
-          break;
-        case 1:
-          generateByteArrayGarbage(bytesPerAlloc);
-          break;
-        case 2:
-          generateObjectGarbage(bytesPerAlloc / 64);
-          break;
-        case 3:
-          generateCollectionGarbage(bytesPerAlloc / 100);
-          break;
+    // Burst detection for HIGH and EXTREME modes (simulates market events)
+    boolean inBurst = false;
+    if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
+      long now = System.currentTimeMillis();
+      if (now - lastBurstTime >= BURST_INTERVAL_MS) {
+        inBurst = true;
+        lastBurstTime = now;
+        LOGGER.info(
+            String.format(
+                "Burst triggered - %dx allocation for %s mode (simulating market event)",
+                BURST_MULTIPLIER, mode.name()));
       }
+    }
 
-      if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
-        int chance = (mode == AllocationMode.EXTREME) ? 10 : 2;
-        if (ThreadLocalRandom.current().nextInt(10000) < chance) {
-          byte[] longLived = new byte[1024 * 1024];
-          ThreadLocalRandom.current().nextBytes(longLived);
-          tenuredObjects.add(longLived);
-          tenuredBytesAllocated.addAndGet(1024 * 1024);
-        }
+    int allocations = inBurst ? baseAllocations * BURST_MULTIPLIER : baseAllocations;
+
+    // HFT pattern-based allocation (order books, ticks, depth snapshots)
+    for (int i = 0; i < allocations; i++) {
+      try {
+        AllocationPattern pattern = patternRegistry.selectPattern();
+        Object allocated = pattern.allocate(bytesPerAlloc);
+        // Object becomes garbage after this scope - GC will collect it
+      } catch (Exception e) {
+        LOGGER.warning("Pattern allocation failed: " + e.getMessage());
       }
 
       totalBytesAllocated += bytesPerAlloc;
     }
 
+    // Tenured object promotion logic (unchanged - forces old-gen pressure)
+    if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
+      int chance = (mode == AllocationMode.EXTREME) ? 10 : 2;
+      if (ThreadLocalRandom.current().nextInt(10000) < chance) {
+        byte[] longLived = new byte[1024 * 1024];
+        ThreadLocalRandom.current().nextBytes(longLived);
+        tenuredObjects.add(longLived);
+        tenuredBytesAllocated.addAndGet(1024 * 1024);
+      }
+    }
+
+    // Tenured cleanup logic (unchanged - maintains 1GB cap)
     if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
       while (tenuredBytesAllocated.get() > TENURED_TARGET_MB * 1024L * 1024L) {
         if (!tenuredObjects.isEmpty()) {
@@ -152,33 +171,6 @@ public class MemoryPressureService {
         tenuredObjects.clear();
         tenuredBytesAllocated.set(0);
       }
-    }
-  }
-
-  private void generateStringGarbage(int bytes) {
-    StringBuilder sb = new StringBuilder(bytes);
-    for (int i = 0; i < bytes / 10; i++) {
-      sb.append("GARBAGE");
-    }
-    String garbage = sb.toString();
-  }
-
-  private void generateByteArrayGarbage(int bytes) {
-    byte[] garbage = new byte[bytes];
-    ThreadLocalRandom.current().nextBytes(garbage);
-  }
-
-  private void generateObjectGarbage(int count) {
-    List<DummyObject> garbage = new ArrayList<>(count);
-    for (int i = 0; i < count; i++) {
-      garbage.add(new DummyObject(i, "data-" + i, System.nanoTime()));
-    }
-  }
-
-  private void generateCollectionGarbage(int count) {
-    List<Integer> garbage = new ArrayList<>(count);
-    for (int i = 0; i < count; i++) {
-      garbage.add(ThreadLocalRandom.current().nextInt());
     }
   }
 
@@ -218,17 +210,5 @@ public class MemoryPressureService {
 
   public boolean isRunning() {
     return running;
-  }
-
-  private static class DummyObject {
-    private final int id;
-    private final String data;
-    private final long timestamp;
-
-    DummyObject(int id, String data, long timestamp) {
-      this.id = id;
-      this.data = data;
-      this.timestamp = timestamp;
-    }
   }
 }
