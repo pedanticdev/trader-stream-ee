@@ -1,10 +1,10 @@
 # TradeStreamEE: High-Frequency Trading Reference Architecture
 
-**TradeStreamEE** demonstrates how Jakarta EE applications can achieve low-latency, high-throughput performance by combining modern messaging (Aeron), efficient serialization (SBE), and a concurrent garbage collector (Azul C4).
+TradeStreamEE demonstrates how Jakarta EE applications can achieve low-latency, high-throughput performance by combining modern messaging (Aeron), efficient serialization (SBE), and a concurrent garbage collector (Azul C4).
 
-It simulates a high-frequency trading dashboard that ingests tens of thousands of market data messages per second, processes them in real-time, and broadcasts updates to a web frontend—without the latency spikes associated with traditional Java garbage collection.
+It simulates a high-frequency trading dashboard that ingests tens of thousands of market data messages per second, processes them in real-time, and broadcasts updates to a web frontend without the latency spikes associated with traditional Java garbage collection.
 
-## ⚡ The Core Technologies
+## The Core Technologies
 
 TradeStreamEE achieves high performance by combining four key technologies:
 
@@ -26,61 +26,61 @@ A JVM with the C4 garbage collector that performs cleanup concurrently with appl
 
 **How they work together:** Payara Micro manages the Aeron publisher/subscriber lifecycle via CDI. The publisher encodes market data into binary using SBE, sends it through Aeron's shared memory transport, and the subscriber decodes it without allocating Java objects. This minimal garbage generation lets C4's concurrent collection easily handle the cleanup, maintaining flat latency even at high throughput.
 
-## 🚀 The Rationale: Why This Project Exists
+## The Rationale: Why This Project Exists
 
 Enterprise Java applications often struggle with two competing requirements:
 
-1. **High Throughput:** Ingesting massive data streams (IoT, Financial Data).
-2. **Low Latency:** Processing that data without "Stop-the-World" pauses.
+1. High Throughput: Ingesting massive data streams (IoT, Financial Data).
+2. Low Latency: Processing that data without "Stop-the-World" pauses.
 
-Standard JVMs (using G1GC or ParallelGC) often "hiccup" under high load, causing UI freezes or missed SLAs. **TradeStreamEE** proves that by combining a modern, broker-less transport (**Aeron**) with a pauseless runtime (**Azul C4**), standard Jakarta EE applications can achieve microsecond-level latency and massive throughput.
+Standard JVMs (using G1GC or ParallelGC) often "hiccup" under high load, causing UI freezes or missed SLAs. TradeStreamEE proves that by combining a modern, broker-less transport (Aeron) with a pauseless runtime (Azul C4), standard Jakarta EE applications can achieve microsecond-level latency and massive throughput.
 
 ### The "A/B" Comparison
 
 This project enables side-by-side JVM comparison with identical architectural choices:
 
-* **Both clusters** use **AERON IPC + Zero-Copy SBE** by default (optimized architecture)
-* **Both clusters** can optionally run **DIRECT mode** (naive string processing) via `TRADER_INGESTION_MODE` flag
-* **The key difference** is the JVM: Azul C4 (pauseless) vs Standard G1GC (stop-the-world)
+* Both clusters use AERON IPC + Zero-Copy SBE by default (optimized architecture)
+* Both clusters can optionally run DIRECT mode (naive string processing) via `TRADER_INGESTION_MODE` flag
+* The key difference is the JVM: Azul C4 (pauseless) vs Standard G1GC (stop-the-world)
 
 This isolates the GC as the variable, letting you see how the same application behaves under different garbage collectors.
 
-## 🚦 Quick Start
+## Quick Start
 
 ### Primary Use Case: Side-by-Side JVM Comparison
 
-**Why this matters:** Most benchmarking tools run tests serially, start JVM A, test, shut down, start JVM B, test, then manually compare spreadsheets. That's not how real systems behave.
+Why this matters: Most benchmarking tools run tests serially, start JVM A, test, shut down, start JVM B, test, then manually compare spreadsheets. That's not how real systems behave.
 
 TradeStreamEE deploys both JVMs simultaneously, enabling you to see real-time behavior differences under identical conditions.
 
-**The key point:** Both clusters run the **exact same WAR file**, same code, same configuration, same workload. The **only difference** is the JVM. This isolates the garbage collector as the sole variable, making the comparison fair and meaningful.
+The key point: Both clusters run the exact same WAR file, same code, same configuration, same workload. The only difference is the JVM. This isolates the garbage collector as the sole variable, making the comparison fair and meaningful.
 
 ```bash
 ./start-comparison.sh all
 ```
 
-**What this does:**
+What this does:
 
-1. Builds and deploys **Azul C4 cluster** (3 instances, ports 8080-8083)
-2. Builds and deploys **G1GC cluster** (3 instances, ports 9080-9083)
-3. Starts **Prometheus** for metrics collection
-4. Starts **Grafana** with pre-configured JVM comparison dashboards
-5. Starts **Loki/Promtail** for centralized logging
+1. Builds and deploys Azul C4 cluster (3 instances, ports 8080-8083)
+2. Builds and deploys G1GC cluster (3 instances, ports 9080-9083)
+3. Starts Prometheus for metrics collection
+4. Starts Grafana with pre-configured JVM comparison dashboards
+5. Starts Loki/Promtail for centralized logging
 
-**Then open both URLs in separate browser tabs:**
+Then open both URLs in separate browser tabs:
 
-- **C4 Cluster:** http://localhost:8080/trader-stream-ee/
-- **G1 Cluster:** http://localhost:9080/trader-stream-ee/
+- C4 Cluster: http://localhost:8080/trader-stream-ee/
+- G1 Cluster: http://localhost:9080/trader-stream-ee/
 
-**Watch the "GC Pause Time (Live)" chart** to see the difference:
+Watch the "GC Pause Time (Live)" chart to see the difference:
 
-| Metric                   | Azul C4            | G1GC              | What You'll See                                                   |
-|:-------------------------|:-------------------|:------------------|:------------------------------------------------------------------|
-| **GC Pause Time (Live)** | Flatline           | Spikes            | C4 maintains consistent latency; G1GC shows stop-the-world pauses |
-| **Heap Usage**           | Smooth oscillation | Sawtooth patterns | Different collection strategies visualized in real-time           |
-| **Under Load**           | Barely moves       | Jitter increases  | Apply stress via UI and watch the gap widen                       |
+| Metric               | Azul C4            | G1GC              | What You'll See                                                   |
+|:---------------------|:-------------------|:------------------|:------------------------------------------------------------------|
+| GC Pause Time (Live) | Flatline           | Spikes            | C4 maintains consistent latency; G1GC shows stop-the-world pauses |
+| Heap Usage           | Smooth oscillation | Sawtooth patterns | Different collection strategies visualized in real-time           |
+| Under Load           | Barely moves       | Jitter increases  | Apply stress via UI and watch the gap widen                       |
 
-**Other options:**
+Other options:
 
 - `./start-comparison.sh` - Clusters only, no monitoring stack (faster for rapid development)
 - `./stop-comparison.sh` - Stop all comparison services
@@ -98,45 +98,45 @@ Use `./start.sh` for testing individual configurations or architectural modes. T
 | Fixing Legacy Code       | `./start.sh azul-direct`     | Azul Prime (C4)     | Direct (Heavy)    | Show how C4 stabilizes high-allocation apps without code changes |
 | Optimizing Standard Java | `./start.sh standard-aeron`  | Standard JDK (G1GC) | Aeron (Optimized) | Test if architectural optimization helps G1GC performance        |
 
-**Utilities:**
+Utilities:
 
 - `./start.sh logs` - View live logs
 - `./start.sh stop` - Stop containers
 - `./start.sh clean` - Deep clean (remove volumes/images)
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
-The application implements a **Hybrid Architecture**:
+The application implements a Hybrid Architecture:
 
-1. **Ingestion Layer (Broker-less):**
-   * Uses **Aeron IPC** (Inter-Process Communication) via an Embedded Media Driver.
+1. Ingestion Layer (Broker-less):
+   * Uses Aeron IPC (Inter-Process Communication) via an Embedded Media Driver.
    * Bypasses the network stack for ultra-low latency between components.
-2. **Serialization Layer (Zero-Copy):**
-   * Uses **Simple Binary Encoding (SBE)**.
+2. Serialization Layer (Zero-Copy):
+   * Uses Simple Binary Encoding (SBE).
    * Decodes messages directly from memory buffers (Flyweight pattern) without allocating Java Objects, reducing GC pressure.
-3. **Application Layer (Jakarta EE 11):**
-   * **Payara Micro 7** serves as the container.
-   * **CDI** manages the lifecycle of the Aeron Publisher and Subscriber.
-   * **WebSockets** push updates to the browser.
-4. **Runtime Layer:**
-   * **Azul Platform Prime** uses the **C4 Collector** to clean up the "garbage" created by the WebSocket layer concurrently, ensuring a flat latency profile.
+3. Application Layer (Jakarta EE 11):
+   * Payara Micro 7 serves as the container.
+   * CDI manages the lifecycle of the Aeron Publisher and Subscriber.
+   * WebSockets push updates to the browser.
+4. Runtime Layer:
+   * Azul Platform Prime uses the C4 Collector to clean up the "garbage" created by the WebSocket layer concurrently, ensuring a flat latency profile.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-| Component      | Technology                              | Role                                    |
-|:---------------|:----------------------------------------|:----------------------------------------|
-| **Runtime**    | **Azul Platform Prime** (Zulu Prime 21) | The Pauseless JVM engine.               |
-| **App Server** | **Payara Micro 7** (Jakarta EE 11)      | Cloud-native Jakarta EE runtime.        |
-| **Transport**  | **Aeron**                               | Low-latency, high-throughput messaging. |
-| **Encoding**   | **SBE (Simple Binary Encoding)**        | Binary serialization (FIX standard).    |
-| **Frontend**   | **HTML5 / Chart.js**                    | Real-time visualization via WebSockets. |
-| **Build**      | **Docker / Maven**                      | Containerized deployment.               |
+| Component  | Technology                          | Role                                    |
+|:-----------|:------------------------------------|:----------------------------------------|
+| Runtime    | Azul Platform Prime (Zulu Prime 21) | The Pauseless JVM engine.               |
+| App Server | Payara Micro 7 (Jakarta EE 11)      | Cloud-native Jakarta EE runtime.        |
+| Transport  | Aeron                               | Low-latency, high-throughput messaging. |
+| Encoding   | SBE (Simple Binary Encoding)        | Binary serialization (FIX standard).    |
+| Frontend   | HTML5 / Chart.js                    | Real-time visualization via WebSockets. |
+| Build      | Docker / Maven                      | Containerized deployment.               |
 
-## 🔍 Understanding the Modes
+## Understanding the Modes
 
-This demo supports two ingestion architectures that you can use with **either JVM**. Set the `TRADER_INGESTION_MODE` environment variable (`AERON` or `DIRECT`) to switch between them.
+This demo supports two ingestion architectures that you can use with either JVM. Set the `TRADER_INGESTION_MODE` environment variable (`AERON` or `DIRECT`) to switch between them.
 
-**Important:** Both Azul C4 and G1GC clusters can run either mode. This lets you test whether architectural optimization (AERON) helps G1GC performance, or how C4 handles high-allocation legacy code (DIRECT).
+Important: Both Azul C4 and G1GC clusters can run either mode. This lets you test whether architectural optimization (AERON) helps G1GC performance, or how C4 handles high-allocation legacy code (DIRECT).
 
 ```mermaid
 graph TD
@@ -163,43 +163,43 @@ graph TD
 
 ### 1\. DIRECT Mode (The "Heavy" Path)
 
-**Goal:** Simulate a standard, naive enterprise application with high object allocation rates.
-**Use for:** Stress-testing GC behavior under high allocation pressure.
+Goal: Simulate a standard, naive enterprise application with high object allocation rates.
+Use for: Stress-testing GC behavior under high allocation pressure.
 
-**How it works:**
+How it works:
 
-1. **Publisher** generates synthetic market data as POJOs
-2. **Allocation** converts data to JSON `String` using `StringBuilder` (high allocation)
-3. **Artificial Load** wraps JSON in 1KB padding to stress the Garbage Collector
-4. **Transport** via direct method call to `MarketDataBroadcaster`
-5. **WebSocket** pushes heavy JSON to browser
+1. Publisher generates synthetic market data as POJOs
+2. Allocation converts data to JSON `String` using `StringBuilder` (high allocation)
+3. Artificial Load wraps JSON in 1KB padding to stress the Garbage Collector
+4. Transport via direct method call to `MarketDataBroadcaster`
+5. WebSocket pushes heavy JSON to browser
 
-**Performance Characteristics:**
+Performance Characteristics:
 
-- **High Allocation:** Gigabytes of temporary String objects per second
-- **GC Pressure:** Frequent pauses on G1GC; C4 handles it better but still creates work
+- High Allocation: Gigabytes of temporary String objects per second
+- GC Pressure: Frequent pauses on G1GC; C4 handles it better but still creates work
 
 ### 2\. AERON Mode (The "Optimized" Path, Default)
 
-**Goal:** Low-latency financial pipeline using off-heap memory and zero-copy semantics.
-**Use for:** Production-grade performance with minimal GC impact.
+Goal: Low-latency financial pipeline using off-heap memory and zero-copy semantics.
+Use for: Production-grade performance with minimal GC impact.
 
-**How it works:**
+How it works:
 
-1. **Publisher** generates synthetic market data
-2. **SBE Encoder** writes binary format to off-heap direct buffer (zero-copy)
-3. **Aeron IPC** publishes to shared memory ring buffer (kernel bypass)
-4. **Fragment Handler** reads using SBE "Flyweights" (reusable views, no allocation)
-5. **Transformation** converts to compact JSON for WebSocket
-6. **WebSocket** pushes lightweight JSON to browser
+1. Publisher generates synthetic market data
+2. SBE Encoder writes binary format to off-heap direct buffer (zero-copy)
+3. Aeron IPC publishes to shared memory ring buffer (kernel bypass)
+4. Fragment Handler reads using SBE "Flyweights" (reusable views, no allocation)
+5. Transformation converts to compact JSON for WebSocket
+6. WebSocket pushes lightweight JSON to browser
 
-**Performance Characteristics:**
+Performance Characteristics:
 
-- **Low Allocation:** Almost no garbage in the ingestion hot-path
-- **High Throughput:** Aeron IPC handles millions of messages/sec with sub-microsecond latency
-- **Both JVMs benefit** from reduced allocation, but C4 maintains flat latency profile
+- Low Allocation: Almost no garbage in the ingestion hot-path
+- High Throughput: Aeron IPC handles millions of messages/sec with sub-microsecond latency
+- Both JVMs benefit from reduced allocation, but C4 maintains flat latency profile
 
-## ⚙️ Configuration & Tuning
+## Configuration & Tuning
 
 You can tweak the performance characteristics via `docker-compose.yml` or the `.env` file (if created).
 
@@ -229,14 +229,14 @@ ENV JAVA_OPTS="-Xms8g -Xmx8g -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -D
 ENV JAVA_OPTS="-Xms4g -Xmx4g -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
 ```
 
-**Infrastructure improvements:**
+Infrastructure improvements:
 
-- **Pre-touch Memory** (`-XX:+AlwaysPreTouch`): Pre-allocates heap pages to eliminate runtime allocation overhead
-- **Transparent Huge Pages** (`-XX:+UseTransparentHugePages`): Reduces TLB misses for large memory operations
-- **GC Logging**: Detailed event logging with decorators for analysis
-- **Rate-Limited Logging**: Prevents log flooding during high-throughput operations
+- Pre-touch Memory (`-XX:+AlwaysPreTouch`): Pre-allocates heap pages to eliminate runtime allocation overhead
+- Transparent Huge Pages (`-XX:+UseTransparentHugePages`): Reduces TLB misses for large memory operations
+- GC Logging: Detailed event logging with decorators for analysis
+- Rate-Limited Logging: Prevents log flooding during high-throughput operations
 
-**Note:** Azul Platform Prime uses C4 by default; we don't specify `-XX:+UseZGC` since C4 is the native, optimized collector for Azul Prime.
+Note: Azul Platform Prime uses C4 by default; we don't specify `-XX:+UseZGC` since C4 is the native, optimized collector for Azul Prime.
 
 ### GC Monitoring & Stress Testing
 
@@ -244,55 +244,67 @@ The application includes comprehensive GC monitoring and memory pressure testing
 
 #### GC Statistics Collection
 
-**GCStatsService** collects real-time garbage collection metrics via JMX MXBeans:
+GCStatsService collects real-time garbage collection metrics via JMX MXBeans:
 
-* **Collection Metrics**: Total collection count and time for each GC type
-* **Pause Time Analysis**: Individual pause durations with percentile calculations (P50, P95, P99, P99.9, Max)
-* **Memory Usage**: Heap memory utilization (total, used, free)
-* **Recent Pause History**: Last 100 pause times for trend analysis
+* Collection Metrics: Total collection count and time for each GC type
+* Pause Time Analysis: Individual pause durations with percentile calculations (P50, P95, P99, P99.9, Max)
+* Memory Usage: Heap memory utilization (total, used, free)
+* Recent Pause History: Last 100 pause times for trend analysis
+* GC Phase Breakdown: Sub-phase timing analysis for detailed performance investigation (vendor-specific)
 
-#### Memory Pressure Testing
+#### HFT-Realistic Memory Pressure Testing
 
-**MemoryPressureService** provides controlled memory allocation to stress test GC performance:
+MemoryPressureService simulates high-frequency trading allocation patterns to create realistic GC stress:
 
-**Allocation Modes:**
+HFT Allocation Patterns:
 
-* **OFF**: No additional allocation
-* **LOW**: 1 MB/sec - Light pressure
-* **MEDIUM**: 10 MB/sec - Moderate pressure
-* **HIGH**: 500 MB/sec - Heavy pressure
-* **EXTREME**: 2 GB/sec - Extreme pressure
+The service rotates through three realistic trading system allocation patterns:
 
-Each mode allocates byte arrays in a background thread to create realistic memory pressure, allowing observation of:
+* OrderBook Pattern: Simulates limit order book updates with hierarchical object graphs (OrderBook → PriceLevel → Order). Typical allocation: ~5KB per book snapshot
+* MarketTick Pattern: Simulates high-frequency tick ingestion using parallel primitive arrays (columnar storage). Typical allocation: ~4KB per batch of 100 ticks
+* MarketDepth Pattern: Simulates L2/L3 market depth snapshots with multi-dimensional bid/ask ladders. Typical allocation: ~6KB per depth snapshot
 
-* C4's concurrent collection vs G1GC's "stop-the-world" pauses
-* Latency impact under increasing memory pressure
-* Throughput degradation patterns
+Allocation Modes with Coordinated Bursts:
+
+* OFF: No additional allocation
+* LOW: 2 MB/sec - Light HFT pressure
+* MEDIUM: 20 MB/sec - Moderate tick ingestion
+* HIGH: 1 GB/sec - Heavy burst trading (3x bursts every 5 seconds)
+* EXTREME: 4 GB/sec - Extreme flash crash simulation (3x bursts every 5 seconds)
+
+Burst Scenarios: HIGH and EXTREME modes include coordinated allocation bursts (3x multiplier every 5 seconds) to simulate market events like flash crashes, sudden volume spikes, or news-driven trading surges.
+
+Each mode uses realistic HFT allocation patterns in a background thread, allowing observation of:
+
+* C4's concurrent collection vs G1GC's "stop-the-world" pauses under realistic trading workloads
+* Latency impact during market event simulations (burst scenarios)
+* Throughput degradation patterns with domain-specific object structures
+* Long-lived object promotion patterns (order book retention)
 
 #### GC Challenge Mode
 
-The web UI includes **GC Challenge Mode** controls that allow:
+The web UI includes GC Challenge Mode controls that allow:
 
 * Real-time switching between allocation modes
-* Visual feedback showing current stress level
-* Side-by-side pause time visualization
-* Immediate observation of collector behavior under load
+* Visual feedback showing current stress level and burst activity
+* Side-by-side pause time visualization with phase breakdown
+* Immediate observation of collector behavior under realistic HFT load
 
-This feature enables live demonstration of how Azul C4 maintains low pause times even under extreme memory pressure, while G1GC shows increasingly long pauses.
+This feature enables live demonstration of how Azul C4 maintains low pause times even under extreme HFT-realistic memory pressure with coordinated bursts, while G1GC shows increasingly long pauses during market event simulations.
 
-## 📊 Monitoring & Observability
+## Monitoring & Observability
 
 When running `./start-comparison.sh all`, the following monitoring stack is deployed:
 
-| Component             | Access                              | Purpose                       |
-|:----------------------|:------------------------------------|:------------------------------|
-| **Grafana Dashboard** | http://localhost:3000 (admin/admin) | JVM comparison dashboards     |
-| **Prometheus**        | http://localhost:9090               | Metrics collection            |
-| **Loki**              | http://localhost:3100               | Log aggregation               |
-| **C4 Application**    | http://localhost:8080 (Traefik LB)  | Azul C4 cluster (3 instances) |
-| **G1 Application**    | http://localhost:9080 (Traefik LB)  | G1GC cluster (3 instances)    |
+| Component         | Access                              | Purpose                       |
+|:------------------|:------------------------------------|:------------------------------|
+| Grafana Dashboard | http://localhost:3000 (admin/admin) | JVM comparison dashboards     |
+| Prometheus        | http://localhost:9090               | Metrics collection            |
+| Loki              | http://localhost:3100               | Log aggregation               |
+| C4 Application    | http://localhost:8080 (Traefik LB)  | Azul C4 cluster (3 instances) |
+| G1 Application    | http://localhost:9080 (Traefik LB)  | G1GC cluster (3 instances)    |
 
-**Direct instance access:**
+Direct instance access:
 
 - C4 instances: http://localhost:8081, http://localhost:8082, http://localhost:8083
 - G1 instances: http://localhost:9081, http://localhost:9082, http://localhost:9083
@@ -306,15 +318,16 @@ Use the UI or API to apply memory pressure and observe GC behavior differences:
 curl -X POST http://localhost:8080/api/pressure/mode/EXTREME    # C4 cluster
 curl -X POST http://localhost:9080/api/pressure/mode/EXTREME    # G1GC cluster
 
-# Get current GC statistics
+# Get current GC statistics (includes phase breakdown)
 curl http://localhost:8080/api/gc/stats
 curl http://localhost:9080/api/gc/stats
 
 # Available modes: OFF, LOW, MEDIUM, HIGH, EXTREME
-# Allocation rates: 0 MB/s, 1 MB/s, 10 MB/s, 500 MB/s, 2 GB/s
+# Allocation rates: 0 MB/s, 2 MB/s, 20 MB/s, 1 GB/s, 4 GB/s
+# HIGH and EXTREME include 3x allocation bursts every 5 seconds
 ```
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 src/main/
@@ -325,6 +338,7 @@ src/main/
 │   ├── rest/           # Status, GC Stats, and Memory Pressure Resources
 │   ├── gc/             # GC statistics collection and monitoring
 │   ├── pressure/       # Memory pressure testing services
+│   │   └── patterns/   # HFT allocation patterns (OrderBook, MarketTick, MarketDepth)
 │   └── monitoring/     # GC monitoring services (GCPauseMonitor, MemoryPressure)
 ├── resources/sbe/
 │   └── market-data.xml # SBE Schema Definition
@@ -349,7 +363,7 @@ Dockerfile.scale               # Multi-stage build for C4 instances
 Dockerfile.scale.standard      # Build for G1GC instances
 ```
 
-## 🧪 Testing & Quality Assurance
+## Testing & Quality Assurance
 
 ### Quick Test Execution
 
@@ -367,27 +381,98 @@ Dockerfile.scale.standard      # Build for G1GC instances
 
 ### Current Test Coverage
 
-**✅ Working Tests (160/160 passing):**
+Working Tests (182/182 passing):
 
-- **Monitoring & GC**: Full coverage of SLA monitoring logic and GC notification handling.
-- **REST Resources**: Comprehensive tests for Memory Pressure and GC Stats endpoints.
-- **Core Logic**: Validated `AllocationMode` and concurrency configurations.
-- **WebSockets**: Verified `MarketDataBroadcaster` functionality and session management.
+- Monitoring & GC: Full coverage of SLA monitoring logic and GC notification handling.
+- REST Resources: Comprehensive tests for Memory Pressure and GC Stats endpoints.
+- Core Logic: Validated `AllocationMode` and concurrency configurations.
+- WebSockets: Verified `MarketDataBroadcaster` functionality and session management.
+- HFT Patterns: Full coverage of OrderBook, MarketTick, MarketDepth allocation patterns and round-robin registry.
 
-**📊 Coverage Metrics:**
+Coverage Metrics:
 
-- **Tests**: 160 unit tests with 100% pass rate
-- **Monitoring Coverage**: >90% (SLAMonitor, GCStatsService)
-- **REST API Coverage**: >85% (Resources and DTOs)
-- **Instruction Coverage**: High coverage for business logic; integration logic relies on `test.sh`.
+- Tests: 182 unit tests with 100% pass rate
+- Monitoring Coverage: >90% (SLAMonitor, GCStatsService)
+- REST API Coverage: >85% (Resources and DTOs)
+- HFT Pattern Coverage: 100% (22 tests for allocation patterns)
+- Instruction Coverage: High coverage for business logic; integration logic relies on `test.sh`.
 
 ### Test Categories
 
-1. **Unit Tests**: Core component testing in isolation (`src/test/java`)
-2. **Integration Tests**: Service layer interactions and resource validation
-3. **Performance Tests**: Load testing and benchmarks via scripts
-4. **Memory Pressure Tests**: GC behavior validation and stress scenarios
+1. Unit Tests: Core component testing in isolation (`src/test/java`)
+2. Integration Tests: Service layer interactions and resource validation
+3. Performance Tests: Load testing and benchmarks via scripts
+4. Memory Pressure Tests: GC behavior validation and stress scenarios
 
-## 📜 License
+## Trading Terms Glossary
+
+For readers unfamiliar with high-frequency trading concepts, this glossary explains the domain-specific terms used throughout this project.
+
+### Market Data & Trading
+
+| Term                          | Definition                                                                                                                                                                                                                                                                    |
+|:------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| High-Frequency Trading (HFT)  | Automated trading strategies that execute thousands or millions of orders per second, requiring sub-millisecond latency. HFT systems are extremely sensitive to processing delays, making garbage collection pauses a critical performance concern.                           |
+| Order Book / Limit Order Book | A data structure containing all buy and sell orders for a security, organized by price level. Each price level (e.g., $100.50) contains multiple orders waiting to be filled. Order books are updated thousands of times per second in active markets.                        |
+| Bid                           | The highest price a buyer is willing to pay for a security.                                                                                                                                                                                                                   |
+| Ask                           | The lowest price a seller is willing to accept.                                                                                                                                                                                                                               |
+| Bid-Ask Spread                | The difference between bid and ask prices, representing the cost of immediate execution.                                                                                                                                                                                      |
+| Market Tick / Price Tick      | A single price update event in the market. High-frequency systems process tens of thousands of ticks per second, with each tick containing price, volume, and timestamp information.                                                                                          |
+| L1 Data (Level 1)             | Best bid and ask prices only (top of book).                                                                                                                                                                                                                                   |
+| L2 Data (Level 2)             | Multiple price levels showing aggregate size at each price (market depth).                                                                                                                                                                                                    |
+| L3 Data (Level 3)             | Individual orders at each price level (full order book).                                                                                                                                                                                                                      |
+| Price Ladder                  | The hierarchical structure of bid and ask prices in an order book. Bid prices decrease as you move away from the best bid; ask prices increase as you move away from the best ask.                                                                                            |
+| Crossed Market                | An abnormal market condition where the best bid price is higher than the best ask price. This should never occur in normal trading and indicates a data error or system malfunction.                                                                                          |
+| Flash Crash                   | A sudden, severe market downturn followed by rapid recovery, often triggered by algorithmic trading systems. The 2010 Flash Crash saw the Dow Jones drop nearly 1,000 points in minutes. These events create extreme allocation bursts as systems process massive order flow. |
+
+### Memory & Performance
+
+| Term                              | Definition                                                                                                                                                                                              |
+|:----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Allocation Rate                   | The speed at which a program creates new objects in memory, measured in bytes per second (e.g., "2 GB/sec allocation rate"). Higher allocation rates increase garbage collection pressure.              |
+| GC Pressure / Memory Pressure     | The workload placed on the garbage collector due to object allocation. Higher pressure leads to more frequent garbage collection cycles and potentially longer pause times.                             |
+| Pause Time / Stop-the-World Pause | Duration when a garbage collector halts all application threads to perform cleanup. For HFT systems, even millisecond-level pauses can cause missed trading opportunities or regulatory violations.     |
+| Concurrent Collection             | Garbage collection that runs simultaneously with application threads, avoiding stop-the-world pauses. Azul C4 is a concurrent collector; G1GC uses stop-the-world pauses.                               |
+| Allocation Burst / Burst Scenario | Sudden spikes in memory allocation, simulating events like market opens, news releases, or flash crashes. This project uses 3x allocation multipliers every 5 seconds to simulate these conditions.     |
+| Tenured Objects / Old Generation  | Long-lived objects that survive multiple garbage collection cycles and are promoted to the "old generation" heap region. Order books are typically tenured since they persist across many tick updates. |
+
+### Data Structures & Patterns
+
+| Term                               | Definition                                                                                                                                                                                               |
+|:-----------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Columnar Storage / Columnar Format | Storing data by column rather than by row (e.g., all prices in one array, all volumes in another). This improves cache locality and enables SIMD operations. Our `MarketTickPattern` uses this approach. |
+| Flyweight Pattern                  | A design pattern that reuses objects to minimize memory allocation. SBE codecs use flyweights, they're views over byte buffers rather than allocated objects.                                            |
+| Zero-Copy                          | Data processing without copying bytes between buffers. Aeron IPC and SBE both use zero-copy techniques to minimize allocation and improve throughput.                                                    |
+| Hierarchical Object Graph          | Objects containing references to other objects in a tree structure. Our `OrderBookPattern` creates these: OrderBook, PriceLevel[], Order[].                                                              |
+
+### Serialization & Messaging
+
+| Term                                    | Definition                                                                                                                                                                        |
+|:----------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| SBE (Simple Binary Encoding)            | A binary serialization format designed for financial trading systems. FIX (Financial Information eXchange) protocol organization standardized it for ultra-low-latency scenarios. |
+| Aeron IPC (Inter-Process Communication) | A messaging transport that uses shared memory for same-machine communication, bypassing kernel networking overhead. Achieves sub-microsecond latency.                             |
+| Message Batching                        | Grouping multiple messages together for efficient processing. Our `MarketTickPattern` simulates batches of 50-200 ticks processed together.                                       |
+
+### Performance Metrics
+
+| Term                  | Definition                                                                                                                                                                          |
+|:----------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Latency               | The time delay between an event occurring and the system responding. HFT systems target sub-millisecond (< 1ms) latency for end-to-end trade execution.                             |
+| Throughput            | The volume of work completed per unit time (e.g., "1 million messages per second"). High throughput with low latency is the holy grail of HFT.                                      |
+| P50 (Median)          | 50% of requests complete faster than this value.                                                                                                                                    |
+| P95 (95th Percentile) | 95% of requests complete faster than this value (1 in 20 is slower).                                                                                                                |
+| P99 (99th Percentile) | 99% of requests complete faster than this value (1 in 100 is slower).                                                                                                               |
+| Jitter                | Variability in latency. Even with good average latency, high jitter (unpredictable spikes) is unacceptable for HFT. G1GC tends to show jitter under load; C4 maintains consistency. |
+
+### Trading System Architecture
+
+| Term                                 | Definition                                                                                                                                                                 |
+|:-------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Ingestion Pipeline / Ingestion Layer | The component responsible for receiving and processing incoming market data feeds. Must handle extreme throughput (millions of messages/sec) with minimal latency.         |
+| Hot Path / Critical Path             | The code execution path that runs most frequently and must be highly optimized. In HFT, the ingestion and order routing paths are hot paths where even nanoseconds matter. |
+| Market Event                         | Significant market occurrences that trigger increased trading activity: market open/close, economic announcements, earnings releases, or sudden price movements.           |
+| SLA (Service Level Agreement)        | Performance guarantees, such as "99.9% of trades execute within 5ms". GC pauses can cause SLA violations if they exceed latency budgets.                                   |
+
+## License
 
 This project is a reference implementation provided for demonstration purposes.
