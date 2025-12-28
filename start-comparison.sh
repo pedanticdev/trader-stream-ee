@@ -71,9 +71,8 @@ fi
 # Create networks
 echo "Creating Docker networks..."
 docker network create trader-network 2>/dev/null || echo "Network trader-network already exists"
-if [ "$MODE" = "all" ]; then
-    docker network create monitoring 2>/dev/null || echo "Network monitoring already exists"
-fi
+docker network create monitoring 2>/dev/null || echo "Network monitoring already exists"
+
 echo "✓ Networks ready"
 
 # Build Docker images

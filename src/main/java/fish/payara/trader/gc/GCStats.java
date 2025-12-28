@@ -1,6 +1,7 @@
 package fish.payara.trader.gc;
 
 import java.util.List;
+import java.util.Map;
 
 public class GCStats {
   private String gcName;
@@ -12,6 +13,7 @@ public class GCStats {
   private long totalMemory;
   private long usedMemory;
   private long freeMemory;
+  private Map<String, GCStatsService.PhaseStats> phaseBreakdown;
 
   public static class PausePercentiles {
     private long p50;
@@ -143,5 +145,13 @@ public class GCStats {
 
   public void setFreeMemory(long freeMemory) {
     this.freeMemory = freeMemory;
+  }
+
+  public Map<String, GCStatsService.PhaseStats> getPhaseBreakdown() {
+    return phaseBreakdown;
+  }
+
+  public void setPhaseBreakdown(Map<String, GCStatsService.PhaseStats> phaseBreakdown) {
+    this.phaseBreakdown = phaseBreakdown;
   }
 }
