@@ -2,10 +2,10 @@ package fish.payara.trader.pressure;
 
 public enum AllocationMode {
   OFF(0, 0, "No additional allocation"),
-  LOW(10, 10240, "1 MB/sec - Light pressure"),
-  MEDIUM(100, 10240, "10 MB/sec - Moderate pressure"),
-  HIGH(5000, 10240, "500 MB/sec - Heavy pressure"),
-  EXTREME(20000, 10240, "2 GB/sec - Extreme pressure");
+  LOW(20, 10240, "2 MB/sec - Light HFT pressure"),
+  MEDIUM(195, 10240, "20 MB/sec - Moderate tick ingestion"),
+  HIGH(10000, 10240, "1 GB/sec - Heavy burst trading"),
+  EXTREME(40000, 10240, "4 GB/sec - Extreme flash crash simulation");
 
   private final int allocationsPerIteration;
   private final int bytesPerAllocation;
