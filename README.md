@@ -24,61 +24,45 @@ A cloud-native Jakarta EE 11 application server that provides Jakarta CDI for de
 
 A JVM with the C4 garbage collector that performs cleanup concurrently with application execution, avoiding the "stop-the-world" pauses that cause latency spikes in traditional JVMs.
 
-**How they work together:** Payara Micro manages the Aeron publisher/subscriber lifecycle via CDI. The publisher encodes market data into binary using SBE, sends it through Aeron's shared memory transport, and the subscriber decodes it without allocating Java objects. This minimal garbage generation lets C4's concurrent collection easily handle the cleanup, maintaining flat latency even at high throughput.
+**How they work together:** Payara Micro manages the Aeron publisher/subscriber lifecycle via CDI. The publisher encodes market data into binary using SBE, sends it through Aeron's shared memory transport, and the subscriber decodes it without allocating Java objects. This minimal garbage generation allows C4's concurrent collection to handle cleanup while maintaining flat latency at high throughput.
 
-## The Rationale: Why This Project Exists
+## Project Motivation
 
-Enterprise Java applications often struggle with two competing requirements:
+Enterprise Java applications must often balance two competing requirements:
 
 1. High Throughput: Ingesting massive data streams (IoT, Financial Data).
-2. Low Latency: Processing that data without "Stop-the-World" pauses.
+2. Low Latency: Processing data without "Stop-the-World" pauses.
 
-Standard JVMs (using G1GC or ParallelGC) often "hiccup" under high load, causing UI freezes or missed SLAs. TradeStreamEE proves that by combining a modern, broker-less transport (Aeron) with a pauseless runtime (Azul C4), standard Jakarta EE applications can achieve microsecond-level latency and massive throughput.
+Standard JVMs (using G1GC or ParallelGC) can exhibit latency spikes under high load, potentially causing UI freezes or missed SLAs. TradeStreamEE demonstrates that by combining a modern, broker-less transport (Aeron) with a pauseless runtime (Azul C4), standard Jakarta EE applications can achieve microsecond-level latency and high throughput.
 
-### The "A/B" Comparison
+### Comparison Methodology
 
-This project enables side-by-side JVM comparison with identical architectural choices:
+This project facilitates a side-by-side JVM comparison using identical architectural choices:
 
-* Both clusters use AERON IPC + Zero-Copy SBE by default (optimized architecture)
-* Both clusters can optionally run DIRECT mode (naive string processing) via `TRADER_INGESTION_MODE` flag
-* The key difference is the JVM: Azul C4 (pauseless) vs Standard G1GC (stop-the-world)
+* **Architecture:** Both clusters use AERON IPC + Zero-Copy SBE by default.
+* **Ingestion:** Both clusters support `DIRECT` mode (naive string processing) via the `TRADER_INGESTION_MODE` flag.
+* **Variable:** The only difference is the JVM (Azul C4 vs Standard G1GC).
 
-This isolates the GC as the variable, letting you see how the same application behaves under different garbage collectors.
+This isolation ensures that observed performance differences are attributable solely to the Garbage Collector.
 
 ## Quick Start
 
 ### Primary Use Case: Side-by-Side JVM Comparison
 
-Why this matters: Most benchmarking tools run tests serially, start JVM A, test, shut down, start JVM B, test, then manually compare spreadsheets. That's not how real systems behave.
-
-TradeStreamEE deploys both JVMs simultaneously, enabling you to see real-time behavior differences under identical conditions.
-
-The key point: Both clusters run the exact same WAR file, same code, same configuration, same workload. The only difference is the JVM. This isolates the garbage collector as the sole variable, making the comparison fair and meaningful.
+TradeStreamEE enables side-by-side JVM comparison by deploying both clusters simultaneously under identical workloads. Both clusters execute the same application binary and configuration, isolating the garbage collector as the sole variable. This approach allows for real-time observation of performance differences in a shared environment, providing a more objective comparison than traditional serial benchmarking.
 
 ```bash
 ./start-comparison.sh all
 ```
 
-What this does:
+This command builds and deploys both the Azul C4 cluster (ports 8080-8083) and the G1GC cluster (ports 9080-9083), along with the complete monitoring stack (Prometheus, Grafana, Loki).
 
-1. Builds and deploys Azul C4 cluster (3 instances, ports 8080-8083)
-2. Builds and deploys G1GC cluster (3 instances, ports 9080-9083)
-3. Starts Prometheus for metrics collection
-4. Starts Grafana with pre-configured JVM comparison dashboards
-5. Starts Loki/Promtail for centralized logging
+Once deployed, access the applications:
 
-Then open both URLs in separate browser tabs:
+- **C4 Cluster:** http://localhost:8080/trader-stream-ee/
+- **G1 Cluster:** http://localhost:9080/trader-stream-ee/
 
-- C4 Cluster: http://localhost:8080/trader-stream-ee/
-- G1 Cluster: http://localhost:9080/trader-stream-ee/
-
-Watch the "GC Pause Time (Live)" chart to see the difference:
-
-| Metric               | Azul C4            | G1GC              | What You'll See                                                   |
-|:---------------------|:-------------------|:------------------|:------------------------------------------------------------------|
-| GC Pause Time (Live) | Flatline           | Spikes            | C4 maintains consistent latency; G1GC shows stop-the-world pauses |
-| Heap Usage           | Smooth oscillation | Sawtooth patterns | Different collection strategies visualized in real-time           |
-| Under Load           | Barely moves       | Jitter increases  | Apply stress via UI and watch the gap widen                       |
+The "GC Pause Time (Live)" chart in Grafana will demonstrate the performance characteristics: C4 typically maintains a consistent latency profile, while G1GC may exhibit spikes and sawtooth patterns under load.
 
 Other options:
 
@@ -117,6 +101,7 @@ The application implements a Hybrid Architecture:
 3. Application Layer (Jakarta EE 11):
    * Payara Micro 7 serves as the container.
    * CDI manages the lifecycle of the Aeron Publisher and Subscriber.
+   * **Jakarta Concurrency 3.1** leverages Virtual Threads for high-throughput memory pressure simulation.
    * WebSockets push updates to the browser.
 4. Runtime Layer:
    * Azul Platform Prime uses the C4 Collector to clean up the "garbage" created by the WebSocket layer concurrently, ensuring a flat latency profile.
@@ -132,11 +117,9 @@ The application implements a Hybrid Architecture:
 | Frontend   | HTML5 / Chart.js                    | Real-time visualization via WebSockets. |
 | Build      | Docker / Maven                      | Containerized deployment.               |
 
-## Understanding the Modes
+## Ingestion Architectures
 
-This demo supports two ingestion architectures that you can use with either JVM. Set the `TRADER_INGESTION_MODE` environment variable (`AERON` or `DIRECT`) to switch between them.
-
-Important: Both Azul C4 and G1GC clusters can run either mode. This lets you test whether architectural optimization (AERON) helps G1GC performance, or how C4 handles high-allocation legacy code (DIRECT).
+The application supports two ingestion architectures, configurable via the `TRADER_INGESTION_MODE` environment variable (`AERON` or `DIRECT`). Both Azul C4 and G1GC clusters can run either mode, allowing for flexible performance testing.
 
 ```mermaid
 graph TD
@@ -177,7 +160,7 @@ How it works:
 Performance Characteristics:
 
 - High Allocation: Gigabytes of temporary String objects per second
-- GC Pressure: Frequent pauses on G1GC; C4 handles it better but still creates work
+- GC Pressure: Frequent pauses on G1GC; C4's concurrent collection avoids stop-the-world pauses but still performs work
 
 ### 2\. AERON Mode (The "Optimized" Path, Default)
 
@@ -256,9 +239,29 @@ GCStatsService collects real-time garbage collection metrics via JMX MXBeans:
 
 MemoryPressureService simulates high-frequency trading allocation patterns to create realistic GC stress:
 
+**Importance of Realistic Patterns:**
+
+Simple byte array allocations (e.g., `new byte[4_000_000_000]`) do not accurately simulate real-world GC workloads. Such allocations typically go directly to the old generation and require minimal GC processing (marking a single object header).
+
+In contrast, realistic HFT patterns create complex, hierarchical object graphs:
+
+```java
+OrderBook {
+  PriceLevel[] levels;        // Array of references
+    -> PriceLevel {
+         Order[] orders;       // Array of references
+           -> Order {          // Individual small objects
+                quantity, timestamp
+              }
+       }
+}
+```
+
+This structure forces the GC to trace references through multiple levels, update remembered sets, scan numerous individual objects, and handle object promotion. This complexity is essential for a meaningful comparison between C4 (pauseless) and G1GC (stop-the-world).
+
 HFT Allocation Patterns:
 
-The service rotates through three realistic trading system allocation patterns:
+The service rotates through three realistic trading system allocation patterns (each uses padding to ensure exact allocation amounts for accurate metrics):
 
 * OrderBook Pattern: Simulates limit order book updates with hierarchical object graphs (OrderBook → PriceLevel → Order). Typical allocation: ~5KB per book snapshot
 * MarketTick Pattern: Simulates high-frequency tick ingestion using parallel primitive arrays (columnar storage). Typical allocation: ~4KB per batch of 100 ticks
@@ -267,14 +270,14 @@ The service rotates through three realistic trading system allocation patterns:
 Allocation Modes with Coordinated Bursts:
 
 * OFF: No additional allocation
-* LOW: 2 MB/sec - Light HFT pressure
-* MEDIUM: 20 MB/sec - Moderate tick ingestion
+* LOW: 2 MB/sec - Light HFT pressure (3x bursts every 5 seconds)
+* MEDIUM: 20 MB/sec - Moderate tick ingestion (3x bursts every 5 seconds)
 * HIGH: 1 GB/sec - Heavy burst trading (3x bursts every 5 seconds)
 * EXTREME: 4 GB/sec - Extreme flash crash simulation (3x bursts every 5 seconds)
 
-Burst Scenarios: HIGH and EXTREME modes include coordinated allocation bursts (3x multiplier every 5 seconds) to simulate market events like flash crashes, sudden volume spikes, or news-driven trading surges.
+Burst Scenarios: All active modes include coordinated allocation bursts (3x multiplier every 5 seconds) to simulate market events like flash crashes, sudden volume spikes, or news-driven trading surges. This allows testing GC behavior under allocation spikes at different baseline rates.
 
-Each mode uses realistic HFT allocation patterns in a background thread, allowing observation of:
+Each mode uses realistic HFT allocation patterns via **parallel virtual threads**, allowing observation of:
 
 * C4's concurrent collection vs G1GC's "stop-the-world" pauses under realistic trading workloads
 * Latency impact during market event simulations (burst scenarios)
@@ -290,7 +293,7 @@ The web UI includes GC Challenge Mode controls that allow:
 * Side-by-side pause time visualization with phase breakdown
 * Immediate observation of collector behavior under realistic HFT load
 
-This feature enables live demonstration of how Azul C4 maintains low pause times even under extreme HFT-realistic memory pressure with coordinated bursts, while G1GC shows increasingly long pauses during market event simulations.
+This feature enables live demonstration of collector behavior under HFT-realistic memory pressure with coordinated bursts, allowing comparison of C4's pause times versus G1GC's behavior during market event simulations.
 
 ## Monitoring & Observability
 
@@ -324,7 +327,7 @@ curl http://localhost:9080/api/gc/stats
 
 # Available modes: OFF, LOW, MEDIUM, HIGH, EXTREME
 # Allocation rates: 0 MB/s, 2 MB/s, 20 MB/s, 1 GB/s, 4 GB/s
-# HIGH and EXTREME include 3x allocation bursts every 5 seconds
+# All active modes include 3x allocation bursts every 5 seconds
 ```
 
 ## Project Structure
@@ -458,7 +461,7 @@ For readers unfamiliar with high-frequency trading concepts, this glossary expla
 | Term                  | Definition                                                                                                                                                                          |
 |:----------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Latency               | The time delay between an event occurring and the system responding. HFT systems target sub-millisecond (< 1ms) latency for end-to-end trade execution.                             |
-| Throughput            | The volume of work completed per unit time (e.g., "1 million messages per second"). High throughput with low latency is the holy grail of HFT.                                      |
+| Throughput            | The volume of work completed per unit time (e.g., "1 million messages per second"). HFT systems require both high throughput and low latency simultaneously.                        |
 | P50 (Median)          | 50% of requests complete faster than this value.                                                                                                                                    |
 | P95 (95th Percentile) | 95% of requests complete faster than this value (1 in 20 is slower).                                                                                                                |
 | P99 (99th Percentile) | 99% of requests complete faster than this value (1 in 100 is slower).                                                                                                               |
