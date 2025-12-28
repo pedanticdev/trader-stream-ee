@@ -965,7 +965,7 @@
 
             <button onclick="applyScenario('DEMO_NORMAL')" class="scenario-btn" id="btn-DEMO_NORMAL">
                 📈 Normal Trading
-                <span class="hint">2 MB/sec HFT</span>
+                <span class="hint">2 MB/sec + Bursts</span>
             </button>
 
             <button onclick="applyScenario('DEMO_STRESS')" class="scenario-btn" id="btn-DEMO_STRESS">
@@ -1151,9 +1151,9 @@
                         <button onclick="event.stopPropagation(); setPressureMode('OFF')"
                                 style="flex: 1; background: #6c757d;">OFF<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">No stress</span></button>
                         <button onclick="event.stopPropagation(); setPressureMode('LOW')"
-                                style="flex: 1; background: #28a745;">LOW<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">2 MB/sec</span></button>
+                                style="flex: 1; background: #28a745;">LOW<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">2 MB/sec + Bursts</span></button>
                         <button onclick="event.stopPropagation(); setPressureMode('MEDIUM')"
-                                style="flex: 1; background: #ffc107; color: #333;">MEDIUM<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">20 MB/sec</span></button>
+                                style="flex: 1; background: #ffc107; color: #333;">MEDIUM<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">20 MB/sec + Bursts</span></button>
                         <button onclick="event.stopPropagation(); setPressureMode('HIGH')"
                                 style="flex: 1; background: #fd7e14;">HIGH<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">1 GB/sec + Bursts</span></button>
                         <button onclick="event.stopPropagation(); setPressureMode('EXTREME')"
@@ -1169,10 +1169,10 @@
                 <p><strong>G1GC:</strong> Pause times spike as allocation rate increases. Bursts cause severe stuttering in
                     message delivery and chart updates.</p>
                 <p><strong>Rates:</strong> LOW=2MB/s, MEDIUM=20MB/s, HIGH=1GB/s, EXTREME=4GB/s</p>
-                <p><strong>Bursts:</strong> HIGH/EXTREME modes include 3x allocation bursts every 5 seconds to simulate flash crashes and market events.</p>
+                <p><strong>Bursts:</strong> All active modes include 3x allocation bursts every 5 seconds to simulate flash crashes and market events.</p>
                 <div class="tech-stack">
                     <strong>Patterns:</strong> OrderBook (5KB), MarketTick (4KB), MarketDepth (6KB)<br>
-                    <strong>Burst Multiplier:</strong> 3x every 5 seconds (HIGH/EXTREME)
+                    <strong>Burst Multiplier:</strong> 3x every 5 seconds (all modes except OFF)
                 </div>
             </div>
         </div>
@@ -1583,9 +1583,9 @@
                 const rateMBps = isFinite(bytesPerSecond) ? (bytesPerSecond / (1024 * 1024)).toFixed(1) : '0';
                 document.getElementById('pressureRate').textContent = rateMBps + ' MB/sec';
 
-                // Show burst indicator for HIGH/EXTREME modes
+                // Show burst indicator for all active modes (except OFF)
                 const burstIndicator = document.getElementById('burstIndicator');
-                if (mode === 'HIGH' || mode === 'EXTREME') {
+                if (mode !== 'OFF') {
                     if (!burstAnimationInterval) {
                         burstAnimationInterval = setInterval(() => {
                             burstIndicator.style.display = 'inline';
