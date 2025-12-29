@@ -553,14 +553,7 @@ public class MarketDataPublisher {
         consecutiveFailures.set(0);
         return;
       } else if (result == Publication.BACK_PRESSURED) {
-        // Back pressure is normal at high throughput, don't log
-        retries--;
-        try {
-          Thread.sleep(1);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-        }
+        continue;
       } else if (result == Publication.NOT_CONNECTED) {
         logWarningRateLimited("Publication not connected");
         handlePublishFailure(messageType);

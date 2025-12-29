@@ -1605,7 +1605,8 @@
             .catch(error => console.error('Error fetching pressure status:', error));
     }
 
-    const API_BASE = '/' + window.location.pathname.split('/')[1] + '/api';
+    const contextRoot = window.location.pathname.split('/')[1];
+    const API_BASE = (contextRoot ? '/' + contextRoot : '') + '/api';
 
     const ALERT_THRESHOLDS = {
         p99Ms: { warning: 10, critical: 50 },

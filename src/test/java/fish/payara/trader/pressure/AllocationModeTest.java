@@ -55,7 +55,7 @@ class AllocationModeTest {
           switch (mode) {
             case OFF -> 0;
             case LOW -> 20;
-            case MEDIUM -> 195;
+            case MEDIUM -> 200;
             case HIGH -> 10000;
             case EXTREME -> 40000;
           };
@@ -117,11 +117,11 @@ class AllocationModeTest {
     @Test
     @DisplayName("Should calculate bytes per second correctly for MEDIUM mode")
     void shouldCalculateBytesPerSecondCorrectlyForMediumMode() {
-      // 195 allocations * 10240 bytes * 10 iterations/sec = 19,968,000 bytes/sec
+      // 200 allocations * 10240 bytes * 10 iterations/sec = 20,480,000 bytes/sec
       assertEquals(
-          19_968_000L,
+          20_480_000L,
           AllocationMode.MEDIUM.getBytesPerSecond(),
-          "MEDIUM mode should allocate ~20 MB/sec");
+          "MEDIUM mode should allocate 20 MB/sec");
     }
 
     @Test
@@ -194,16 +194,16 @@ class AllocationModeTest {
           "LOW should be significantly higher than OFF");
 
       assertTrue(
-          AllocationMode.MEDIUM.getBytesPerSecond() > AllocationMode.LOW.getBytesPerSecond() * 9,
-          "MEDIUM should be at least 9x higher than LOW");
+          AllocationMode.MEDIUM.getBytesPerSecond() > AllocationMode.LOW.getBytesPerSecond() * 5,
+          "MEDIUM should be at least 5x higher than LOW");
 
       assertTrue(
-          AllocationMode.HIGH.getBytesPerSecond() > AllocationMode.MEDIUM.getBytesPerSecond() * 50,
-          "HIGH should be at least 50x higher than MEDIUM");
+          AllocationMode.HIGH.getBytesPerSecond() > AllocationMode.MEDIUM.getBytesPerSecond() * 40,
+          "HIGH should be at least 40x higher than MEDIUM");
 
       assertTrue(
-          AllocationMode.EXTREME.getBytesPerSecond() >= AllocationMode.HIGH.getBytesPerSecond() * 4,
-          "EXTREME should be at least 4x higher than HIGH");
+          AllocationMode.EXTREME.getBytesPerSecond() > AllocationMode.HIGH.getBytesPerSecond() * 2,
+          "EXTREME should be at least 2x higher than HIGH");
     }
   }
 

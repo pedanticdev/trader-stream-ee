@@ -1,12 +1,12 @@
 # TradeStreamEE: High-Frequency Trading Reference Architecture
 
-TradeStreamEE demonstrates how Jakarta EE applications can achieve low-latency, high-throughput performance by combining modern messaging (Aeron), efficient serialization (SBE), and a concurrent garbage collector (Azul C4).
+TradeStreamEE demonstrates how Jakarta EE applications can achieve low-latency, high-throughput performance by combining modern messaging (Aeron), efficient serialization (SBE), and a concurrent garbage collector like Azul C4.
 
-It simulates a high-frequency trading dashboard that ingests tens of thousands of market data messages per second, processes them in real-time, and broadcasts updates to a web frontend without the latency spikes associated with traditional Java garbage collection.
+The application simulates a high-frequency trading dashboard that ingests tens of thousands of market data messages per second, processes them in real-time, and broadcasts updates to a web frontend without the latency spikes associated with traditional Java garbage collection.
 
-## The Core Technologies
+## Core Technologies
 
-TradeStreamEE achieves high performance by combining four key technologies:
+TradeStreamEE combines four key technologies:
 
 ### Aeron (Transport)
 
@@ -14,7 +14,7 @@ Ultra-low latency messaging that bypasses the network stack when components run 
 
 ### SBE (Serialization)
 
-Simple Binary Encoding - the financial industry standard for high-frequency trading. Encodes data as compact binary rather than human-readable text, eliminating parsing overhead and reducing memory allocation.
+Simple Binary Encoding is the financial industry standard for high-frequency trading. Encodes data as compact binary rather than human-readable text, eliminating parsing overhead and reducing memory allocation.
 
 ### Payara Micro (Jakarta EE Runtime)
 
@@ -22,16 +22,16 @@ A cloud-native Jakarta EE 11 application server that provides Jakarta CDI for de
 
 ### Azul Platform Prime (Runtime)
 
-A JVM with the C4 garbage collector that performs cleanup concurrently with application execution, avoiding the "stop-the-world" pauses that cause latency spikes in traditional JVMs.
+A JVM with the C4 garbage collector that performs cleanup concurrently with application execution, avoiding the stop-the-world pauses that cause latency spikes in traditional JVMs.
 
-**How they work together:** Payara Micro manages the Aeron publisher/subscriber lifecycle via CDI. The publisher encodes market data into binary using SBE, sends it through Aeron's shared memory transport, and the subscriber decodes it without allocating Java objects. This minimal garbage generation allows C4's concurrent collection to handle cleanup while maintaining flat latency at high throughput.
+Integration: Payara Micro manages the Aeron publisher/subscriber lifecycle via CDI. The publisher encodes market data into binary using SBE, sends it through Aeron's shared memory transport, and the subscriber decodes it without allocating Java objects. This minimal garbage generation allows C4's concurrent collection to handle cleanup while maintaining flat latency at high throughput.
 
 ## Project Motivation
 
 Enterprise Java applications must often balance two competing requirements:
 
 1. High Throughput: Ingesting massive data streams (IoT, Financial Data).
-2. Low Latency: Processing data without "Stop-the-World" pauses.
+2. Low Latency: Processing data without stop-the-world pauses.
 
 Standard JVMs (using G1GC or ParallelGC) can exhibit latency spikes under high load, potentially causing UI freezes or missed SLAs. TradeStreamEE demonstrates that by combining a modern, broker-less transport (Aeron) with a pauseless runtime (Azul C4), standard Jakarta EE applications can achieve microsecond-level latency and high throughput.
 
@@ -39,9 +39,9 @@ Standard JVMs (using G1GC or ParallelGC) can exhibit latency spikes under high l
 
 This project facilitates a side-by-side JVM comparison using identical architectural choices:
 
-* **Architecture:** Both clusters use AERON IPC + Zero-Copy SBE by default.
-* **Ingestion:** Both clusters support `DIRECT` mode (naive string processing) via the `TRADER_INGESTION_MODE` flag.
-* **Variable:** The only difference is the JVM (Azul C4 vs Standard G1GC).
+* Architecture: Both clusters use AERON IPC + Zero-Copy SBE by default.
+* Ingestion: Both clusters support DIRECT mode (naive string processing) via the `TRADER_INGESTION_MODE` flag.
+* Variable: The only difference is the JVM (Azul C4 vs Standard G1GC).
 
 This isolation ensures that observed performance differences are attributable solely to the Garbage Collector.
 
@@ -59,8 +59,8 @@ This command builds and deploys both the Azul C4 cluster (ports 8080-8083) and t
 
 Once deployed, access the applications:
 
-- **C4 Cluster:** http://localhost:8080/trader-stream-ee/
-- **G1 Cluster:** http://localhost:9080/trader-stream-ee/
+- C4 Cluster: http://localhost:8080/trader-stream-ee/
+- G1 Cluster: http://localhost:9080/trader-stream-ee/
 
 The "GC Pause Time (Live)" chart in Grafana will demonstrate the performance characteristics: C4 typically maintains a consistent latency profile, while G1GC may exhibit spikes and sawtooth patterns under load.
 
@@ -101,7 +101,7 @@ The application implements a Hybrid Architecture:
 3. Application Layer (Jakarta EE 11):
    * Payara Micro 7 serves as the container.
    * CDI manages the lifecycle of the Aeron Publisher and Subscriber.
-   * **Jakarta Concurrency 3.1** leverages Virtual Threads for high-throughput memory pressure simulation.
+   * Jakarta Concurrency 3.1 leverages Virtual Threads for high-throughput memory pressure simulation.
    * WebSockets push updates to the browser.
 4. Runtime Layer:
    * Azul Platform Prime uses the C4 Collector to clean up the "garbage" created by the WebSocket layer concurrently, ensuring a flat latency profile.
@@ -144,17 +144,18 @@ graph TD
     class A1,A2,A3,A4,A5,A6 optimized
 ```
 
-### 1\. DIRECT Mode (The "Heavy" Path)
+### DIRECT Mode (High Allocation Path)
 
 Goal: Simulate a standard, naive enterprise application with high object allocation rates.
-Use for: Stress-testing GC behavior under high allocation pressure.
 
-How it works:
+Use Case: Stress-testing GC behavior under high allocation pressure.
+
+Implementation:
 
 1. Publisher generates synthetic market data as POJOs
-2. Allocation converts data to JSON `String` using `StringBuilder` (high allocation)
+2. Allocation converts data to JSON String using StringBuilder (high allocation)
 3. Artificial Load wraps JSON in 1KB padding to stress the Garbage Collector
-4. Transport via direct method call to `MarketDataBroadcaster`
+4. Transport via direct method call to MarketDataBroadcaster
 5. WebSocket pushes heavy JSON to browser
 
 Performance Characteristics:
@@ -162,12 +163,13 @@ Performance Characteristics:
 - High Allocation: Gigabytes of temporary String objects per second
 - GC Pressure: Frequent pauses on G1GC; C4's concurrent collection avoids stop-the-world pauses but still performs work
 
-### 2\. AERON Mode (The "Optimized" Path, Default)
+### AERON Mode (Optimized Path, Default)
 
 Goal: Low-latency financial pipeline using off-heap memory and zero-copy semantics.
-Use for: Production-grade performance with minimal GC impact.
 
-How it works:
+Use Case: Production-grade performance with minimal GC impact.
+
+Implementation:
 
 1. Publisher generates synthetic market data
 2. SBE Encoder writes binary format to off-heap direct buffer (zero-copy)
@@ -197,12 +199,12 @@ Controls how data moves from the Publisher to the Processor.
 
 Heap size varies by deployment type:
 
-| Deployment                            | Dockerfiles                                     | Heap Size | Reason                                                  |
-|:--------------------------------------|:------------------------------------------------|:----------|:--------------------------------------------------------|
-| **Single Instance** (`start.sh`)      | `Dockerfile`, `Dockerfile.standard`             | 8GB       | Full heap for maximum throughput                        |
-| **Clustered** (`start-comparison.sh`) | `Dockerfile.scale`, `Dockerfile.scale.standard` | 4GB       | Balanced for 3-instance deployments (~12GB per cluster) |
+| Deployment                        | Dockerfiles                                     | Heap Size | Reason                                                  |
+|:----------------------------------|:------------------------------------------------|:----------|:--------------------------------------------------------|
+| Single Instance (`start.sh`)      | `Dockerfile`, `Dockerfile.standard`             | 8GB       | Full heap for maximum throughput                        |
+| Clustered (`start-comparison.sh`) | `Dockerfile.scale`, `Dockerfile.scale.standard` | 4GB       | Balanced for 3-instance deployments (~12GB per cluster) |
 
-**Common JVM options:**
+Common JVM options:
 
 ```dockerfile
 # Azul Prime (C4) - 8GB single instance example
@@ -235,54 +237,35 @@ GCStatsService collects real-time garbage collection metrics via JMX MXBeans:
 * Recent Pause History: Last 100 pause times for trend analysis
 * GC Phase Breakdown: Sub-phase timing analysis for detailed performance investigation (vendor-specific)
 
-#### HFT-Realistic Memory Pressure Testing
+#### Memory Pressure Stress Testing
 
-MemoryPressureService simulates high-frequency trading allocation patterns to create realistic GC stress:
+MemoryPressureService generates controlled memory allocation to create realistic GC stress:
 
-**Importance of Realistic Patterns:**
+Stress Test Patterns:
 
-Simple byte array allocations (e.g., `new byte[4_000_000_000]`) do not accurately simulate real-world GC workloads. Such allocations typically go directly to the old generation and require minimal GC processing (marking a single object header).
+The service rotates through four high-churn allocation patterns designed to maximize Garbage Collection pressure:
 
-In contrast, realistic HFT patterns create complex, hierarchical object graphs:
-
-```java
-OrderBook {
-  PriceLevel[] levels;        // Array of references
-    -> PriceLevel {
-         Order[] orders;       // Array of references
-           -> Order {          // Individual small objects
-                quantity, timestamp
-              }
-       }
-}
-```
-
-This structure forces the GC to trace references through multiple levels, update remembered sets, scan numerous individual objects, and handle object promotion. This complexity is essential for a meaningful comparison between C4 (pauseless) and G1GC (stop-the-world).
-
-HFT Allocation Patterns:
-
-The service rotates through three realistic trading system allocation patterns (each uses padding to ensure exact allocation amounts for accurate metrics):
-
-* OrderBook Pattern: Simulates limit order book updates with hierarchical object graphs (OrderBook → PriceLevel → Order). Typical allocation: ~5KB per book snapshot
-* MarketTick Pattern: Simulates high-frequency tick ingestion using parallel primitive arrays (columnar storage). Typical allocation: ~4KB per batch of 100 ticks
-* MarketDepth Pattern: Simulates L2/L3 market depth snapshots with multi-dimensional bid/ask ladders. Typical allocation: ~6KB per depth snapshot
+* String Churn: High-frequency creation and concatenation of short-lived Strings.
+* Byte Array Churn: Rapid allocation and discard of primitive byte arrays.
+* Object Graph Churn: Creation of nested object structures to stress reference tracing.
+* Collection Churn: High-volume addition/removal of elements in standard Java Collections.
 
 Allocation Modes with Coordinated Bursts:
 
 * OFF: No additional allocation
-* LOW: 2 MB/sec - Light HFT pressure (3x bursts every 5 seconds)
-* MEDIUM: 20 MB/sec - Moderate tick ingestion (3x bursts every 5 seconds)
-* HIGH: 1 GB/sec - Heavy burst trading (3x bursts every 5 seconds)
-* EXTREME: 4 GB/sec - Extreme flash crash simulation (3x bursts every 5 seconds)
+* LOW: 2 MB/sec - Light pressure (3x bursts every 5 seconds)
+* MEDIUM: 20 MB/sec - Moderate pressure (3x bursts every 5 seconds)
+* HIGH: 1 GB/sec - Heavy pressure (3x bursts every 5 seconds)
+* EXTREME: 4 GB/sec - Extreme pressure (3x bursts every 5 seconds)
 
-Burst Scenarios: All active modes include coordinated allocation bursts (3x multiplier every 5 seconds) to simulate market events like flash crashes, sudden volume spikes, or news-driven trading surges. This allows testing GC behavior under allocation spikes at different baseline rates.
+Burst Scenarios: All active modes include coordinated allocation bursts (3x multiplier every 5 seconds) to simulate market events like flash crashes, sudden volume spikes, or news-driven trading surges.
 
-Each mode uses realistic HFT allocation patterns via **parallel virtual threads**, allowing observation of:
+Each mode uses parallel virtual threads to generate load, allowing observation of:
 
-* C4's concurrent collection vs G1GC's "stop-the-world" pauses under realistic trading workloads
-* Latency impact during market event simulations (burst scenarios)
-* Throughput degradation patterns with domain-specific object structures
-* Long-lived object promotion patterns (order book retention)
+* C4's concurrent collection vs G1GC's "stop-the-world" pauses under heavy allocation
+* Latency impact during burst scenarios
+* Throughput degradation patterns with different object types
+* Long-lived object promotion patterns (tenured generation stress)
 
 #### GC Challenge Mode
 
@@ -291,9 +274,9 @@ The web UI includes GC Challenge Mode controls that allow:
 * Real-time switching between allocation modes
 * Visual feedback showing current stress level and burst activity
 * Side-by-side pause time visualization with phase breakdown
-* Immediate observation of collector behavior under realistic HFT load
+* Immediate observation of collector behavior under realistic load
 
-This feature enables live demonstration of collector behavior under HFT-realistic memory pressure with coordinated bursts, allowing comparison of C4's pause times versus G1GC's behavior during market event simulations.
+This feature enables live demonstration of collector behavior under realistic memory pressure with coordinated bursts, allowing comparison of C4's pause times versus G1GC's behavior during market event simulations.
 
 ## Monitoring & Observability
 
@@ -321,7 +304,7 @@ Use the UI or API to apply memory pressure and observe GC behavior differences:
 curl -X POST http://localhost:8080/api/pressure/mode/EXTREME    # C4 cluster
 curl -X POST http://localhost:9080/api/pressure/mode/EXTREME    # G1GC cluster
 
-# Get current GC statistics (includes phase breakdown)
+# Get current GC statistics
 curl http://localhost:8080/api/gc/stats
 curl http://localhost:9080/api/gc/stats
 
@@ -341,7 +324,6 @@ src/main/
 │   ├── rest/           # Status, GC Stats, and Memory Pressure Resources
 │   ├── gc/             # GC statistics collection and monitoring
 │   ├── pressure/       # Memory pressure testing services
-│   │   └── patterns/   # HFT allocation patterns (OrderBook, MarketTick, MarketDepth)
 │   └── monitoring/     # GC monitoring services (GCPauseMonitor, MemoryPressure)
 ├── resources/sbe/
 │   └── market-data.xml # SBE Schema Definition
@@ -384,20 +366,18 @@ Dockerfile.scale.standard      # Build for G1GC instances
 
 ### Current Test Coverage
 
-Working Tests (182/182 passing):
+Working Tests (160/160 passing):
 
 - Monitoring & GC: Full coverage of SLA monitoring logic and GC notification handling.
 - REST Resources: Comprehensive tests for Memory Pressure and GC Stats endpoints.
 - Core Logic: Validated `AllocationMode` and concurrency configurations.
 - WebSockets: Verified `MarketDataBroadcaster` functionality and session management.
-- HFT Patterns: Full coverage of OrderBook, MarketTick, MarketDepth allocation patterns and round-robin registry.
 
 Coverage Metrics:
 
-- Tests: 182 unit tests with 100% pass rate
+- Tests: 160 unit tests with 100% pass rate
 - Monitoring Coverage: >90% (SLAMonitor, GCStatsService)
 - REST API Coverage: >85% (Resources and DTOs)
-- HFT Pattern Coverage: 100% (22 tests for allocation patterns)
 - Instruction Coverage: High coverage for business logic; integration logic relies on `test.sh`.
 
 ### Test Categories

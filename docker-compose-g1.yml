@@ -79,7 +79,7 @@ services:
       - TRADER_INGESTION_MODE=AERON
       - PAYARA_INSTANCE_NAME=g1-instance-2
       - HAZELCAST_MEMBER_NAME=trader-stream-g1-2
-      - ENABLE_PUBLISHER=false
+      - ENABLE_PUBLISHER=true
       - JVM_TYPE=eclipse-temurin-g1
       - JAVA_OPTS=-Xms4g -Xmx4g
         -XX:+UseG1GC
@@ -115,7 +115,7 @@ services:
       - TRADER_INGESTION_MODE=AERON
       - PAYARA_INSTANCE_NAME=g1-instance-3
       - HAZELCAST_MEMBER_NAME=trader-stream-g1-3
-      - ENABLE_PUBLISHER=false
+      - ENABLE_PUBLISHER=true
       - JVM_TYPE=eclipse-temurin-g1
       - JAVA_OPTS=-Xms4g -Xmx4g
         -XX:+UseG1GC
