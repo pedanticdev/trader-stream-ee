@@ -91,6 +91,7 @@ public class MarketDataFragmentHandler implements FragmentHandler {
     }
   }
 
+  /** Process Trade message using SBE decoder (zero-copy) */
   private void processTrade(
       DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
     if (!shouldBroadcast) {

@@ -35,7 +35,7 @@ public class MemoryPressureService {
   private final AtomicLong tenuredBytesAllocated = new AtomicLong(0);
 
   private volatile long lastBurstTime = 0;
-  private static final long BURST_INTERVAL_MS = 5000; // 5 seconds
+  private static final long BURST_INTERVAL_MS = 5000;
   private static final int BURST_MULTIPLIER = 3;
   @Resource private ManagedExecutorService executorService;
 
@@ -261,7 +261,6 @@ public class MemoryPressureService {
     return running;
   }
 
-  /** Dummy object for allocation testing */
   private static class DummyObject {
     private final int id;
     private final String data;

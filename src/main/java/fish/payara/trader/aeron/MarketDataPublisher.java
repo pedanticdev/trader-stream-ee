@@ -47,6 +47,7 @@ public class MarketDataPublisher {
   private Aeron aeron;
   private Publication publication;
 
+  // SBE encoders (reusable flyweights)
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final TradeEncoder tradeEncoder = new TradeEncoder();
   private final QuoteEncoder quoteEncoder = new QuoteEncoder();
@@ -88,9 +89,11 @@ public class MarketDataPublisher {
 
   @Resource private ManagedExecutorService managedExecutorService;
 
+  // Cluster-wide message counter (shared across all instances)
   private IAtomicLong clusterMessageCounter;
 
   void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
+    //        managedExecutorService.submit(this::init);
     init();
   }
 
@@ -528,13 +531,7 @@ public class MarketDataPublisher {
         consecutiveFailures.set(0);
         return;
       } else if (result == Publication.BACK_PRESSURED) {
-        retries--;
-        try {
-          Thread.sleep(1);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-        }
+        continue;
       } else if (result == Publication.NOT_CONNECTED) {
         logWarningRateLimited("Publication not connected");
         handlePublishFailure(messageType);

@@ -14,6 +14,7 @@ RUN ./mvnw dependency:go-offline -B
 
 COPY src ./src
 
+RUN ./mvnw spotless:apply
 RUN ./mvnw clean package -DskipTests
 
 # Use Azul Platform Prime for C4 GC

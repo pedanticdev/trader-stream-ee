@@ -3,7 +3,7 @@ package fish.payara.trader.pressure;
 public enum AllocationMode {
   OFF(0, 0, "No additional allocation"),
   LOW(20, 10240, "2 MB/sec - Light pressure"),
-  MEDIUM(195, 10240, "20 MB/sec - Moderate pressure"),
+  MEDIUM(200, 10240, "20 MB/sec - Moderate pressure"),
   HIGH(10000, 10240, "1 GB/sec - Heavy pressure"),
   EXTREME(40000, 10240, "4 GB/sec - Extreme pressure");
 
