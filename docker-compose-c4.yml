@@ -78,7 +78,7 @@ services:
       - TRADER_INGESTION_MODE=AERON
       - PAYARA_INSTANCE_NAME=c4-instance-2
       - HAZELCAST_MEMBER_NAME=trader-stream-c4-2
-      - ENABLE_PUBLISHER=false
+      - ENABLE_PUBLISHER=true
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
         -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
@@ -113,7 +113,7 @@ services:
       - TRADER_INGESTION_MODE=AERON
       - PAYARA_INSTANCE_NAME=c4-instance-3
       - HAZELCAST_MEMBER_NAME=trader-stream-c4-3
-      - ENABLE_PUBLISHER=false
+      - ENABLE_PUBLISHER=true
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
         -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
