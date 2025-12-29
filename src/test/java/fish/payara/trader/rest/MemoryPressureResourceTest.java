@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 import fish.payara.trader.pressure.AllocationMode;
 import fish.payara.trader.pressure.MemoryPressureService;
 import jakarta.ws.rs.core.Response;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,7 @@ class MemoryPressureResourceTest {
   @Test
   @DisplayName("Should return current status")
   void shouldReturnCurrentStatus() {
-    when(pressureService.getCurrentMode()).thenReturn(AllocationMode.LOW);
+    when(pressureService.getCurrentMode()).thenReturn(AllocationMode.STEADY_LOAD);
     when(pressureService.isRunning()).thenReturn(true);
 
     Response response = resource.getStatus();
@@ -34,22 +33,22 @@ class MemoryPressureResourceTest {
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     @SuppressWarnings("unchecked")
     Map<String, Object> entity = (Map<String, Object>) response.getEntity();
-    assertEquals("LOW", entity.get("currentMode"));
+    assertEquals("STEADY_LOAD", entity.get("currentMode"));
     assertEquals(true, entity.get("running"));
   }
 
   @Test
   @DisplayName("Should set allocation mode successfully")
   void shouldSetAllocationModeSuccessfully() {
-    Response response = resource.setMode("high");
+    Response response = resource.setMode("steady_load");
 
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    verify(pressureService).setAllocationMode(AllocationMode.HIGH);
+    verify(pressureService).setAllocationMode(AllocationMode.STEADY_LOAD);
 
     @SuppressWarnings("unchecked")
     Map<String, Object> entity = (Map<String, Object>) response.getEntity();
     assertTrue((Boolean) entity.get("success"));
-    assertEquals("HIGH", entity.get("mode"));
+    assertEquals("STEADY_LOAD", entity.get("mode"));
   }
 
   @Test
@@ -65,32 +64,6 @@ class MemoryPressureResourceTest {
   }
 
   @Test
-  @DisplayName("Should apply scenario successfully")
-  void shouldApplyScenarioSuccessfully() {
-    Response response = resource.applyScenario("demo_stress");
-
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    verify(pressureService).setAllocationMode(AllocationMode.HIGH);
-
-    @SuppressWarnings("unchecked")
-    Map<String, Object> entity = (Map<String, Object>) response.getEntity();
-    assertEquals("DEMO_STRESS", entity.get("scenario"));
-    assertEquals("applied", entity.get("status"));
-  }
-
-  @Test
-  @DisplayName("Should list all scenarios")
-  void shouldListAllScenarios() {
-    Response response = resource.listScenarios();
-
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    @SuppressWarnings("unchecked")
-    List<Map<String, String>> entity = (List<Map<String, String>>) response.getEntity();
-    assertFalse(entity.isEmpty());
-    assertTrue(entity.stream().anyMatch(s -> s.get("name").equals("DEMO_EXTREME")));
-  }
-
-  @Test
   @DisplayName("Should return all modes")
   void shouldReturnAllModes() {
     Response response = resource.getModes();
@@ -99,9 +72,7 @@ class MemoryPressureResourceTest {
     @SuppressWarnings("unchecked")
     Map<String, Map<String, Object>> entity =
         (Map<String, Map<String, Object>>) response.getEntity();
-    assertTrue(entity.containsKey("EXTREME"));
-    assertEquals(
-        "4 GB/sec - Extreme pressure",
-        ((Map<String, Object>) entity.get("EXTREME")).get("description"));
+    assertTrue(entity.containsKey("STEADY_LOAD"));
+    assertTrue(entity.containsKey("PROMOTION_STORM"));
   }
 }

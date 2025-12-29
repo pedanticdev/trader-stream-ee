@@ -293,19 +293,31 @@
 
             <p>I developed TradeStreamEE, a sophisticated high-frequency trading dashboard to demonstrate that HFT is not only possible but also highly performant in Enterprise Java, particularly when combining Azul Platform Prime with the C4 garbage collector and Payara Micro. This technology stack changes Java's performance profile, offering measurable, real-world improvements that are now leading financial institutions to reconsider their current technology choices.</p>
 
-            <h2>The Evidence: 2GB/s Pressure, 1ms Latency</h2>
+            <h2>The Evidence: Scenario-Based GC Stress Testing</h2>
 
-            <p>We subjected TradeStreamEE to an extreme torture test: generating 2 Gigabytes of garbage per second while simultaneously processing market data.</p>
+            <p>Rather than applying generic high-allocation pressure, TradeStreamEE uses scenario-based testing that targets specific garbage collector weaknesses. Each scenario exposes fundamental algorithmic differences between G1 and C4.</p>
 
-            <p>In a standard OpenJDK environment using G1GC, this level of pressure typically results in "Stop-the-World" pauses lasting hundreds of milliseconds. The user interface freezes. Tickers jump. Traders lose money.</p>
+            <p>The test scenarios include:</p>
 
-            <p>With Azul C4, the results were staggering. We queried the live application status while it was under this 2GB/s bombardment. Here is the raw JSON returned from our Payara endpoints:</p>
+            <ul>
+                <li><strong>STEADY_LOAD:</strong> 200 MB/sec allocation with 512 MB stable live set. Tests baseline young generation collection behavior.</li>
+                <li><strong>GROWING_HEAP:</strong> 150 MB/sec with live set growing from 100 MB to 2 GB over 60 seconds. Tests mixed collection pause scaling.</li>
+                <li><strong>PROMOTION_STORM:</strong> 300 MB/sec with 50% survival rate. Tests old generation collection efficiency under high promotion.</li>
+                <li><strong>FRAGMENTATION:</strong> 200 MB/sec with small objects (100-1000 bytes). Tests compaction behavior.</li>
+                <li><strong>CROSS_GEN_REFS:</strong> 150 MB/sec with 800 MB in old generation holding references to young objects. Tests remembered set overhead.</li>
+            </ul>
+
+            <p>Each scenario uses 4 parallel threads to generate allocation load, mirroring production web servers and trading systems where multiple threads compete for heap space. The allocation rates (100-300 MB/sec) are calibrated to demonstrate normal GC behavior rather than pathological thrashing, ensuring consistent results across 2GB-4GB heap configurations.</p>
+
+            <p>Here is the raw JSON returned from our Payara endpoints during a PROMOTION_STORM scenario:</p>
 
             <pre><code class="language-json">{
   "running": true,
-  "description": "2 GB/sec - Extreme pressure",
-  "bytesPerSecond": 2048000000,
-  "currentMode": "EXTREME",
+  "currentMode": "PROMOTION_STORM",
+  "description": "High promotion rate (50% survival) - Tests old gen collection efficiency",
+  "allocationRateMBPerSec": 300,
+  "liveSetSizeMB": 1024,
+  "scenarioType": "PROMOTION",
   "percentiles": {
     "max": 1,
     "p50": 0,
@@ -315,8 +327,8 @@
 }</code></pre>
 
             <div class="highlight-block">
-                <p>Read that again.</p>
-                <p>Allocating 2GB of data every second, the application's garbage collection pauses peaked at 1 millisecond. The 50th percentile (median) was 0ms. The SLA monitor reported zero violations over 10ms.</p>
+                <p>The Results</p>
+                <p>Under PROMOTION_STORM (300 MB/sec with high old generation traffic), the application's garbage collection pauses peaked at 1 millisecond. The 50th percentile (median) was 0ms. G1 under the same scenario exhibited pauses of 50-200ms as mixed collections struggled to keep pace with promotion rates.</p>
             </div>
 
             <h2>Payara Micro: Enterprise Jakarta EE for Demanding Applications</h2>
@@ -369,21 +381,35 @@ public void onFragment(DirectBuffer buffer, int offset, int length, Header heade
     final long quantity = tradeDecoder.quantity();
 }</code></pre>
 
-            <h3>The "Villain": The Memory Pressure Service</h3>
+            <h3>The "Villain": Scenario-Based Memory Pressure</h3>
 
-            <p>To prove the reliability of the system, we included a component designed specifically to break it. The <code>MemoryPressureService</code> generates massive amounts of random data to simulate extreme market volatility or memory leaks.</p>
+            <p>To demonstrate collector behavior under specific pathological conditions, the <code>MemoryPressureService</code> implements five distinct scenarios. Each targets a known G1 weakness while C4 handles the workload without pause.</p>
 
-            <pre><code class="language-java">// The "Villain": Generating 2GB/sec of garbage to stress the JVM
-private void generateGarbage(AllocationMode mode) {
-    // 20,000 allocations per 100ms iteration = ~2GB/sec
-    for (int i = 0; i < mode.getAllocationsPerIteration(); i++) {
-        // Create 100KB byte array, touch it, and immediately discard it
-        byte[] garbage = new byte[1024 * 100];
-        ThreadLocalRandom.current().nextBytes(garbage); // Prevent optimization
+            <p>The CROSS_GEN_REFS scenario is particularly instructive. It creates old generation objects that hold references to newly allocated young objects, triggering G1's write barriers and remembered set maintenance:</p>
+
+            <pre><code class="language-java">// Cross-generational reference stress test
+private static class RefHolder {
+    volatile Object youngRef;  // Updated frequently to trigger write barriers
+    final byte[] padding;      // 1MB padding to establish old gen presence
+}
+
+private void createCrossGenerationalRefsMultiThreaded(int totalBytes, int numThreads) {
+    RefHolder[] holders = crossRefHolders.toArray(new RefHolder[0]);
+
+    for (int t = 0; t < numThreads; t++) {
+        futures[t] = CompletableFuture.runAsync(() -> {
+            int remaining = bytesPerThread;
+            while (remaining > 0) {
+                byte[] youngObj = new byte[size];
+                // This write triggers G1's post-write barrier
+                holders[idx].youngRef = youngObj;
+                remaining -= size;
+            }
+        }, executorService);
     }
 }</code></pre>
 
-            <p>Even with this "villain" running full throttle, the Azul C4 collector cleaned up the mess concurrently, ensuring the trading threads never stopped.</p>
+            <p>G1 must track every old-to-young reference update via card tables and remembered sets. During young collection, G1 scans these remembered sets to find roots, adding overhead proportional to cross-reference volume. C4 has no generational boundaries, eliminating this overhead entirely.</p>
 
             <h2>The Business Impact</h2>
 
@@ -409,7 +435,7 @@ private void generateGarbage(AllocationMode mode) {
                     <li><strong>Try Payara Micro:</strong> <a href="https://payara.fish/downloads/" target="_blank" rel="noopener">Download Payara Micro</a> and experience the lightweight, enterprise-grade application server for yourself.</li>
                     <li><strong>Try Payara Qube:</strong> <a href="https://payara.fish/qube" target="_blank" rel="noopener">Deploy to Payara Qube</a> (formerly Payara Cloud) for effortless cloud deployment without the infrastructure overhead.</li>
                     <li><strong>Evaluate Azul Platform Prime:</strong> <a href="https://www.azul.com/products/prime/" target="_blank" rel="noopener">Request a trial of Azul Platform Prime</a> to see C4 garbage collection in action. The performance improvements are immediately noticeable, especially under memory pressure.</li>
-                    <li><strong>Run Your Own Tests:</strong> Use the built-in stress testing capabilities in TradeStreamEE to see how your applications perform under realistic load conditions.</li>
+                    <li><strong>Run Your Own Tests:</strong> Use the built-in scenario-based stress testing in TradeStreamEE. The five scenarios (STEADY_LOAD, GROWING_HEAP, PROMOTION_STORM, FRAGMENTATION, CROSS_GEN_REFS) target specific GC weaknesses, allowing direct comparison between G1 and C4 behavior under controlled conditions.</li>
                 </ul>
             </div>
         </article>

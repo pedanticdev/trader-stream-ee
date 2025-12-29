@@ -239,44 +239,42 @@ GCStatsService collects real-time garbage collection metrics via JMX MXBeans:
 
 #### Memory Pressure Stress Testing
 
-MemoryPressureService generates controlled memory allocation to create realistic GC stress:
+MemoryPressureService generates controlled memory allocation using scenario-based testing that targets specific garbage collector weaknesses. Rather than generic high-allocation stress, each scenario exposes fundamental algorithmic differences between G1 and C4.
 
-Stress Test Patterns:
+Design Principles:
 
-The service rotates through four high-churn allocation patterns designed to maximize Garbage Collection pressure:
+* Lower allocation rates (100-500 MB/sec) that allow normal GC behavior rather than pathological thrashing
+* Multi-threaded allocation (4 threads) mirroring production web servers and trading systems
+* Focus on pause time metrics rather than throughput
+* Scenarios that work consistently across 2GB-4GB heap sizes
 
-* String Churn: High-frequency creation and concatenation of short-lived Strings.
-* Byte Array Churn: Rapid allocation and discard of primitive byte arrays.
-* Object Graph Churn: Creation of nested object structures to stress reference tracing.
-* Collection Churn: High-volume addition/removal of elements in standard Java Collections.
+Test Scenarios:
 
-Allocation Modes with Coordinated Bursts:
+| Scenario        | Allocation | Live Set               | What It Tests                                             |
+|:----------------|:-----------|:-----------------------|:----------------------------------------------------------|
+| STEADY_LOAD     | 200 MB/sec | 512 MB stable          | Baseline young generation collection behavior             |
+| GROWING_HEAP    | 150 MB/sec | 100 MB → 2 GB over 60s | Mixed collection pause scaling with live set size         |
+| PROMOTION_STORM | 300 MB/sec | 1 GB (50% survival)    | Old generation collection efficiency under high promotion |
+| FRAGMENTATION   | 200 MB/sec | 1 GB fragmented        | Compaction behavior with small objects (100-1000 bytes)   |
+| CROSS_GEN_REFS  | 150 MB/sec | 800 MB in old gen      | Remembered set overhead from old→young references         |
 
-* OFF: No additional allocation
-* LOW: 2 MB/sec - Light pressure (3x bursts every 5 seconds)
-* MEDIUM: 20 MB/sec - Moderate pressure (3x bursts every 5 seconds)
-* HIGH: 1 GB/sec - Heavy pressure (3x bursts every 5 seconds)
-* EXTREME: 4 GB/sec - Extreme pressure (3x bursts every 5 seconds)
+Expected Behavior:
 
-Burst Scenarios: All active modes include coordinated allocation bursts (3x multiplier every 5 seconds) to simulate market events like flash crashes, sudden volume spikes, or news-driven trading surges.
+* G1: Stop-the-world pauses that scale with live set size, remembered set scanning overhead, compaction pauses under fragmentation
+* C4: Zero pauses across all scenarios due to concurrent collection, no remembered sets, concurrent compaction
 
-Each mode uses parallel virtual threads to generate load, allowing observation of:
+Each scenario uses 4 parallel virtual threads to generate allocation load. This multi-threaded pattern demonstrates G1's stop-the-world impact when all application threads must pause simultaneously.
 
-* C4's concurrent collection vs G1GC's "stop-the-world" pauses under heavy allocation
-* Latency impact during burst scenarios
-* Throughput degradation patterns with different object types
-* Long-lived object promotion patterns (tenured generation stress)
+#### GC Scenario Control
 
-#### GC Challenge Mode
+The web UI includes scenario selection controls that allow:
 
-The web UI includes GC Challenge Mode controls that allow:
-
-* Real-time switching between allocation modes
-* Visual feedback showing current stress level and burst activity
+* Real-time switching between test scenarios
+* Visual feedback showing current scenario and allocation rate
 * Side-by-side pause time visualization with phase breakdown
-* Immediate observation of collector behavior under realistic load
+* Observation of collector behavior under specific pathological conditions
 
-This feature enables live demonstration of collector behavior under realistic memory pressure with coordinated bursts, allowing comparison of C4's pause times versus G1GC's behavior during market event simulations.
+This feature enables targeted demonstration of G1's architectural limitations versus C4's concurrent collection model.
 
 ## Monitoring & Observability
 
@@ -297,21 +295,34 @@ Direct instance access:
 
 ### Stress Testing
 
-Use the UI or API to apply memory pressure and observe GC behavior differences:
+Use the UI or API to apply memory pressure scenarios and observe GC behavior differences:
 
 ```bash
-# Apply extreme memory pressure via API
-curl -X POST http://localhost:8080/api/pressure/mode/EXTREME    # C4 cluster
-curl -X POST http://localhost:9080/api/pressure/mode/EXTREME    # G1GC cluster
+# Apply test scenarios via API
+curl -X POST http://localhost:8080/api/pressure/mode/STEADY_LOAD      # Baseline test
+curl -X POST http://localhost:8080/api/pressure/mode/GROWING_HEAP     # Mixed GC scaling
+curl -X POST http://localhost:8080/api/pressure/mode/PROMOTION_STORM  # Old gen pressure
+curl -X POST http://localhost:8080/api/pressure/mode/FRAGMENTATION    # Compaction test
+curl -X POST http://localhost:8080/api/pressure/mode/CROSS_GEN_REFS   # Remembered set test
+curl -X POST http://localhost:8080/api/pressure/mode/OFF              # Stop pressure
 
 # Get current GC statistics
-curl http://localhost:8080/api/gc/stats
-curl http://localhost:9080/api/gc/stats
+curl http://localhost:8080/api/gc/stats    # C4 cluster
+curl http://localhost:9080/api/gc/stats    # G1GC cluster
 
-# Available modes: OFF, LOW, MEDIUM, HIGH, EXTREME
-# Allocation rates: 0 MB/s, 2 MB/s, 20 MB/s, 1 GB/s, 4 GB/s
-# All active modes include 3x allocation bursts every 5 seconds
+# Get current pressure status
+curl http://localhost:8080/api/pressure/status
 ```
+
+Scenario Details:
+
+| Scenario        | Rate     | Target                 | Purpose                                   |
+|:----------------|:---------|:-----------------------|:------------------------------------------|
+| STEADY_LOAD     | 200 MB/s | 512 MB live set        | Tests baseline young GC pause behavior    |
+| GROWING_HEAP    | 150 MB/s | Grows to 2 GB          | Tests mixed collection pause scaling      |
+| PROMOTION_STORM | 300 MB/s | 1 GB with 50% survival | Tests old generation under high promotion |
+| FRAGMENTATION   | 200 MB/s | 1 GB fragmented        | Tests compaction with small objects       |
+| CROSS_GEN_REFS  | 150 MB/s | 800 MB old gen         | Tests remembered set scanning overhead    |
 
 ## Project Structure
 
@@ -366,7 +377,7 @@ Dockerfile.scale.standard      # Build for G1GC instances
 
 ### Current Test Coverage
 
-Working Tests (160/160 passing):
+Working Tests (170/170 passing):
 
 - Monitoring & GC: Full coverage of SLA monitoring logic and GC notification handling.
 - REST Resources: Comprehensive tests for Memory Pressure and GC Stats endpoints.
@@ -375,7 +386,7 @@ Working Tests (160/160 passing):
 
 Coverage Metrics:
 
-- Tests: 160 unit tests with 100% pass rate
+- Tests: 170 unit tests with 100% pass rate
 - Monitoring Coverage: >90% (SLAMonitor, GCStatsService)
 - REST API Coverage: >85% (Resources and DTOs)
 - Instruction Coverage: High coverage for business logic; integration logic relies on `test.sh`.
@@ -412,11 +423,15 @@ For readers unfamiliar with high-frequency trading concepts, this glossary expla
 
 | Term                              | Definition                                                                                                                                                                                              |
 |:----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Allocation Rate                   | The speed at which a program creates new objects in memory, measured in bytes per second (e.g., "2 GB/sec allocation rate"). Higher allocation rates increase garbage collection pressure.              |
+| Allocation Rate                   | The speed at which a program creates new objects in memory, measured in bytes per second (e.g., "200 MB/sec allocation rate"). Higher allocation rates increase garbage collection pressure.            |
 | GC Pressure / Memory Pressure     | The workload placed on the garbage collector due to object allocation. Higher pressure leads to more frequent garbage collection cycles and potentially longer pause times.                             |
 | Pause Time / Stop-the-World Pause | Duration when a garbage collector halts all application threads to perform cleanup. For HFT systems, even millisecond-level pauses can cause missed trading opportunities or regulatory violations.     |
 | Concurrent Collection             | Garbage collection that runs simultaneously with application threads, avoiding stop-the-world pauses. Azul C4 is a concurrent collector; G1GC uses stop-the-world pauses.                               |
-| Allocation Burst / Burst Scenario | Sudden spikes in memory allocation, simulating events like market opens, news releases, or flash crashes. This project uses 3x allocation multipliers every 5 seconds to simulate these conditions.     |
+| Live Set                          | The total size of objects currently reachable from application roots. Larger live sets increase GC work during marking phases. G1's mixed collection pause time scales with live set size.              |
+| Promotion / Promotion Rate        | Moving objects from young generation to old generation after surviving multiple collections. High promotion rates force frequent old generation collections.                                            |
+| Remembered Set                    | G1 data structure tracking references from old generation to young generation. Scanning remembered sets adds overhead to young GC pauses. C4 has no generational boundaries, eliminating this overhead. |
+| Cross-Generational Reference      | A reference from an old generation object to a young generation object. G1 must track these via card tables and remembered sets; every such reference update triggers a write barrier.                  |
+| Heap Fragmentation                | Memory fragmentation where free space is scattered in small chunks. G1 must pause to compact fragmented regions; C4 compacts concurrently using read barriers.                                          |
 | Tenured Objects / Old Generation  | Long-lived objects that survive multiple garbage collection cycles and are promoted to the "old generation" heap region. Order books are typically tenured since they persist across many tick updates. |
 
 ### Data Structures & Patterns

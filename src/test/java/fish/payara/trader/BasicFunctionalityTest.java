@@ -17,15 +17,15 @@ class BasicFunctionalityTest {
   void shouldVerifyAllocationModesWorkCorrectly() {
     // Test AllocationMode enum
     assertEquals(AllocationMode.OFF, AllocationMode.valueOf("OFF"));
-    assertEquals(AllocationMode.LOW, AllocationMode.valueOf("LOW"));
-    assertEquals(AllocationMode.MEDIUM, AllocationMode.valueOf("MEDIUM"));
-    assertEquals(AllocationMode.HIGH, AllocationMode.valueOf("HIGH"));
-    assertEquals(AllocationMode.EXTREME, AllocationMode.valueOf("EXTREME"));
+    assertEquals(AllocationMode.STEADY_LOAD, AllocationMode.valueOf("STEADY_LOAD"));
+    assertEquals(AllocationMode.GROWING_HEAP, AllocationMode.valueOf("GROWING_HEAP"));
+    assertEquals(AllocationMode.PROMOTION_STORM, AllocationMode.valueOf("PROMOTION_STORM"));
+    assertEquals(AllocationMode.FRAGMENTATION, AllocationMode.valueOf("FRAGMENTATION"));
 
     // Test allocation rates
-    assertEquals(0L, AllocationMode.OFF.getBytesPerSecond());
-    assertTrue(AllocationMode.LOW.getBytesPerSecond() > 0);
-    assertTrue(AllocationMode.EXTREME.getBytesPerSecond() > AllocationMode.LOW.getBytesPerSecond());
+    assertEquals(0, AllocationMode.OFF.getAllocationRateMBPerSec());
+    assertTrue(AllocationMode.STEADY_LOAD.getAllocationRateMBPerSec() > 0);
+    // Note: STEADY_LOAD rate (200) is > OFF (0)
   }
 
   @Test
