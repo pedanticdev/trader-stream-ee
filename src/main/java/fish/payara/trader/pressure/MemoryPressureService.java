@@ -6,18 +6,18 @@ import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.concurrent.ManagedExecutorService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
- * Service to generate controlled memory pressure for GC stress testing. Based on 1BRC techniques -
- * intentional allocation to demonstrate GC behavior.
+ * Service to generate controlled memory pressure for GC stress testing. Updated to use
+ * scenario-based testing targeting G1 vs C4 differences.
  */
 @ApplicationScoped
 public class MemoryPressureService {
@@ -31,13 +31,33 @@ public class MemoryPressureService {
   private final AtomicLong totalBytesAllocated = new AtomicLong(0);
   private long lastStatsTime = System.currentTimeMillis();
 
-  private final List<byte[]> tenuredObjects = new CopyOnWriteArrayList<>();
-  private static final int TENURED_TARGET_MB = 1024;
-  private final AtomicLong tenuredBytesAllocated = new AtomicLong(0);
+  // Live set management
+  private final Deque<byte[]> liveSet = new LinkedList<>();
+  private final AtomicLong liveSetBytesAllocated = new AtomicLong(0);
 
-  private volatile long lastBurstTime = 0;
-  private static final long BURST_INTERVAL_MS = 5000;
-  private static final int BURST_MULTIPLIER = 3;
+  // For Promotion Storm (thread-safe as multiple threads add to it)
+  private final Deque<byte[]> promotableObjects = new ConcurrentLinkedDeque<>();
+
+  // For Cross-Gen Refs scenario - holders in old gen that reference young objects
+  private final Deque<RefHolder> crossRefHolders = new LinkedList<>();
+  private final AtomicLong crossRefBytesAllocated = new AtomicLong(0);
+
+  // Scenario state
+  private final AtomicLong scenarioStartTime = new AtomicLong(0);
+
+  /**
+   * Holder object that lives in old generation and holds a reference to a young object. Every
+   * update to youngRef triggers G1's write barrier and remembered set maintenance.
+   */
+  private static class RefHolder {
+    volatile Object youngRef; // Reference to young gen object - updated frequently
+    final byte[] padding; // Padding to make holder substantial (~1MB each)
+
+    RefHolder(int paddingSize) {
+      this.padding = new byte[paddingSize];
+      ThreadLocalRandom.current().nextBytes(this.padding);
+    }
+  }
 
   @Inject @VirtualThreadExecutor private ManagedExecutorService executorService;
 
@@ -57,6 +77,14 @@ public class MemoryPressureService {
     if (mode == AllocationMode.OFF) {
       stopPressure();
     } else {
+      // clear previous state
+      liveSet.clear();
+      liveSetBytesAllocated.set(0);
+      promotableObjects.clear();
+      crossRefHolders.clear();
+      crossRefBytesAllocated.set(0);
+      scenarioStartTime.set(System.currentTimeMillis());
+
       startPressure();
     }
   }
@@ -86,6 +114,7 @@ public class MemoryPressureService {
                   generateGarbage(mode);
 
                   long executionTime = System.currentTimeMillis() - loopStartTime;
+                  // Target 10 iterations per second (100ms per iteration)
                   long sleepTime = 100 - executionTime;
 
                   if (sleepTime > 0) {
@@ -103,6 +132,12 @@ public class MemoryPressureService {
               }
 
               LOGGER.info("Memory pressure generator stopped");
+              // Cleanup
+              liveSet.clear();
+              liveSetBytesAllocated.set(0);
+              promotableObjects.clear();
+              crossRefHolders.clear();
+              crossRefBytesAllocated.set(0);
             });
   }
 
@@ -115,113 +150,267 @@ public class MemoryPressureService {
   }
 
   private void generateGarbage(AllocationMode mode) {
-    int baseAllocations = mode.getAllocationsPerIteration();
-    int bytesPerAlloc = mode.getBytesPerAllocation();
+    switch (mode.getScenarioType()) {
+      case STEADY:
+        executeSteadyLoadScenario(mode);
+        break;
+      case GROWING:
+        executeGrowingHeapScenario(mode);
+        break;
+      case PROMOTION:
+        executePromotionStormScenario(mode);
+        break;
+      case FRAGMENTATION:
+        executeFragmentationScenario(mode);
+        break;
+      case CROSS_REF:
+        executeCrossRefsScenario(mode);
+        break;
+      default:
+        // Do nothing for NONE
+        break;
+    }
+  }
 
-    boolean inBurst = false;
-    if (mode != AllocationMode.OFF) {
-      long now = System.currentTimeMillis();
-      if (now - lastBurstTime >= BURST_INTERVAL_MS) {
-        inBurst = true;
-        lastBurstTime = now;
-        LOGGER.info(
-            String.format(
-                "Burst triggered - %dx allocation for %s mode (simulating market event)",
-                BURST_MULTIPLIER, mode.name()));
-      }
+  private void executeSteadyLoadScenario(AllocationMode mode) {
+    int targetMB = mode.getLiveSetSizeMB();
+    int rateMBPerSec = mode.getAllocationRateMBPerSec();
+
+    // Maintain stable live set (single-threaded)
+    maintainLiveSet(targetMB);
+
+    // Allocate transient garbage at specified rate across 4 threads
+    // (100ms iteration = 10 iterations/sec)
+    int bytesPerIteration = (rateMBPerSec * 1024 * 1024) / 10;
+
+    allocateTransientGarbageMultiThreaded(bytesPerIteration, 4);
+  }
+
+  private void executeGrowingHeapScenario(AllocationMode mode) {
+    long startTime = scenarioStartTime.get();
+    long elapsed = (System.currentTimeMillis() - startTime) / 1000; // seconds
+
+    int startMB = 100;
+    int targetMB = mode.getLiveSetSizeMB();
+    int duration = mode.getGrowthDurationSeconds();
+
+    // Calculate current target based on linear growth
+    int currentTargetMB =
+        elapsed >= duration
+            ? targetMB
+            : startMB + (int) ((targetMB - startMB) * elapsed / duration);
+
+    maintainLiveSet(currentTargetMB);
+
+    // Allocate transient garbage
+    int rateMBPerSec = mode.getAllocationRateMBPerSec();
+    int bytesPerIteration = (rateMBPerSec * 1024 * 1024) / 10;
+    allocateTransientGarbageMultiThreaded(bytesPerIteration, 4);
+  }
+
+  private void executePromotionStormScenario(AllocationMode mode) {
+    int rateMBPerSec = mode.getAllocationRateMBPerSec();
+    int bytesPerIteration = (rateMBPerSec * 1024 * 1024) / 10;
+
+    // 50% of allocations should survive to old generation
+    // Allocate half as transient, half as medium-lived
+    int transientBytes = bytesPerIteration / 2;
+    int promotableBytes = bytesPerIteration / 2;
+
+    // Multi-threaded allocation for both transient and promotable
+    allocateTransientGarbageMultiThreaded(transientBytes, 4);
+    allocatePromotableGarbageMultiThreaded(promotableBytes, 4);
+
+    // Move from thread-safe queue to local live set management
+    byte[] promoted;
+    while ((promoted = promotableObjects.poll()) != null) {
+      liveSet.add(promoted);
+      liveSetBytesAllocated.addAndGet(promoted.length);
     }
 
-    int totalAllocations = inBurst ? baseAllocations * BURST_MULTIPLIER : baseAllocations;
+    // Now trim live set if needed (remove oldest)
+    long targetBytes = mode.getLiveSetSizeMB() * 1024L * 1024L;
+    while (liveSetBytesAllocated.get() > targetBytes && !liveSet.isEmpty()) {
+      byte[] removed = liveSet.removeFirst();
+      liveSetBytesAllocated.addAndGet(-removed.length);
+    }
+  }
 
-    int numTasks = 4;
-    int allocationsPerTask = totalAllocations / numTasks;
-    CompletableFuture<?>[] futures = new CompletableFuture[numTasks];
+  private void executeFragmentationScenario(AllocationMode mode) {
+    int targetMB = mode.getLiveSetSizeMB();
+    maintainLiveSet(targetMB);
 
-    for (int t = 0; t < numTasks; t++) {
-      final int taskAllocations =
-          (t == numTasks - 1)
-              ? totalAllocations - (allocationsPerTask * (numTasks - 1))
-              : allocationsPerTask;
+    int rateMBPerSec = mode.getAllocationRateMBPerSec();
+    int bytesPerIteration = (rateMBPerSec * 1024 * 1024) / 10;
 
+    allocateFragmentationGarbageMultiThreaded(bytesPerIteration, 4);
+  }
+
+  private void executeCrossRefsScenario(AllocationMode mode) {
+    // Maintain old gen holders (these will be promoted after surviving GCs)
+    maintainCrossRefHolders(mode.getLiveSetSizeMB());
+
+    int rateMBPerSec = mode.getAllocationRateMBPerSec();
+    int bytesPerIteration = (rateMBPerSec * 1024 * 1024) / 10;
+
+    // Create young objects and link them from old gen holders
+    // This triggers G1's write barriers and remembered set updates
+    createCrossGenerationalRefsMultiThreaded(bytesPerIteration, 4);
+  }
+
+  /**
+   * Maintain RefHolder objects that will live in old generation. Each holder has ~1MB padding and a
+   * reference slot for young objects.
+   */
+  private void maintainCrossRefHolders(int targetMB) {
+    long targetBytes = targetMB * 1024L * 1024L;
+    long currentBytes = crossRefBytesAllocated.get();
+
+    // Add holders if below target
+    while (currentBytes < targetBytes) {
+      RefHolder holder = new RefHolder(1024 * 1024); // ~1MB each
+      crossRefHolders.add(holder);
+      currentBytes += 1024 * 1024;
+      crossRefBytesAllocated.set(currentBytes);
+    }
+
+    // Remove holders if above target
+    while (currentBytes > targetBytes && !crossRefHolders.isEmpty()) {
+      crossRefHolders.removeFirst();
+      currentBytes -= 1024 * 1024;
+      crossRefBytesAllocated.set(currentBytes);
+    }
+  }
+
+  /**
+   * Create young objects and update old→young references. Each reference update triggers G1's write
+   * barrier, which marks the card table and adds to remembered sets. This is the overhead we're
+   * testing - C4 has no remembered sets.
+   */
+  private void createCrossGenerationalRefsMultiThreaded(int totalBytes, int numThreads) {
+    if (crossRefHolders.isEmpty()) {
+      return;
+    }
+
+    int bytesPerThread = totalBytes / numThreads;
+    CompletableFuture<?>[] futures = new CompletableFuture[numThreads];
+
+    // Convert to array for random access from multiple threads
+    RefHolder[] holders = crossRefHolders.toArray(new RefHolder[0]);
+
+    for (int t = 0; t < numThreads; t++) {
       futures[t] =
           CompletableFuture.runAsync(
               () -> {
-                for (int i = 0; i < taskAllocations; i++) {
-                  int pattern = i % 4;
+                int remaining = bytesPerThread;
+                while (remaining > 0) {
+                  // Create young object (1-4KB each for variety)
+                  int size = ThreadLocalRandom.current().nextInt(1024, 4097);
+                  if (size > remaining) size = remaining;
+                  byte[] youngObj = new byte[size];
+                  ThreadLocalRandom.current().nextBytes(youngObj);
 
-                  switch (pattern) {
-                    case 0:
-                      generateStringGarbage(bytesPerAlloc);
-                      break;
-                    case 1:
-                      generateByteArrayGarbage(bytesPerAlloc);
-                      break;
-                    case 2:
-                      generateObjectGarbage(bytesPerAlloc / 64);
-                      break;
-                    case 3:
-                      generateCollectionGarbage(bytesPerAlloc / 100);
-                      break;
-                  }
-                  totalBytesAllocated.addAndGet(bytesPerAlloc);
+                  // Update random old gen holder to point to this young object
+                  // This write triggers G1's post-write barrier:
+                  // 1. Marks card table entry as dirty
+                  // 2. Adds to remembered set for later scanning
+                  int idx = ThreadLocalRandom.current().nextInt(holders.length);
+                  holders[idx].youngRef = youngObj;
+
+                  remaining -= size;
                 }
+                totalBytesAllocated.addAndGet(bytesPerThread);
               },
               executorService);
     }
 
     CompletableFuture.allOf(futures).join();
-
-    if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
-      int chance = (mode == AllocationMode.EXTREME) ? 100 : 20;
-      if (ThreadLocalRandom.current().nextInt(10000) < chance) {
-        byte[] longLived = new byte[1024 * 1024];
-        ThreadLocalRandom.current().nextBytes(longLived);
-        tenuredObjects.add(longLived);
-        tenuredBytesAllocated.addAndGet(1024 * 1024);
-      }
-    }
-
-    if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
-      while (tenuredBytesAllocated.get() > TENURED_TARGET_MB * 1024L * 1024L) {
-        if (!tenuredObjects.isEmpty()) {
-          tenuredObjects.removeFirst();
-          tenuredBytesAllocated.addAndGet(-1024 * 1024);
-        } else {
-          break;
-        }
-      }
-    } else if (mode == AllocationMode.OFF || mode == AllocationMode.LOW) {
-      if (!tenuredObjects.isEmpty()) {
-        tenuredObjects.clear();
-        tenuredBytesAllocated.set(0);
-      }
-    }
   }
 
-  private void generateStringGarbage(int bytes) {
-    StringBuilder sb = new StringBuilder(bytes);
-    for (int i = 0; i < bytes / 10; i++) {
-      sb.append("GARBAGE");
+  private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThreads) {
+    int bytesPerThread = totalBytes / numThreads;
+    CompletableFuture<?>[] futures = new CompletableFuture[numThreads];
+
+    for (int t = 0; t < numThreads; t++) {
+      futures[t] =
+          CompletableFuture.runAsync(
+              () -> {
+                // Each thread allocates its share
+                byte[] garbage = new byte[bytesPerThread];
+                ThreadLocalRandom.current().nextBytes(garbage);
+                // Object is now eligible for GC
+                totalBytesAllocated.addAndGet(bytesPerThread);
+              },
+              executorService);
     }
-    String garbage = sb.toString();
+
+    // Wait for all threads to complete
+    CompletableFuture.allOf(futures).join();
   }
 
-  private void generateByteArrayGarbage(int bytes) {
-    byte[] garbage = new byte[bytes];
-    ThreadLocalRandom.current().nextBytes(garbage);
-  }
+  private void allocatePromotableGarbageMultiThreaded(int totalBytes, int numThreads) {
+    int bytesPerThread = totalBytes / numThreads;
+    CompletableFuture<?>[] futures = new CompletableFuture[numThreads];
 
-  private void generateObjectGarbage(int count) {
-    List<DummyObject> garbage = new ArrayList<>(count);
-    for (int i = 0; i < count; i++) {
-      garbage.add(new DummyObject(i, "data-" + i, System.nanoTime()));
+    for (int t = 0; t < numThreads; t++) {
+      futures[t] =
+          CompletableFuture.runAsync(
+              () -> {
+                // Create objects that live long enough to be promoted
+                byte[] obj = new byte[bytesPerThread];
+                ThreadLocalRandom.current().nextBytes(obj);
+                promotableObjects.add(obj);
+                totalBytesAllocated.addAndGet(bytesPerThread);
+              },
+              executorService);
     }
+
+    CompletableFuture.allOf(futures).join();
   }
 
-  private void generateCollectionGarbage(int count) {
-    List<Integer> garbage = new ArrayList<>(count);
-    for (int i = 0; i < count; i++) {
-      garbage.add(ThreadLocalRandom.current().nextInt());
+  private void allocateFragmentationGarbageMultiThreaded(int totalBytes, int numThreads) {
+    int bytesPerThread = totalBytes / numThreads;
+    CompletableFuture<?>[] futures = new CompletableFuture[numThreads];
+
+    for (int t = 0; t < numThreads; t++) {
+      futures[t] =
+          CompletableFuture.runAsync(
+              () -> {
+                int remaining = bytesPerThread;
+                while (remaining > 0) {
+                  // Small objects 100-1000 bytes
+                  int size = ThreadLocalRandom.current().nextInt(100, 1001);
+                  if (size > remaining) size = remaining;
+                  byte[] garbage = new byte[size];
+                  ThreadLocalRandom.current().nextBytes(garbage);
+                  remaining -= size;
+                }
+                totalBytesAllocated.addAndGet(bytesPerThread);
+              },
+              executorService);
+    }
+
+    CompletableFuture.allOf(futures).join();
+  }
+
+  private void maintainLiveSet(int targetMB) {
+    long targetBytes = targetMB * 1024L * 1024L;
+    long currentBytes = liveSetBytesAllocated.get();
+
+    // Add objects if below target
+    while (currentBytes < targetBytes) {
+      byte[] obj = new byte[1024 * 1024]; // 1 MB object
+      ThreadLocalRandom.current().nextBytes(obj);
+      liveSet.add(obj);
+      currentBytes += 1024 * 1024;
+      liveSetBytesAllocated.set(currentBytes);
+    }
+
+    // Remove objects if above target
+    while (currentBytes > targetBytes && !liveSet.isEmpty()) {
+      liveSet.removeFirst();
+      currentBytes -= 1024 * 1024;
+      liveSetBytesAllocated.set(currentBytes);
     }
   }
 
@@ -234,19 +423,11 @@ public class MemoryPressureService {
 
       LOGGER.info(
           String.format(
-              "Memory Pressure Stats - Mode: %s | Allocated: %.2f MB/sec | Tenured: %d MB (%d objects)",
-              currentMode, mbPerSec, getTenuredObjectsMB(), getTenuredObjectCount()));
+              "Memory Pressure Stats - Mode: %s | Allocated: %.2f MB/sec | Live Set: %d MB",
+              currentMode, mbPerSec, liveSetBytesAllocated.get() / (1024 * 1024)));
 
       lastStatsTime = now;
     }
-  }
-
-  public long getTenuredObjectsMB() {
-    return tenuredBytesAllocated.get() / (1024 * 1024);
-  }
-
-  public int getTenuredObjectCount() {
-    return tenuredObjects.size();
   }
 
   @PreDestroy
@@ -261,17 +442,5 @@ public class MemoryPressureService {
 
   public boolean isRunning() {
     return running;
-  }
-
-  private static class DummyObject {
-    private final int id;
-    private final String data;
-    private final long timestamp;
-
-    DummyObject(int id, String data, long timestamp) {
-      this.id = id;
-      this.data = data;
-      this.timestamp = timestamp;
-    }
   }
 }

@@ -956,26 +956,36 @@
     </div>
 
     <div class="stress-scenarios">
-        <h3 style="font-size: 1em; color: #64748b; font-weight: 600; text-transform: uppercase;">Demo Scenarios</h3>
+        <h3 style="font-size: 1em; color: #64748b; font-weight: 600; text-transform: uppercase;">Test Scenarios</h3>
         <div class="scenario-buttons">
-            <button onclick="applyScenario('DEMO_BASELINE')" class="scenario-btn" id="btn-DEMO_BASELINE">
-                📊 Baseline
-                <span class="hint">No HFT stress</span>
+            <button onclick="setPressureMode('OFF')" class="scenario-btn" id="btn-OFF">
+                🛑 Stop
+                <span class="hint">Reset all pressure</span>
             </button>
 
-            <button onclick="applyScenario('DEMO_NORMAL')" class="scenario-btn" id="btn-DEMO_NORMAL">
-                📈 Normal Trading
-                <span class="hint">2 MB/sec + Bursts</span>
+            <button onclick="setPressureMode('STEADY_LOAD')" class="scenario-btn" id="btn-STEADY_LOAD">
+                ⚖️ Steady Load
+                <span class="hint">200MB/s, 512MB Live</span>
             </button>
 
-            <button onclick="applyScenario('DEMO_STRESS')" class="scenario-btn" id="btn-DEMO_STRESS">
-                🔥 High Stress
-                <span class="hint">1 GB/sec + Bursts</span>
+            <button onclick="setPressureMode('GROWING_HEAP')" class="scenario-btn" id="btn-GROWING_HEAP">
+                📈 Growing Heap
+                <span class="hint">Growth to 2GB</span>
             </button>
 
-            <button onclick="applyScenario('DEMO_EXTREME')" class="scenario-btn" id="btn-DEMO_EXTREME">
-                💥 Flash Crash
-                <span class="hint">4 GB/sec + Bursts</span>
+            <button onclick="setPressureMode('PROMOTION_STORM')" class="scenario-btn" id="btn-PROMOTION_STORM">
+                🌊 Promotion
+                <span class="hint">High Old Gen Traffic</span>
+            </button>
+
+            <button onclick="setPressureMode('FRAGMENTATION')" class="scenario-btn" id="btn-FRAGMENTATION">
+                🧩 Fragmentation
+                <span class="hint">Small Obj, Rand Life</span>
+            </button>
+
+            <button onclick="setPressureMode('CROSS_GEN_REFS')" class="scenario-btn" id="btn-CROSS_GEN_REFS">
+                🔄 Cross-Gen
+                <span class="hint">Old->Young Refs</span>
             </button>
         </div>
     </div>
@@ -1130,49 +1140,45 @@
         <div class="card" onclick="flipCard(this)">
             <div class="card-front">
                 <div class="card-header">
-                    GC Challenge Mode
+                    GC Scenario Control
                     <span class="chart-mode-label" id="pressureMode">OFF</span>
                     <span class="flip-hint">Click to learn</span>
                 </div>
                 <div class="card-body">
                     <div class="message">
-                        <div class="message-type">Allocation Rate <span id="burstIndicator" style="color: #ef4444; font-weight: 700; display: none;">⚡ BURST</span></div>
+                        <div class="message-type">Allocation Rate</div>
                         <div class="message-data">
                             <span class="highlight" id="pressureRate">0 MB/sec</span>
                         </div>
                     </div>
                     <div class="message" style="margin-top: 8px; padding: 10px; background: #f8fafc; border-left: 3px solid #3b82f6;">
-                        <div class="message-type" style="font-size: 0.75em; margin-bottom: 4px;">HFT Pattern</div>
+                        <div class="message-type" style="font-size: 0.75em; margin-bottom: 4px;">Active Scenario</div>
                         <div class="message-data" style="font-size: 0.8em; color: #475569;">
-                            <span id="hftPattern">OrderBook → MarketTick → MarketDepth</span>
+                            <span id="hftPattern">None</span>
                         </div>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-                        <button onclick="event.stopPropagation(); setPressureMode('OFF')"
-                                style="flex: 1; background: #6c757d;">OFF<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">No stress</span></button>
-                        <button onclick="event.stopPropagation(); setPressureMode('LOW')"
-                                style="flex: 1; background: #28a745;">LOW<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">2 MB/sec + Bursts</span></button>
-                        <button onclick="event.stopPropagation(); setPressureMode('MEDIUM')"
-                                style="flex: 1; background: #ffc107; color: #333;">MEDIUM<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">20 MB/sec + Bursts</span></button>
-                        <button onclick="event.stopPropagation(); setPressureMode('HIGH')"
-                                style="flex: 1; background: #fd7e14;">HIGH<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">1 GB/sec + Bursts</span></button>
-                        <button onclick="event.stopPropagation(); setPressureMode('EXTREME')"
-                                style="flex: 1; background: #dc3545;">EXTREME<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">4 GB/sec + Bursts</span></button>
+                         <button onclick="event.stopPropagation(); setPressureMode('STEADY_LOAD')"
+                                style="flex: 1; background: #28a745;">Steady Load<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">Baseline</span></button>
+                        <button onclick="event.stopPropagation(); setPressureMode('GROWING_HEAP')"
+                                style="flex: 1; background: #ffc107; color: #333;">Growing Heap<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">Test Mixed GC</span></button>
+                        <button onclick="event.stopPropagation(); setPressureMode('PROMOTION_STORM')"
+                                style="flex: 1; background: #fd7e14;">Promotion Storm<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">Test Old Gen</span></button>
+                         <button onclick="event.stopPropagation(); setPressureMode('OFF')"
+                                style="flex: 1; background: #6c757d;">OFF<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">Stop Pressure</span></button>
                     </div>
                 </div>
             </div>
             <div class="card-back">
-                <h3>GC Challenge Mode</h3>
-                <p>Uses realistic HFT allocation patterns to stress-test the GC. Rotates through OrderBook, MarketTick, and MarketDepth patterns that match actual trading system memory profiles.</p>
-                <p><strong>Azul C4:</strong> Maintains low, consistent pause times even under EXTREME allocation
-                    pressure with coordinated bursts. Concurrent collection keeps up.</p>
-                <p><strong>G1GC:</strong> Pause times spike as allocation rate increases. Bursts cause severe stuttering in
-                    message delivery and chart updates.</p>
-                <p><strong>Rates:</strong> LOW=2MB/s, MEDIUM=20MB/s, HIGH=1GB/s, EXTREME=4GB/s</p>
-                <p><strong>Bursts:</strong> All active modes include 3x allocation bursts every 5 seconds to simulate flash crashes and market events.</p>
+                <h3>GC Stress Scenarios</h3>
+                <p>Select a scenario to target specific GC weaknesses:</p>
+                <p><strong>Steady Load:</strong> Baseline 200MB/s. Tests young gen collection latency.</p>
+                <p><strong>Growing Heap:</strong> Fills live set to 2GB. Tests mixed/major collection behavior as heap fills.</p>
+                <p><strong>Promotion Storm:</strong> High survival rate. Floods old generation to force expensive collections.</p>
+                <p><strong>Fragmentation:</strong> (Via Top Bar) Creates Swiss-cheese heap to force compaction pauses.</p>
                 <div class="tech-stack">
-                    <strong>Patterns:</strong> OrderBook (5KB), MarketTick (4KB), MarketDepth (6KB)<br>
-                    <strong>Burst Multiplier:</strong> 3x every 5 seconds (all modes except OFF)
+                    <strong>Goal:</strong> Compare G1 vs C4 latency under specific pathological conditions.<br>
+                    <strong>C4 Advantage:</strong> Should remain pauseless in all scenarios.
                 </div>
             </div>
         </div>
@@ -1537,9 +1543,11 @@
         const buttons = document.querySelectorAll('[onclick*="setPressureMode"]');
         let clickedButton = null;
         buttons.forEach(btn => {
-            if (btn.textContent.trim() === mode) {
-                clickedButton = btn;
-                btn.classList.add('processing');
+            // Simple check to find the button that was clicked if possible, 
+            // or we highlight based on mode in pollPressureStatus
+            if (btn.textContent.includes(mode) || btn.id === 'btn-' + mode) {
+                 btn.classList.add('processing');
+                 clickedButton = btn;
             }
         });
 
@@ -1553,10 +1561,10 @@
                     clickedButton.classList.remove('processing');
                 }
                 if (result.success) {
-                    addLog('Memory pressure mode set to: ' + mode);
+                    addLog('Scenario set to: ' + mode);
                     pollPressureStatus();
                 } else {
-                    addLog('Error setting pressure mode: ' + result.error);
+                    addLog('Error setting scenario: ' + result.error);
                 }
             })
             .catch(error => {
@@ -1564,11 +1572,9 @@
                     clickedButton.classList.remove('processing');
                 }
                 console.error('Error setting pressure mode:', error);
-                addLog('Failed to set pressure mode: ' + error.message);
+                addLog('Failed to set mode: ' + error.message);
             });
     }
-
-    let burstAnimationInterval = null;
 
     function pollPressureStatus() {
         fetch(API_BASE + '/pressure/status')
@@ -1579,28 +1585,23 @@
             .then(status => {
                 const mode = status.currentMode || 'OFF';
                 document.getElementById('pressureMode').textContent = mode;
-                const bytesPerSecond = status.bytesPerSecond ?? 0;
-                const rateMBps = isFinite(bytesPerSecond) ? (bytesPerSecond / (1024 * 1024)).toFixed(1) : '0';
+                
+                const rateMBps = status.allocationRateMBPerSec || 0;
                 document.getElementById('pressureRate').textContent = rateMBps + ' MB/sec';
-
-                // Show burst indicator for all active modes (except OFF)
-                const burstIndicator = document.getElementById('burstIndicator');
-                if (mode !== 'OFF') {
-                    if (!burstAnimationInterval) {
-                        burstAnimationInterval = setInterval(() => {
-                            burstIndicator.style.display = 'inline';
-                            setTimeout(() => {
-                                burstIndicator.style.display = 'none';
-                            }, 1000);
-                        }, 5000);
-                    }
-                } else {
-                    if (burstAnimationInterval) {
-                        clearInterval(burstAnimationInterval);
-                        burstAnimationInterval = null;
-                    }
-                    burstIndicator.style.display = 'none';
+                
+                const patternEl = document.getElementById('hftPattern');
+                if (patternEl) {
+                     patternEl.textContent = status.description || 'None';
+                     patternEl.title = status.description || '';
                 }
+
+                // Update active state of top buttons
+                document.querySelectorAll('.scenario-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.id === 'btn-' + mode) {
+                        btn.classList.add('active');
+                    }
+                });
             })
             .catch(error => console.error('Error fetching pressure status:', error));
     }
@@ -1828,28 +1829,7 @@
             });
     }
 
-    async function applyScenario(scenario) {
-        document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
 
-        const btn = document.getElementById('btn-' + scenario);
-        if (btn) btn.classList.add('active');
-
-        try {
-            const response = await fetch(API_BASE + '/pressure/scenario/' + scenario, {
-                method: 'POST'
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const result = await response.json();
-            console.log('Applied scenario:', result);
-
-            pollPressureStatus();
-
-            addLog('Scenario applied: ' + result.description);
-        } catch (error) {
-            console.error('Error applying scenario:', error);
-            addLog('Failed to apply scenario: ' + error.message);
-        }
-    }
 
     async function pollGCComparison() {
         try {
