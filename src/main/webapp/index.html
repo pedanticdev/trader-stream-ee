@@ -960,22 +960,22 @@
         <div class="scenario-buttons">
             <button onclick="applyScenario('DEMO_BASELINE')" class="scenario-btn" id="btn-DEMO_BASELINE">
                 📊 Baseline
-                <span class="hint">No stress</span>
+                <span class="hint">No HFT stress</span>
             </button>
 
             <button onclick="applyScenario('DEMO_NORMAL')" class="scenario-btn" id="btn-DEMO_NORMAL">
-                📈 Normal
-                <span class="hint">Light load</span>
+                📈 Normal Trading
+                <span class="hint">2 MB/sec + Bursts</span>
             </button>
 
             <button onclick="applyScenario('DEMO_STRESS')" class="scenario-btn" id="btn-DEMO_STRESS">
                 🔥 High Stress
-                <span class="hint">Heavy + Burst</span>
+                <span class="hint">1 GB/sec + Bursts</span>
             </button>
 
             <button onclick="applyScenario('DEMO_EXTREME')" class="scenario-btn" id="btn-DEMO_EXTREME">
-                💥 Extreme
-                <span class="hint">Max Pressure</span>
+                💥 Flash Crash
+                <span class="hint">4 GB/sec + Bursts</span>
             </button>
         </div>
     </div>
@@ -1102,6 +1102,12 @@
                             <span class="highlight" id="heapPercent">--</span>% utilized
                         </div>
                     </div>
+                    <div class="message" id="phaseBreakdownContainer" style="display: none;">
+                        <div class="message-type">GC Phase Breakdown</div>
+                        <div class="message-data" id="phaseBreakdownData" style="font-size: 0.85em; line-height: 1.6;">
+                            <em>No phase data available</em>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="card-back">
@@ -1130,38 +1136,43 @@
                 </div>
                 <div class="card-body">
                     <div class="message">
-                        <div class="message-type">Allocation Rate</div>
+                        <div class="message-type">Allocation Rate <span id="burstIndicator" style="color: #ef4444; font-weight: 700; display: none;">⚡ BURST</span></div>
                         <div class="message-data">
                             <span class="highlight" id="pressureRate">0 MB/sec</span>
                         </div>
                     </div>
+                    <div class="message" style="margin-top: 8px; padding: 10px; background: #f8fafc; border-left: 3px solid #3b82f6;">
+                        <div class="message-type" style="font-size: 0.75em; margin-bottom: 4px;">HFT Pattern</div>
+                        <div class="message-data" style="font-size: 0.8em; color: #475569;">
+                            <span id="hftPattern">OrderBook → MarketTick → MarketDepth</span>
+                        </div>
+                    </div>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
                         <button onclick="event.stopPropagation(); setPressureMode('OFF')"
-                                style="flex: 1; background: #6c757d;">OFF</button>
+                                style="flex: 1; background: #6c757d;">OFF<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">No stress</span></button>
                         <button onclick="event.stopPropagation(); setPressureMode('LOW')"
-                                style="flex: 1; background: #28a745;">LOW</button>
+                                style="flex: 1; background: #28a745;">LOW<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">2 MB/sec + Bursts</span></button>
                         <button onclick="event.stopPropagation(); setPressureMode('MEDIUM')"
-                                style="flex: 1; background: #ffc107; color: #333;">MEDIUM</button>
+                                style="flex: 1; background: #ffc107; color: #333;">MEDIUM<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">20 MB/sec + Bursts</span></button>
                         <button onclick="event.stopPropagation(); setPressureMode('HIGH')"
-                                style="flex: 1; background: #fd7e14;">HIGH</button>
+                                style="flex: 1; background: #fd7e14;">HIGH<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">1 GB/sec + Bursts</span></button>
                         <button onclick="event.stopPropagation(); setPressureMode('EXTREME')"
-                                style="flex: 1; background: #dc3545;">EXTREME</button>
+                                style="flex: 1; background: #dc3545;">EXTREME<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">4 GB/sec + Bursts</span></button>
                     </div>
                 </div>
             </div>
             <div class="card-back">
                 <h3>GC Challenge Mode</h3>
-                <p>Intentionally generates garbage to stress-test the GC under load. Watch how each collector
-                    responds.</p>
+                <p>Uses realistic HFT allocation patterns to stress-test the GC. Rotates through OrderBook, MarketTick, and MarketDepth patterns that match actual trading system memory profiles.</p>
                 <p><strong>Azul C4:</strong> Maintains low, consistent pause times even under EXTREME allocation
-                    pressure. Concurrent collection keeps up.</p>
-                <p><strong>G1GC:</strong> Pause times spike as allocation rate increases. You'll see stuttering in
+                    pressure with coordinated bursts. Concurrent collection keeps up.</p>
+                <p><strong>G1GC:</strong> Pause times spike as allocation rate increases. Bursts cause severe stuttering in
                     message delivery and chart updates.</p>
-                <p><strong>Rates:</strong> LOW=0.1MB/s, MEDIUM=0.5MB/s, HIGH=2MB/s, EXTREME=10MB/s</p>
+                <p><strong>Rates:</strong> LOW=2MB/s, MEDIUM=20MB/s, HIGH=1GB/s, EXTREME=4GB/s</p>
+                <p><strong>Bursts:</strong> All active modes include 3x allocation bursts every 5 seconds to simulate flash crashes and market events.</p>
                 <div class="tech-stack">
-                    <strong>Technique:</strong> Mixed allocation patterns (Strings, arrays, objects,
-                    collections)<br>
-                    <strong>Inspired by:</strong> 1BRC stress testing
+                    <strong>Patterns:</strong> OrderBook (5KB), MarketTick (4KB), MarketDepth (6KB)<br>
+                    <strong>Burst Multiplier:</strong> 3x every 5 seconds (all modes except OFF)
                 </div>
             </div>
         </div>
@@ -1481,6 +1492,31 @@
                     document.getElementById('gcPauseCollectorName').textContent = collectorNames || '--';
                     document.getElementById('gcCollectorName').textContent = collectorNames || '--';
 
+                    // Display phase breakdown if available
+                    if (stats.length > 0 && stats[0].phaseBreakdown) {
+                        const phaseBreakdown = stats[0].phaseBreakdown;
+                        const phaseContainer = document.getElementById('phaseBreakdownContainer');
+                        const phaseData = document.getElementById('phaseBreakdownData');
+
+                        if (phaseBreakdown && Object.keys(phaseBreakdown).length > 0) {
+                            phaseData.textContent = '';
+                            for (const [phaseName, phaseStats] of Object.entries(phaseBreakdown)) {
+                                const phaseLine = document.createElement('div');
+                                const phaseNameEl = document.createElement('strong');
+                                phaseNameEl.textContent = phaseName + ': ';
+                                phaseLine.appendChild(phaseNameEl);
+                                const statsText = document.createTextNode(
+                                    `P99=${phaseStats.p99Ms.toFixed(2)}ms, Max=${phaseStats.maxMs.toFixed(2)}ms`
+                                );
+                                phaseLine.appendChild(statsText);
+                                phaseData.appendChild(phaseLine);
+                            }
+                            phaseContainer.style.display = 'block';
+                        } else {
+                            phaseContainer.style.display = 'none';
+                        }
+                    }
+
                     if (gcPauseChart) {
                         gcPauseChart.data.labels.push('');
                         gcPauseChart.data.datasets[0].data.push(maxPauseMs);
@@ -1532,6 +1568,8 @@
             });
     }
 
+    let burstAnimationInterval = null;
+
     function pollPressureStatus() {
         fetch(API_BASE + '/pressure/status')
             .then(response => {
@@ -1539,10 +1577,30 @@
                 return response.json();
             })
             .then(status => {
-                document.getElementById('pressureMode').textContent = status.currentMode || 'OFF';
+                const mode = status.currentMode || 'OFF';
+                document.getElementById('pressureMode').textContent = mode;
                 const bytesPerSecond = status.bytesPerSecond ?? 0;
                 const rateMBps = isFinite(bytesPerSecond) ? (bytesPerSecond / (1024 * 1024)).toFixed(1) : '0';
                 document.getElementById('pressureRate').textContent = rateMBps + ' MB/sec';
+
+                // Show burst indicator for all active modes (except OFF)
+                const burstIndicator = document.getElementById('burstIndicator');
+                if (mode !== 'OFF') {
+                    if (!burstAnimationInterval) {
+                        burstAnimationInterval = setInterval(() => {
+                            burstIndicator.style.display = 'inline';
+                            setTimeout(() => {
+                                burstIndicator.style.display = 'none';
+                            }, 1000);
+                        }, 5000);
+                    }
+                } else {
+                    if (burstAnimationInterval) {
+                        clearInterval(burstAnimationInterval);
+                        burstAnimationInterval = null;
+                    }
+                    burstIndicator.style.display = 'none';
+                }
             })
             .catch(error => console.error('Error fetching pressure status:', error));
     }
