@@ -68,7 +68,7 @@ class GCStatsResourceTest {
   @Test
   @DisplayName("Should return accurate comparison data")
   void shouldReturnAccurateComparisonData() {
-    when(memoryPressureService.getCurrentMode()).thenReturn(AllocationMode.MEDIUM);
+    when(memoryPressureService.getCurrentMode()).thenReturn(AllocationMode.STEADY_LOAD);
     when(publisher.getMessagesPublished()).thenReturn(5000L);
     when(gcStatsService.collectGCStats()).thenReturn(Collections.emptyList());
 
@@ -82,7 +82,7 @@ class GCStatsResourceTest {
     @SuppressWarnings("unchecked")
     Map<String, Object> entity = (Map<String, Object>) response.getEntity();
 
-    assertEquals(AllocationMode.MEDIUM, entity.get("allocationMode"));
+    assertEquals(AllocationMode.STEADY_LOAD, entity.get("allocationMode"));
     assertEquals(5000L, entity.get("messageRate"));
     assertEquals(10.0, ((Number) entity.get("pauseP50Ms")).doubleValue());
     assertEquals(50L, entity.get("pauseMaxMs"));

@@ -90,8 +90,7 @@ public class GCStatsResource {
 
     comparison.put("allocationMode", memoryPressureService.getCurrentMode());
     comparison.put(
-        "allocationRateMBps",
-        memoryPressureService.getCurrentMode().getBytesPerSecond() / (1024 * 1024));
+        "allocationRateMBps", memoryPressureService.getCurrentMode().getAllocationRateMBPerSec());
     comparison.put("messageRate", publisher.getMessagesPublished());
 
     List<GCStats> stats = gcStatsService.collectGCStats();
