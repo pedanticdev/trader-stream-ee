@@ -47,6 +47,8 @@ case "$ACTION" in
         echo "   > Dockerfile (Azul) + MODE=AERON"
         echo ""
         MODE=AERON run_compose -f docker-compose.yml up -d --build --force-recreate
+        echo ""
+        echo "🌐 Access: http://localhost:8080/trader-stream-ee/"
         ;;
 
     azul-direct)
@@ -55,6 +57,8 @@ case "$ACTION" in
         echo "   ℹ️  Observe how C4 handles high-allocation legacy code."
         echo ""
         MODE=DIRECT run_compose -f docker-compose.yml up -d --build --force-recreate
+        echo ""
+        echo "🌐 Access: http://localhost:8080/trader-stream-ee/"
         ;;
 
     # --- Standard OpenJDK (G1 GC) Scenarios ---
@@ -65,6 +69,8 @@ case "$ACTION" in
         echo "   ℹ️  Baseline performance: High allocation on G1GC."
         echo ""
         MODE=DIRECT run_compose -f docker-compose-standard.yml up -d --build --force-recreate
+        echo ""
+        echo "🌐 Access: http://localhost:8080/trader-stream-ee/"
         ;;
 
     standard-aeron)
@@ -73,6 +79,8 @@ case "$ACTION" in
         echo "   ℹ️  Observe if off-heap transport helps G1GC."
         echo ""
         MODE=AERON run_compose -f docker-compose-standard.yml up -d --build --force-recreate
+        echo ""
+        echo "🌐 Access: http://localhost:8080/trader-stream-ee/"
         ;;
 
     # --- Clustered Scenarios ---
@@ -115,6 +123,8 @@ case "$ACTION" in
         echo "   ℹ️  Test cluster with high-allocation legacy mode."
         echo ""
         MODE=DIRECT DOCKERFILE=Dockerfile.scale run_compose -f docker-compose-scale.yml up -d --build --force-recreate
+        echo ""
+        echo "🌐 Access: http://localhost:8080/trader-stream-ee/"
         ;;
 
     cluster-dynamic)
@@ -244,9 +254,6 @@ case "$ACTION" in
         echo "  status           - Check if application is running"
         echo "  stop             - Stop the application"
         echo "  clean            - Stop and clean all containers/volumes"
-        echo ""
-        echo "Documentation:"
-        echo "  See SCALABILITY.md for clustering details"
         echo ""
         exit 1
         ;;

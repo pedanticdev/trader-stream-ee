@@ -54,10 +54,10 @@ class AllocationModeTest {
       int expected =
           switch (mode) {
             case OFF -> 0;
-            case LOW -> 10;
-            case MEDIUM -> 100;
-            case HIGH -> 5000;
-            case EXTREME -> 20000;
+            case LOW -> 20;
+            case MEDIUM -> 200;
+            case HIGH -> 10000;
+            case EXTREME -> 40000;
           };
 
       assertEquals(
@@ -109,39 +109,39 @@ class AllocationModeTest {
     @Test
     @DisplayName("Should calculate bytes per second correctly for LOW mode")
     void shouldCalculateBytesPerSecondCorrectlyForLowMode() {
-      // 10 allocations * 10240 bytes * 10 iterations/sec = 1,024,000 bytes/sec
+      // 20 allocations * 10240 bytes * 10 iterations/sec = 2,048,000 bytes/sec
       assertEquals(
-          1_024_000L, AllocationMode.LOW.getBytesPerSecond(), "LOW mode should allocate 1 MB/sec");
+          2_048_000L, AllocationMode.LOW.getBytesPerSecond(), "LOW mode should allocate 2 MB/sec");
     }
 
     @Test
     @DisplayName("Should calculate bytes per second correctly for MEDIUM mode")
     void shouldCalculateBytesPerSecondCorrectlyForMediumMode() {
-      // 100 allocations * 10240 bytes * 10 iterations/sec = 10,240,000 bytes/sec
+      // 200 allocations * 10240 bytes * 10 iterations/sec = 20,480,000 bytes/sec
       assertEquals(
-          10_240_000L,
+          20_480_000L,
           AllocationMode.MEDIUM.getBytesPerSecond(),
-          "MEDIUM mode should allocate 10 MB/sec");
+          "MEDIUM mode should allocate 20 MB/sec");
     }
 
     @Test
     @DisplayName("Should calculate bytes per second correctly for HIGH mode")
     void shouldCalculateBytesPerSecondCorrectlyForHighMode() {
-      // 5000 allocations * 10240 bytes * 10 iterations/sec = 512,000,000 bytes/sec
+      // 10000 allocations * 10240 bytes * 10 iterations/sec = 1,024,000,000 bytes/sec
       assertEquals(
-          512_000_000L,
+          1_024_000_000L,
           AllocationMode.HIGH.getBytesPerSecond(),
-          "HIGH mode should allocate 500 MB/sec");
+          "HIGH mode should allocate 1 GB/sec");
     }
 
     @Test
     @DisplayName("Should calculate bytes per second correctly for EXTREME mode")
     void shouldCalculateBytesPerSecondCorrectlyForExtremeMode() {
-      // 20000 allocations * 10240 bytes * 10 iterations/sec = 2,048,000,000 bytes/sec
+      // 40000 allocations * 10240 bytes * 10 iterations/sec = 4,096,000,000 bytes/sec
       assertEquals(
-          2_048_000_000L,
+          4_096_000_000L,
           AllocationMode.EXTREME.getBytesPerSecond(),
-          "EXTREME mode should allocate 2 GB/sec");
+          "EXTREME mode should allocate 4 GB/sec");
     }
   }
 
@@ -239,19 +239,19 @@ class AllocationModeTest {
     @DisplayName("Descriptions should contain rate information")
     void descriptionsShouldContainRateInformation() {
       assertTrue(
-          AllocationMode.LOW.getDescription().contains("1 MB/sec"),
+          AllocationMode.LOW.getDescription().contains("2 MB/sec"),
           "LOW description should contain rate information");
 
       assertTrue(
-          AllocationMode.MEDIUM.getDescription().contains("10 MB/sec"),
+          AllocationMode.MEDIUM.getDescription().contains("20 MB/sec"),
           "MEDIUM description should contain rate information");
 
       assertTrue(
-          AllocationMode.HIGH.getDescription().contains("500 MB/sec"),
+          AllocationMode.HIGH.getDescription().contains("1 GB/sec"),
           "HIGH description should contain rate information");
 
       assertTrue(
-          AllocationMode.EXTREME.getDescription().contains("2 GB/sec"),
+          AllocationMode.EXTREME.getDescription().contains("4 GB/sec"),
           "EXTREME description should contain rate information");
     }
   }
@@ -283,7 +283,7 @@ class AllocationModeTest {
           extremeRate > 1_000_000_000L, // 1GB
           "EXTREME mode should handle large allocations (>1GB/sec)");
 
-      assertEquals(2_048_000_000L, extremeRate, "EXTREME mode should handle exactly 2GB/sec");
+      assertEquals(4_096_000_000L, extremeRate, "EXTREME mode should handle exactly 4GB/sec");
     }
 
     @ParameterizedTest

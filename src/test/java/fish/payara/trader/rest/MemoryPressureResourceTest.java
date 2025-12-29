@@ -101,7 +101,7 @@ class MemoryPressureResourceTest {
         (Map<String, Map<String, Object>>) response.getEntity();
     assertTrue(entity.containsKey("EXTREME"));
     assertEquals(
-        "2 GB/sec - Extreme pressure",
+        "4 GB/sec - Extreme pressure",
         ((Map<String, Object>) entity.get("EXTREME")).get("description"));
   }
 }
