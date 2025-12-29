@@ -29,7 +29,6 @@ public class MarketDataWebSocket {
     LOGGER.info("WebSocket connection opened: " + session.getId());
     broadcaster.addSession(session);
 
-    // Send welcome message with current mode
     try {
       String welcomeJson =
           String.format(
@@ -59,10 +58,8 @@ public class MarketDataWebSocket {
 
   @OnMessage
   public void onMessage(String message, Session session) {
-    // Handle client messages if needed (e.g., subscription requests)
     LOGGER.fine("Received message from client: " + message);
 
-    // Echo back for now
     try {
       session.getBasicRemote().sendText("{\"type\":\"ack\",\"message\":\"Message received\"}");
     } catch (Exception e) {

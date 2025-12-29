@@ -19,27 +19,19 @@ import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
 
-/**
- * Real-time GC pause monitoring using JMX notifications. Captures individual GC events with exact
- * pause times (not averaged).
- */
 @ApplicationScoped
 public class GCPauseMonitor implements NotificationListener {
 
   private static final Logger LOGGER = Logger.getLogger(GCPauseMonitor.class.getName());
 
-  // Keep last N pauses for percentile calculations (reactive window)
   private static final int MAX_PAUSE_HISTORY = 500;
 
-  // Pause history (milliseconds)
   private final ConcurrentLinkedDeque<Long> pauseHistory = new ConcurrentLinkedDeque<>();
 
-  // All-time statistics
   private final AtomicLong totalPauseCount = new AtomicLong(0);
   private final AtomicLong totalPauseTimeMs = new AtomicLong(0);
   private volatile long maxPauseMs = 0;
 
-  // SLA violation counters (all-time)
   private final AtomicLong violationsOver10ms = new AtomicLong(0);
   private final AtomicLong violationsOver50ms = new AtomicLong(0);
   private final AtomicLong violationsOver100ms = new AtomicLong(0);
@@ -91,9 +83,6 @@ public class GCPauseMonitor implements NotificationListener {
       GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from(cd);
       String gcName = info.getGcName();
 
-      // FILTERING LOGIC:
-      // Azul C4 exposes "GPGC" (Concurrent Cycle) and "GPGC Pauses" (STW Pauses).
-      // We MUST ignore "GPGC" because it reports cycle time (hundreds of ms) which is NOT a pause.
       if ("GPGC".equals(gcName) || (gcName.contains("Cycles") && !gcName.contains("Pauses"))) {
         return;
       }
@@ -101,7 +90,6 @@ public class GCPauseMonitor implements NotificationListener {
       GcInfo gcInfo = info.getGcInfo();
       long pauseMs = gcInfo.getDuration();
 
-      // Record pause
       recordPause(pauseMs, gcName, info.getGcAction());
 
     } catch (Exception e) {
@@ -110,17 +98,14 @@ public class GCPauseMonitor implements NotificationListener {
   }
 
   private void recordPause(long pauseMs, String gcName, String gcAction) {
-    // Add to history
     pauseHistory.addLast(pauseMs);
     if (pauseHistory.size() > MAX_PAUSE_HISTORY) {
       pauseHistory.removeFirst();
     }
 
-    // Update statistics
     totalPauseCount.incrementAndGet();
     totalPauseTimeMs.addAndGet(pauseMs);
 
-    // Update max (thread-safe but may miss true max in race condition - acceptable for monitoring)
     if (pauseMs > maxPauseMs) {
       synchronized (this) {
         if (pauseMs > maxPauseMs) {
@@ -129,7 +114,6 @@ public class GCPauseMonitor implements NotificationListener {
       }
     }
 
-    // Track SLA violations
     if (pauseMs > 100) {
       violationsOver100ms.incrementAndGet();
       violationsOver50ms.incrementAndGet();
@@ -141,7 +125,6 @@ public class GCPauseMonitor implements NotificationListener {
       violationsOver10ms.incrementAndGet();
     }
 
-    // Log significant pauses
     if (pauseMs > 100) {
       LOGGER.warning(
           String.format("Large GC pause detected: %d ms [%s - %s]", pauseMs, gcName, gcAction));
@@ -210,7 +193,7 @@ public class GCPauseMonitor implements NotificationListener {
     public final long p95Ms;
     public final long p99Ms;
     public final long p999Ms;
-    public final long maxMs; // All-time max since startup/reset
+    public final long maxMs;
     public final long violationsOver10ms;
     public final long violationsOver50ms;
     public final long violationsOver100ms;

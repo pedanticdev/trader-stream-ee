@@ -31,7 +31,6 @@ public class StatusResource {
   public Response getStatus() {
     Map<String, Object> status = new HashMap<>();
 
-    // Get instance name from environment variable
     String instanceName = System.getenv("PAYARA_INSTANCE_NAME");
     if (instanceName == null) {
       instanceName = "standalone";
