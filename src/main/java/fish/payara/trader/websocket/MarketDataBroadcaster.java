@@ -38,11 +38,9 @@ public class MarketDataBroadcaster {
 
   private ITopic<String> clusterTopic;
 
-  // Statistics
   private long messagesSent = 0;
   private long lastStatsTime = System.currentTimeMillis();
 
-  /** Initialize Hazelcast topic subscription for cluster-wide broadcasting */
   @PostConstruct
   public void init() {
     try {
@@ -58,11 +56,9 @@ public class MarketDataBroadcaster {
       }
     } catch (Exception e) {
       LOGGER.log(Level.SEVERE, "Failed to initialize Hazelcast topic subscription", e);
-      // Continue without clustering
     }
   }
 
-  /** Register a new WebSocket session */
   public void addSession(Session session) {
     sessions.add(session);
     LOGGER.info("WebSocket session added. Total sessions: " + sessions.size());
@@ -100,10 +96,6 @@ public class MarketDataBroadcaster {
     }
   }
 
-  /**
-   * Broadcast message to local WebSocket sessions only. Called either in standalone mode or by
-   * Hazelcast topic listener.
-   */
   private void broadcastLocal(String jsonMessage) {
     if (sessions.isEmpty()) {
       return;
@@ -143,8 +135,6 @@ public class MarketDataBroadcaster {
   public void broadcastWithArtificialLoad(String jsonMessage) {
     String padding = "X".repeat(1024);
 
-    // Wrap the original message in a new JSON structure
-    // We use StringBuilder to explicitly construct the new JSON string
     String enrichedMessage =
         new StringBuilder(jsonMessage.length() + padding.length() + 100)
             .append("{\"wrapped\":true,")
@@ -162,15 +152,13 @@ public class MarketDataBroadcaster {
     broadcast(enrichedMessage);
   }
 
-  /** Get count of active sessions */
   public int getSessionCount() {
     return sessions.size();
   }
 
-  /** Log statistics periodically */
   private void logStatistics() {
     long now = System.currentTimeMillis();
-    if (now - lastStatsTime > 10000) { // Log every 10 seconds
+    if (now - lastStatsTime > 10000) {
       LOGGER.info(
           String.format(
               "WebSocket Stats - Active sessions: %d, Messages sent: %,d (%.1f msg/sec)",

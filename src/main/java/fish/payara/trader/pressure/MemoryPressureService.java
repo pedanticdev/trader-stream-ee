@@ -1,13 +1,11 @@
 package fish.payara.trader.pressure;
 
-import fish.payara.trader.pressure.patterns.AllocationPattern;
-import fish.payara.trader.pressure.patterns.HFTPatternRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
 import jakarta.enterprise.concurrent.ManagedExecutorService;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -40,7 +38,6 @@ public class MemoryPressureService {
   private static final long BURST_INTERVAL_MS = 5000; // 5 seconds
   private static final int BURST_MULTIPLIER = 3;
   @Resource private ManagedExecutorService executorService;
-  @Inject private HFTPatternRegistry patternRegistry;
 
   @PostConstruct
   public void init() {
@@ -119,7 +116,6 @@ public class MemoryPressureService {
     int baseAllocations = mode.getAllocationsPerIteration();
     int bytesPerAlloc = mode.getBytesPerAllocation();
 
-    // Burst detection for HIGH and EXTREME modes (simulates market events)
     boolean inBurst = false;
     if (mode != AllocationMode.OFF) {
       long now = System.currentTimeMillis();
@@ -135,7 +131,6 @@ public class MemoryPressureService {
 
     int totalAllocations = inBurst ? baseAllocations * BURST_MULTIPLIER : baseAllocations;
 
-    // Parallelize allocation using virtual threads
     int numTasks = 4;
     int allocationsPerTask = totalAllocations / numTasks;
     CompletableFuture<?>[] futures = new CompletableFuture[numTasks];
@@ -150,11 +145,21 @@ public class MemoryPressureService {
           CompletableFuture.runAsync(
               () -> {
                 for (int i = 0; i < taskAllocations; i++) {
-                  try {
-                    AllocationPattern pattern = patternRegistry.selectPattern();
-                    pattern.allocate(bytesPerAlloc);
-                  } catch (Exception e) {
-                    // Fail silently in parallel task to avoid flooding logs
+                  int pattern = i % 4;
+
+                  switch (pattern) {
+                    case 0:
+                      generateStringGarbage(bytesPerAlloc);
+                      break;
+                    case 1:
+                      generateByteArrayGarbage(bytesPerAlloc);
+                      break;
+                    case 2:
+                      generateObjectGarbage(bytesPerAlloc / 64);
+                      break;
+                    case 3:
+                      generateCollectionGarbage(bytesPerAlloc / 100);
+                      break;
                   }
                   totalBytesAllocated.addAndGet(bytesPerAlloc);
                 }
@@ -174,7 +179,6 @@ public class MemoryPressureService {
       }
     }
 
-    // Tenured cleanup logic (unchanged - maintains 1GB cap)
     if (mode == AllocationMode.HIGH || mode == AllocationMode.EXTREME) {
       while (tenuredBytesAllocated.get() > TENURED_TARGET_MB * 1024L * 1024L) {
         if (!tenuredObjects.isEmpty()) {
@@ -189,6 +193,33 @@ public class MemoryPressureService {
         tenuredObjects.clear();
         tenuredBytesAllocated.set(0);
       }
+    }
+  }
+
+  private void generateStringGarbage(int bytes) {
+    StringBuilder sb = new StringBuilder(bytes);
+    for (int i = 0; i < bytes / 10; i++) {
+      sb.append("GARBAGE");
+    }
+    String garbage = sb.toString();
+  }
+
+  private void generateByteArrayGarbage(int bytes) {
+    byte[] garbage = new byte[bytes];
+    ThreadLocalRandom.current().nextBytes(garbage);
+  }
+
+  private void generateObjectGarbage(int count) {
+    List<DummyObject> garbage = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      garbage.add(new DummyObject(i, "data-" + i, System.nanoTime()));
+    }
+  }
+
+  private void generateCollectionGarbage(int count) {
+    List<Integer> garbage = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      garbage.add(ThreadLocalRandom.current().nextInt());
     }
   }
 
@@ -228,5 +259,18 @@ public class MemoryPressureService {
 
   public boolean isRunning() {
     return running;
+  }
+
+  /** Dummy object for allocation testing */
+  private static class DummyObject {
+    private final int id;
+    private final String data;
+    private final long timestamp;
+
+    DummyObject(int id, String data, long timestamp) {
+      this.id = id;
+      this.data = data;
+      this.timestamp = timestamp;
+    }
   }
 }

@@ -47,7 +47,6 @@ public class MarketDataPublisher {
   private Aeron aeron;
   private Publication publication;
 
-  // SBE encoders (reusable flyweights)
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final TradeEncoder tradeEncoder = new TradeEncoder();
   private final QuoteEncoder quoteEncoder = new QuoteEncoder();
@@ -89,17 +88,13 @@ public class MarketDataPublisher {
 
   @Resource private ManagedExecutorService managedExecutorService;
 
-  // Cluster-wide message counter (shared across all instances)
   private IAtomicLong clusterMessageCounter;
 
   void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
-    //        managedExecutorService.submit(this::init);
     init();
   }
 
   public void init() {
-    // Initialize cluster-wide message counter on ALL instances (even non-publishers)
-    // This allows all instances to read the shared counter value via Hazelcast CP Subsystem
     if (hazelcastInstance != null) {
       try {
         clusterMessageCounter =
@@ -113,7 +108,6 @@ public class MarketDataPublisher {
       }
     }
 
-    // Check if publisher should be enabled on this instance
     if (enablePublisherEnv != null && !"true".equalsIgnoreCase(enablePublisherEnv)) {
       LOGGER.info(
           "Market Data Publisher DISABLED on this instance (ENABLE_PUBLISHER="
@@ -190,7 +184,6 @@ public class MarketDataPublisher {
     }
   }
 
-  /** Start background thread to continuously publish market data at high throughput */
   private void startPublishing() {
     running = true;
     publisherFuture =
@@ -200,15 +193,13 @@ public class MarketDataPublisher {
                   "Market data publisher task started - targeting 50k-100k messages/sec with burst patterns");
 
               final int BASE_BURST_SIZE = 500;
-              final long PARK_NANOS = 5_000; // 5 microseconds base rate
+              final long PARK_NANOS = 5_000;
 
               while (running && !Thread.currentThread().isInterrupted()) {
                 try {
-                  // Apply burst multiplier for realistic market spikes
                   int burstMultiplier = getBurstMultiplier();
                   int adjustedBurstSize = BASE_BURST_SIZE * burstMultiplier;
 
-                  // Log burst transitions
                   if (burstMultiplier > 1) {
                     long secondOfMinute = (System.currentTimeMillis() / 1000) % 60;
                     if (secondOfMinute == 20 || secondOfMinute == 45) {
@@ -230,7 +221,6 @@ public class MarketDataPublisher {
 
                 } catch (Throwable e) {
                   LOGGER.log(Level.SEVERE, "Critical error in publisher loop", e);
-                  // Brief pause on error, then continue
                   LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                 }
               }
@@ -290,18 +280,17 @@ public class MarketDataPublisher {
     long secondOfMinute = (System.currentTimeMillis() / 1000) % 60;
 
     if (secondOfMinute >= 20 && secondOfMinute < 25) {
-      return 5; // News event - 5x burst
+      return 5;
     } else if (secondOfMinute >= 45 && secondOfMinute < 50) {
-      return 3; // Market close - 3x spike
+      return 3;
     }
 
-    return 1; // Normal
+    return 1;
   }
 
-  /** Publish a Trade message */
   private void publishTrade() {
     if (isDirectMode) {
-      final ThreadLocalRandom currentRandom = ThreadLocalRandom.current(); // Use ThreadLocalRandom
+      final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
       final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
       final double price = 100.0 + currentRandom.nextDouble() * 400.0;
       final int quantity = currentRandom.nextInt(1000) + 100;
@@ -320,12 +309,10 @@ public class MarketDataPublisher {
         broadcaster.broadcastWithArtificialLoad(json);
       }
       messagesPublished.incrementAndGet();
-      // Increment cluster-wide counter
       if (clusterMessageCounter != null) {
         try {
           clusterMessageCounter.incrementAndGet();
         } catch (Exception e) {
-          // Ignore cluster counter errors, not critical
         }
       }
       return;
@@ -348,7 +335,7 @@ public class MarketDataPublisher {
         .wrap(buffer, bufferOffset)
         .timestamp(System.currentTimeMillis())
         .tradeId(tradeIdGenerator.incrementAndGet())
-        .price((long) ((100.0 + currentRandom.nextDouble() * 400.0) * 10000)) // $100-$500
+        .price((long) ((100.0 + currentRandom.nextDouble() * 400.0) * 10000))
         .quantity(currentRandom.nextInt(1000) + 100)
         .side(currentRandom.nextBoolean() ? Side.BUY : Side.SELL)
         .symbol(symbol);
@@ -357,7 +344,6 @@ public class MarketDataPublisher {
     offer(buffer, 0, length, "Trade");
   }
 
-  /** Publish a Quote message */
   private void publishQuote() {
     if (isDirectMode) {
       final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
@@ -376,12 +362,10 @@ public class MarketDataPublisher {
         broadcaster.broadcastWithArtificialLoad(json);
       }
       messagesPublished.incrementAndGet();
-      // Increment cluster-wide counter
       if (clusterMessageCounter != null) {
         try {
           clusterMessageCounter.incrementAndGet();
         } catch (Exception e) {
-          // Ignore cluster counter errors, not critical
         }
       }
       return;
@@ -414,7 +398,6 @@ public class MarketDataPublisher {
     offer(buffer, 0, length, "Quote");
   }
 
-  /** Publish a MarketDepth message */
   private void publishMarketDepth() {
     if (isDirectMode) {
       final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
@@ -451,12 +434,10 @@ public class MarketDataPublisher {
         broadcaster.broadcastWithArtificialLoad(json);
       }
       messagesPublished.incrementAndGet();
-      // Increment cluster-wide counter
       if (clusterMessageCounter != null) {
         try {
           clusterMessageCounter.incrementAndGet();
         } catch (Exception e) {
-          // Ignore cluster counter errors, not critical
         }
       }
       return;
@@ -503,11 +484,8 @@ public class MarketDataPublisher {
     offer(buffer, 0, length, "MarketDepth");
   }
 
-  /** Publish a Heartbeat message */
   private void publishHeartbeat() {
     if (isDirectMode) {
-      // In DIRECT mode, we just increment counter but don't broadcast heartbeats to UI
-      // as they are mainly for system health checks in the Aeron log
       messagesPublished.incrementAndGet();
       return;
     }
@@ -532,7 +510,6 @@ public class MarketDataPublisher {
     offer(buffer, 0, length, "Heartbeat");
   }
 
-  /** Offer buffer to Aeron publication with retry logic */
   private void offer(UnsafeBuffer buffer, int offset, int length, String messageType) {
     long result;
     int retries = 3;
@@ -542,18 +519,15 @@ public class MarketDataPublisher {
 
       if (result > 0) {
         messagesPublished.incrementAndGet();
-        // Increment cluster-wide counter
         if (clusterMessageCounter != null) {
           try {
             clusterMessageCounter.incrementAndGet();
           } catch (Exception e) {
-            // Ignore cluster counter errors, not critical
           }
         }
         consecutiveFailures.set(0);
         return;
       } else if (result == Publication.BACK_PRESSURED) {
-        // Back pressure is normal at high throughput, don't log
         retries--;
         try {
           Thread.sleep(1);

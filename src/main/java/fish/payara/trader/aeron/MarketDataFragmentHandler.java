@@ -91,7 +91,6 @@ public class MarketDataFragmentHandler implements FragmentHandler {
     }
   }
 
-  /** Process Trade message using SBE decoder (zero-copy) */
   private void processTrade(
       DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
     if (!shouldBroadcast) {
@@ -129,7 +128,6 @@ public class MarketDataFragmentHandler implements FragmentHandler {
     broadcaster.broadcast(sb.toString());
   }
 
-  /** Process Quote message using SBE decoder (zero-copy) */
   private void processQuote(
       DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
     if (!shouldBroadcast) {
@@ -168,7 +166,6 @@ public class MarketDataFragmentHandler implements FragmentHandler {
     broadcaster.broadcast(sb.toString());
   }
 
-  /** Process MarketDepth message with repeating groups (zero-copy) */
   private void processMarketDepth(
       DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
     if (!shouldBroadcast) {

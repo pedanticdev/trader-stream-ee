@@ -74,7 +74,7 @@ public class SLAMonitorService {
     public final long violationsOver50ms;
     public final long violationsOver100ms;
     public final double violationRate;
-    public final long recentViolations; // Last 5 minutes
+    public final long recentViolations;
 
     public SLAStats(
         long totalOperations,

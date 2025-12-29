@@ -235,54 +235,35 @@ GCStatsService collects real-time garbage collection metrics via JMX MXBeans:
 * Recent Pause History: Last 100 pause times for trend analysis
 * GC Phase Breakdown: Sub-phase timing analysis for detailed performance investigation (vendor-specific)
 
-#### HFT-Realistic Memory Pressure Testing
+#### Memory Pressure Stress Testing
 
-MemoryPressureService simulates high-frequency trading allocation patterns to create realistic GC stress:
+MemoryPressureService generates controlled memory allocation to create realistic GC stress:
 
-**Importance of Realistic Patterns:**
+**Stress Test Patterns:**
 
-Simple byte array allocations (e.g., `new byte[4_000_000_000]`) do not accurately simulate real-world GC workloads. Such allocations typically go directly to the old generation and require minimal GC processing (marking a single object header).
+The service rotates through four high-churn allocation patterns designed to maximize Garbage Collection pressure:
 
-In contrast, realistic HFT patterns create complex, hierarchical object graphs:
-
-```java
-OrderBook {
-  PriceLevel[] levels;        // Array of references
-    -> PriceLevel {
-         Order[] orders;       // Array of references
-           -> Order {          // Individual small objects
-                quantity, timestamp
-              }
-       }
-}
-```
-
-This structure forces the GC to trace references through multiple levels, update remembered sets, scan numerous individual objects, and handle object promotion. This complexity is essential for a meaningful comparison between C4 (pauseless) and G1GC (stop-the-world).
-
-HFT Allocation Patterns:
-
-The service rotates through three realistic trading system allocation patterns (each uses padding to ensure exact allocation amounts for accurate metrics):
-
-* OrderBook Pattern: Simulates limit order book updates with hierarchical object graphs (OrderBook → PriceLevel → Order). Typical allocation: ~5KB per book snapshot
-* MarketTick Pattern: Simulates high-frequency tick ingestion using parallel primitive arrays (columnar storage). Typical allocation: ~4KB per batch of 100 ticks
-* MarketDepth Pattern: Simulates L2/L3 market depth snapshots with multi-dimensional bid/ask ladders. Typical allocation: ~6KB per depth snapshot
+* **String Churn:** High-frequency creation and concatenation of short-lived Strings.
+* **Byte Array Churn:** Rapid allocation and discard of primitive byte arrays.
+* **Object Graph Churn:** Creation of nested object structures to stress reference tracing.
+* **Collection Churn:** High-volume addition/removal of elements in standard Java Collections.
 
 Allocation Modes with Coordinated Bursts:
 
 * OFF: No additional allocation
-* LOW: 2 MB/sec - Light HFT pressure (3x bursts every 5 seconds)
-* MEDIUM: 20 MB/sec - Moderate tick ingestion (3x bursts every 5 seconds)
-* HIGH: 1 GB/sec - Heavy burst trading (3x bursts every 5 seconds)
-* EXTREME: 4 GB/sec - Extreme flash crash simulation (3x bursts every 5 seconds)
+* LOW: 2 MB/sec - Light pressure (3x bursts every 5 seconds)
+* MEDIUM: 20 MB/sec - Moderate pressure (3x bursts every 5 seconds)
+* HIGH: 1 GB/sec - Heavy pressure (3x bursts every 5 seconds)
+* EXTREME: 4 GB/sec - Extreme pressure (3x bursts every 5 seconds)
 
-Burst Scenarios: All active modes include coordinated allocation bursts (3x multiplier every 5 seconds) to simulate market events like flash crashes, sudden volume spikes, or news-driven trading surges. This allows testing GC behavior under allocation spikes at different baseline rates.
+Burst Scenarios: All active modes include coordinated allocation bursts (3x multiplier every 5 seconds) to simulate market events like flash crashes, sudden volume spikes, or news-driven trading surges.
 
-Each mode uses realistic HFT allocation patterns via **parallel virtual threads**, allowing observation of:
+Each mode uses parallel virtual threads to generate load, allowing observation of:
 
-* C4's concurrent collection vs G1GC's "stop-the-world" pauses under realistic trading workloads
-* Latency impact during market event simulations (burst scenarios)
-* Throughput degradation patterns with domain-specific object structures
-* Long-lived object promotion patterns (order book retention)
+* C4's concurrent collection vs G1GC's "stop-the-world" pauses under heavy allocation
+* Latency impact during burst scenarios
+* Throughput degradation patterns with different object types
+* Long-lived object promotion patterns (tenured generation stress)
 
 #### GC Challenge Mode
 
@@ -390,14 +371,12 @@ Working Tests (182/182 passing):
 - REST Resources: Comprehensive tests for Memory Pressure and GC Stats endpoints.
 - Core Logic: Validated `AllocationMode` and concurrency configurations.
 - WebSockets: Verified `MarketDataBroadcaster` functionality and session management.
-- HFT Patterns: Full coverage of OrderBook, MarketTick, MarketDepth allocation patterns and round-robin registry.
 
 Coverage Metrics:
 
 - Tests: 182 unit tests with 100% pass rate
 - Monitoring Coverage: >90% (SLAMonitor, GCStatsService)
 - REST API Coverage: >85% (Resources and DTOs)
-- HFT Pattern Coverage: 100% (22 tests for allocation patterns)
 - Instruction Coverage: High coverage for business logic; integration logic relies on `test.sh`.
 
 ### Test Categories
