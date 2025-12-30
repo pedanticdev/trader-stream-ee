@@ -324,10 +324,9 @@
                 <version>3.0.0</version>
                 <configuration>
                     <java>
-                        <googleJavaFormat>
-                            <version>1.17.0</version>
-                            <style>GOOGLE</style>
-                        </googleJavaFormat>
+                        <eclipse>
+                            <file>${project.basedir}/spotless/java-formatter.xml</file>
+                        </eclipse>
                         <removeUnusedImports/>
                         <trimTrailingWhitespace/>
                         <endWithNewline/>
