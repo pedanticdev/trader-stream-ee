@@ -80,14 +80,13 @@ public class GCStatsResource {
         gcBeans.stream().map(GarbageCollectorMXBean::getName).collect(Collectors.joining(", "));
 
     boolean isAzulC4 =
-        jvmVendor != null && (jvmVendor.contains("Azul") || jvmName.contains("Zing"));
+        gcName.toLowerCase().contains("c4") || jvmName.toLowerCase().contains("zing");
 
     comparison.put("jvmVendor", jvmVendor);
     comparison.put("jvmName", jvmName);
     comparison.put("gcCollectors", gcName);
     comparison.put("isAzulC4", isAzulC4);
     comparison.put("heapSizeMB", Runtime.getRuntime().maxMemory() / (1024 * 1024));
-
     comparison.put("allocationMode", memoryPressureService.getCurrentMode());
     comparison.put(
         "allocationRateMBps", memoryPressureService.getCurrentMode().getAllocationRateMBPerSec());
