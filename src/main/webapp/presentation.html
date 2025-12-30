@@ -218,6 +218,13 @@
             </p>
         </section>
 
+        <!-- Section: The Problem -->
+        <section>
+            <h1 style="color: var(--payara-orange);">Part 1</h1>
+            <h2>The Problem</h2>
+            <p>Why GC pauses matter in financial systems</p>
+        </section>
+
         <!-- Slide 2: The Problem -->
         <section>
             <h2>The Problem: GC Pauses in Financial Systems</h2>
@@ -226,7 +233,7 @@
                 <div class="box">
                     <h3>The Challenge</h3>
                     <ul>
-                        <li>HFT processes millions of messages/second</li>
+                        <li>HFT processes 50,000-100,000+ messages/second</li>
                         <li>Latency budgets measured in microseconds</li>
                         <li>Single 50ms pause = missed trades</li>
                         <li>Unpredictable latency violates SLAs</li>
@@ -348,30 +355,31 @@
 
         <!-- Slide 6: C4 Architecture -->
         <section>
-            <h2>Azul C4: Concurrent by Design</h2>
+            <h2>Azul C4/GPGC: Concurrent by Design</h2>
             <h3>How Pauseless Collection Works</h3>
             <div class="two-column">
                 <div class="box">
-                    <h3>Read Barriers</h3>
+                    <h3>Read Barriers (LVB)</h3>
                     <ul>
-                        <li>Check object state on every read</li>
+                        <li>Loaded Value Barrier on every read</li>
                         <li>Relocate objects on-the-fly</li>
-                        <li>No stop-the-world compaction</li>
-                        <li>Hardware-assisted (LVB)</li>
+                        <li>Enables concurrent compaction</li>
+                        <li>Small overhead, huge benefit</li>
                     </ul>
                 </div>
                 <div class="box">
-                    <h3>No Generations</h3>
+                    <h3>Concurrent Generations</h3>
                     <ul>
-                        <li>Single heap region</li>
-                        <li>No remembered sets needed</li>
-                        <li>No write barrier overhead</li>
-                        <li>Simpler, more predictable</li>
+                        <li>Has young (New) and old generations</li>
+                        <li>Both collected concurrently</li>
+                        <li>No STW for generational collection</li>
+                        <li>No remembered set scanning pauses</li>
                     </ul>
                 </div>
             </div>
             <div style="margin-top: 30px; text-align: center;">
-                <p><span class="highlight">Result:</span> Pause times remain under 1ms regardless of heap size or live set.</p>
+                <p><span class="highlight">Result:</span> Sub-millisecond pauses regardless of heap size or live set.</p>
+                <p style="font-size: 0.75em; color: #888;">C4 = algorithm name; GPGC (Generational Pauseless GC) = collector implementation in JMX</p>
             </div>
         </section>
 
@@ -453,6 +461,13 @@ private void createCrossGenerationalRefs(int bytes, int threads) {
             </p>
         </section>
 
+        <!-- Section: Architecture -->
+        <section>
+            <h1 style="color: var(--payara-orange);">Part 2</h1>
+            <h2>Architecture</h2>
+            <p>Zero-copy pipeline design with Jakarta EE</p>
+        </section>
+
         <!-- Slide 9: Architecture Overview -->
         <section>
             <h2>TradeStreamEE Architecture</h2>
@@ -486,6 +501,88 @@ private void createCrossGenerationalRefs(int bytes, int threads) {
                     </ul>
                 </div>
             </div>
+        </section>
+
+        <!-- Slide 9b: Dual-Mode Architecture -->
+        <section>
+            <h2>Dual-Mode Ingestion</h2>
+            <h3>AERON vs DIRECT: Controlled Comparison</h3>
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th style="color: #51cf66;">AERON Mode</th>
+                    <th style="color: #ff6b6b;">DIRECT Mode</th>
+                </tr>
+                <tr>
+                    <td>Encoding</td>
+                    <td>SBE binary</td>
+                    <td>JSON strings</td>
+                </tr>
+                <tr>
+                    <td>Transport</td>
+                    <td>Shared memory IPC</td>
+                    <td>In-process calls</td>
+                </tr>
+                <tr>
+                    <td>Allocation</td>
+                    <td>~0 bytes/message</td>
+                    <td>~1KB+ per message</td>
+                </tr>
+                <tr>
+                    <td>GC Pressure</td>
+                    <td>Minimal</td>
+                    <td>High (intentional)</td>
+                </tr>
+                <tr>
+                    <td>Purpose</td>
+                    <td>Production pattern</td>
+                    <td>GC stress baseline</td>
+                </tr>
+            </table>
+            <div class="box" style="margin-top: 20px;">
+                <p>DIRECT mode adds 1KB+ padding per message to stress the garbage collector. This isolates GC as the variable when comparing C4 vs G1.</p>
+            </div>
+        </section>
+
+        <!-- Slide 9c: SBE Message Types -->
+        <section>
+            <h2>SBE Schema: 5 Message Types</h2>
+            <h3>Defined in market-data.xml</h3>
+            <table>
+                <tr>
+                    <th>Message</th>
+                    <th>ID</th>
+                    <th>Key Fields</th>
+                </tr>
+                <tr>
+                    <td><code>Trade</code></td>
+                    <td>1</td>
+                    <td>timestamp, tradeId, price, quantity, side, symbol</td>
+                </tr>
+                <tr>
+                    <td><code>Quote</code></td>
+                    <td>2</td>
+                    <td>timestamp, bidPrice, bidSize, askPrice, askSize, symbol</td>
+                </tr>
+                <tr>
+                    <td><code>MarketDepth</code></td>
+                    <td>3</td>
+                    <td>bids[], asks[] (5 levels), sequenceNumber</td>
+                </tr>
+                <tr>
+                    <td><code>OrderAck</code></td>
+                    <td>4</td>
+                    <td>orderId, execType, leavesQty, cumQty, side</td>
+                </tr>
+                <tr>
+                    <td><code>Heartbeat</code></td>
+                    <td>5</td>
+                    <td>timestamp, sequenceNumber</td>
+                </tr>
+            </table>
+            <p style="margin-top: 15px; font-size: 0.85em;">
+                Price encoding: <code>int64 × 10,000</code> for 4 decimal places. Little-endian byte order.
+            </p>
         </section>
 
         <!-- Slide 10: SBE Zero-Copy -->
@@ -541,18 +638,61 @@ public void onFragment(DirectBuffer buffer, int offset, int length, Header heade
                         <li>Direct memory access</li>
                         <li>Zero-copy with SBE</li>
                         <li>No kernel involvement</li>
-                        <li>Latency: sub-microsecond</li>
+                        <li>Transport latency: sub-microsecond</li>
                     </ul>
                 </div>
             </div>
             <div class="box" style="margin-top: 30px;">
                 <p>Aeron's ring buffer in shared memory allows components on the same machine to communicate without network overhead. Combined with SBE, the entire path from publisher to subscriber involves no object allocation.</p>
+                <p style="font-size: 0.75em; color: #888; margin-top: 10px;">Note: End-to-end latency includes WebSocket broadcast and JSON conversion. Transport layer is sub-microsecond.</p>
+            </div>
+        </section>
+
+        <!-- Slide 11b: Aeron Configuration -->
+        <section>
+            <h2>Aeron Configuration Details</h2>
+            <h3>Production-Ready Settings</h3>
+            <table>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Purpose</th>
+                </tr>
+                <tr>
+                    <td><code>Channel</code></td>
+                    <td><code>aeron:ipc</code></td>
+                    <td>Inter-process communication mode</td>
+                </tr>
+                <tr>
+                    <td><code>Stream ID</code></td>
+                    <td>1001</td>
+                    <td>Logical message stream identifier</td>
+                </tr>
+                <tr>
+                    <td><code>Fragment Limit</code></td>
+                    <td>10</td>
+                    <td>Messages polled per iteration</td>
+                </tr>
+                <tr>
+                    <td><code>Idle Strategy</code></td>
+                    <td>BackoffIdleStrategy</td>
+                    <td>100ns → 100μs adaptive backoff</td>
+                </tr>
+                <tr>
+                    <td><code>Shared Memory</code></td>
+                    <td>512 MB</td>
+                    <td>IPC buffer size (Docker tmpfs)</td>
+                </tr>
+            </table>
+            <div class="box" style="margin-top: 20px;">
+                <h3>Circuit Breaker</h3>
+                <p>Publisher stops after 50 consecutive offer failures to prevent resource exhaustion.</p>
             </div>
         </section>
 
         <!-- Slide 12: Payara Micro -->
         <section>
-            <h2>Payara Micro: Enterprise Runtime</h2>
+            <h2>Payara Micro 7.2025.2</h2>
             <h3>Jakarta EE 11 for Financial Applications</h3>
             <div class="two-column">
                 <div class="box">
@@ -569,10 +709,10 @@ public void onFragment(DirectBuffer buffer, int offset, int length, Header heade
                 <div class="box">
                     <h3>Clustering</h3>
                     <ul>
-                        <li>Hazelcast built-in</li>
-                        <li>Automatic discovery</li>
-                        <li>Distributed counters</li>
-                        <li>Session replication</li>
+                        <li>Hazelcast 5.5 built-in</li>
+                        <li>TCP/IP discovery (Docker)</li>
+                        <li>CP Subsystem for counters</li>
+                        <li>Reliable Topics (back-pressure)</li>
                         <li>No external infrastructure</li>
                     </ul>
                 </div>
@@ -593,8 +733,9 @@ public void init() {
             <h2>Jakarta Concurrency 3.1</h2>
             <h3>Virtual Threads for Memory Pressure Testing</h3>
             <pre><code class="java" data-trim>
-@Resource
-private ManagedExecutorService executorService;
+@Inject
+@VirtualThreadExecutor  // Jakarta Concurrency 3.1 - virtual threads
+private ManagedExecutorService managedExecutorService;
 
 private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThreads) {
     int bytesPerThread = totalBytes / numThreads;
@@ -605,7 +746,7 @@ private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThread
             byte[] garbage = new byte[bytesPerThread];
             ThreadLocalRandom.current().nextBytes(garbage);
             totalBytesAllocated.addAndGet(bytesPerThread);
-        }, executorService);
+        }, managedExecutorService);
     }
 
     CompletableFuture.allOf(futures).join();
@@ -616,34 +757,53 @@ private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThread
             </p>
         </section>
 
+        <!-- Section: Results -->
+        <section>
+            <h1 style="color: var(--payara-orange);">Part 3</h1>
+            <h2>Test Results</h2>
+            <p>Measured GC behavior under stress scenarios</p>
+        </section>
+
         <!-- Slide 14: Test Results -->
         <section>
             <h2>Test Results: G1 vs C4</h2>
             <h3>Under PROMOTION_STORM (300 MB/sec, 50% survival)</h3>
             <div class="comparison-row">
                 <div class="comparison-item">
-                    <div class="metric-large" style="color: #ff6b6b;">50-200ms</div>
-                    <div class="metric-label">G1 Mixed Collection Pauses</div>
+                    <div class="metric-large" style="color: #ff6b6b;">25ms</div>
+                    <div class="metric-label">G1 Maximum Pause (measured)</div>
                 </div>
                 <div class="comparison-item">
-                    <div class="metric-large" style="color: #51cf66;">< 1ms</div>
-                    <div class="metric-label">C4 Maximum Pause</div>
+                    <div class="metric-large" style="color: #51cf66;">2ms</div>
+                    <div class="metric-label">C4 Maximum Pause (measured)</div>
                 </div>
             </div>
-            <pre style="margin-top: 20px;"><code class="json" data-trim>
+            <div class="two-column" style="margin-top: 20px; font-size: 0.75em;">
+                <div class="box">
+                    <h3 style="color: #ff6b6b;">G1GC (Zulu 21)</h3>
+                    <pre><code class="json" data-trim>
 {
-  "currentMode": "PROMOTION_STORM",
-  "allocationRateMBPerSec": 300,
-  "liveSetSizeMB": 1024,
-  "percentiles": {
-    "p50": 0,
-    "p99": 1,
-    "max": 1
-  }
+  "pauseP50Ms": 3, "pauseP95Ms": 16,
+  "pauseP99Ms": 24, "pauseMaxMs": 25,
+  "avgPauseMs": 4.87,
+  "slaViolations10ms": 20
 }
-            </code></pre>
-            <p style="margin-top: 15px;">
-                C4 maintains sub-millisecond pauses regardless of promotion rate or live set size.
+                    </code></pre>
+                </div>
+                <div class="box">
+                    <h3 style="color: #51cf66;">C4/GPGC (Prime 21)</h3>
+                    <pre><code class="json" data-trim>
+{
+  "pauseP50Ms": 0, "pauseP95Ms": 1,
+  "pauseP99Ms": 1, "pauseMaxMs": 2,
+  "avgPauseMs": 0.078,
+  "slaViolations10ms": 0
+}
+                    </code></pre>
+                </div>
+            </div>
+            <p style="margin-top: 15px; font-size: 0.85em;">
+                Same workload, same allocation rate. G1: <span class="failure">20 SLA violations</span> | C4: <span class="success">Zero violations</span>
             </p>
         </section>
 
@@ -678,6 +838,102 @@ private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThread
             </p>
         </section>
 
+        <!-- Slide 15b: Burst Pattern Simulation -->
+        <section>
+            <h2>Burst Pattern Simulation</h2>
+            <h3>Realistic Market Conditions</h3>
+            <div class="box">
+                <p>The publisher simulates a 60-second market cycle:</p>
+            </div>
+            <table style="margin-top: 20px;">
+                <tr>
+                    <th>Time</th>
+                    <th>Event</th>
+                    <th>Rate Multiplier</th>
+                </tr>
+                <tr>
+                    <td>0-20s</td>
+                    <td>Normal trading</td>
+                    <td>1x</td>
+                </tr>
+                <tr>
+                    <td style="color: #ff6b6b;">20-25s</td>
+                    <td style="color: #ff6b6b;">News event spike</td>
+                    <td style="color: #ff6b6b;">5x burst</td>
+                </tr>
+                <tr>
+                    <td>25-45s</td>
+                    <td>Normal trading</td>
+                    <td>1x</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--payara-orange);">45-50s</td>
+                    <td style="color: var(--payara-orange);">Market close rush</td>
+                    <td style="color: var(--payara-orange);">3x spike</td>
+                </tr>
+                <tr>
+                    <td>50-60s</td>
+                    <td>Normal trading</td>
+                    <td>1x</td>
+                </tr>
+            </table>
+            <p style="margin-top: 20px; font-size: 0.85em;">
+                Tests GC response to variable load. G1 may trigger mixed collections during bursts; C4 adapts smoothly.
+            </p>
+        </section>
+
+        <!-- Slide 15c: SLA Monitoring -->
+        <section>
+            <h2>SLA Violation Tracking</h2>
+            <h3>Real-Time Compliance Monitoring</h3>
+            <div class="two-column">
+                <div class="box">
+                    <h3>Tracked Thresholds</h3>
+                    <ul>
+                        <li><span class="success">< 10ms</span> - Within SLA</li>
+                        <li><span style="color: var(--payara-orange);">> 10ms</span> - Minor violation</li>
+                        <li><span class="failure">> 50ms</span> - Major violation</li>
+                        <li><span class="failure">> 100ms</span> - Critical violation</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>Metrics Collected</h3>
+                    <ul>
+                        <li>P50, P95, P99, P999 latency</li>
+                        <li>All-time maximum pause</li>
+                        <li>Total pause count and time</li>
+                        <li>Violation counts by threshold</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="two-column" style="margin-top: 20px; font-size: 0.7em;">
+                <div class="box">
+                    <h3 style="color: #ff6b6b;">G1GC SLA Stats</h3>
+                    <pre><code class="json" data-trim>
+{
+  "totalPauseCount": 164,
+  "totalPauseTimeMs": 799,
+  "violationsOver10ms": 20,
+  "violationsOver50ms": 0,
+  "violationsOver100ms": 0
+}
+                    </code></pre>
+                </div>
+                <div class="box">
+                    <h3 style="color: #51cf66;">C4 SLA Stats</h3>
+                    <pre><code class="json" data-trim>
+{
+  "totalPauseCount": 665,
+  "totalPauseTimeMs": 52,
+  "violationsOver10ms": 0,
+  "violationsOver50ms": 0,
+  "violationsOver100ms": 0
+}
+                    </code></pre>
+                </div>
+            </div>
+        </section>
+
         <!-- Slide 16: Business Impact -->
         <section>
             <h2>Business Impact</h2>
@@ -708,7 +964,24 @@ private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThread
             </div>
         </section>
 
-        <!-- Slide 17: Deployment Options -->
+        <!-- Section: Demo & Deployment -->
+        <section>
+            <h1 style="color: var(--payara-orange);">Part 4</h1>
+            <h2>Demo & Deployment</h2>
+            <p>Running and monitoring the application</p>
+        </section>
+
+        <!-- Slide 17: Dashboard Demo -->
+        <section>
+            <h2>Live Dashboard</h2>
+            <h3>Real-Time GC Visualization</h3>
+            <img src="images/dashboard.png" alt="TradeStreamEE Dashboard" style="max-width: 90%; border: 2px solid var(--payara-orange); border-radius: 10px;">
+            <p style="margin-top: 15px; font-size: 0.85em;">
+                WebSocket-connected dashboard showing live message rates, GC pause percentiles, and SLA violations.
+            </p>
+        </section>
+
+        <!-- Slide 17b: Deployment Options -->
         <section>
             <h2>Deployment Options</h2>
             <h3>Running TradeStreamEE</h3>
@@ -740,6 +1013,32 @@ private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThread
                     </ul>
                 </div>
             </div>
+        </section>
+
+        <!-- Slide 17c: Comparison Architecture -->
+        <section>
+            <h2>Comparison Stack Architecture</h2>
+            <h3>Side-by-Side C4 vs G1 Testing</h3>
+            <pre style="font-size: 0.7em; text-align: left;"><code data-trim>
+┌─────────────────────────┐    ┌─────────────────────────┐
+│   C4 Cluster (Prime)    │    │   G1 Cluster (Temurin)  │
+│   └─ Traefik :8080      │    │   └─ Traefik :9080      │
+│      ├─ instance-1      │    │      ├─ instance-1      │
+│      ├─ instance-2      │    │      ├─ instance-2      │
+│      └─ instance-3      │    │      └─ instance-3      │
+│   JMX: 9010-9012        │    │   JMX: 9020-9022        │
+└───────────┬─────────────┘    └───────────┬─────────────┘
+            │                              │
+            └──────────┬───────────────────┘
+                       ▼
+              ┌────────────────┐
+              │   Prometheus   │──▶ Grafana :3000
+              │    :9090       │
+              └────────────────┘
+            </code></pre>
+            <p style="margin-top: 15px; font-size: 0.85em;">
+                Both clusters run identical workloads. JMX Exporter exposes GC metrics to Prometheus.
+            </p>
         </section>
 
         <!-- Slide 18: API Endpoints -->
@@ -777,33 +1076,33 @@ curl http://localhost:8080/api/pressure/status
                 </tr>
                 <tr>
                     <td>Runtime</td>
-                    <td>Azul Platform Prime</td>
-                    <td>C4 pauseless garbage collection</td>
+                    <td>Azul Platform Prime 21</td>
+                    <td>C4/GPGC pauseless garbage collection</td>
                 </tr>
                 <tr>
                     <td>App Server</td>
-                    <td>Payara Micro 7</td>
+                    <td>Payara Micro 7.2025.2</td>
                     <td>Jakarta EE 11 container</td>
                 </tr>
                 <tr>
                     <td>Transport</td>
-                    <td>Aeron IPC</td>
-                    <td>Shared memory messaging</td>
+                    <td>Aeron 1.46.7</td>
+                    <td>Shared memory IPC messaging</td>
                 </tr>
                 <tr>
                     <td>Encoding</td>
-                    <td>SBE</td>
+                    <td>SBE 1.34.0</td>
                     <td>Zero-copy binary serialization</td>
                 </tr>
                 <tr>
                     <td>Clustering</td>
-                    <td>Hazelcast</td>
-                    <td>Distributed state and discovery</td>
+                    <td>Hazelcast 5.5.0</td>
+                    <td>Distributed topics and CP subsystem</td>
                 </tr>
                 <tr>
                     <td>Monitoring</td>
                     <td>Prometheus + Grafana</td>
-                    <td>Metrics and visualization</td>
+                    <td>JMX metrics and visualization</td>
                 </tr>
             </table>
         </section>
@@ -813,11 +1112,11 @@ curl http://localhost:8080/api/pressure/status
             <h2>Key Takeaways</h2>
             <ol style="font-size: 0.85em;">
                 <li><strong>G1's stop-the-world pauses are architectural</strong> - no tuning eliminates them</li>
-                <li><strong>C4 collects concurrently</strong> - application never stops</li>
+                <li><strong>C4/GPGC collects concurrently</strong> - application never stops</li>
                 <li><strong>Pause time in G1 scales with live set</strong> - larger heaps = longer pauses</li>
                 <li><strong>C4 pause time is constant</strong> - regardless of heap or live set size</li>
                 <li><strong>Remembered sets add overhead in G1</strong> - cross-gen refs trigger write barriers</li>
-                <li><strong>C4 has no generations</strong> - no remembered sets, no barrier overhead</li>
+                <li><strong>C4 collects generations concurrently</strong> - no STW for generational collection</li>
                 <li><strong>Scenario-based testing exposes weaknesses</strong> - targeted stress reveals true behavior</li>
                 <li><strong>Enterprise Java can achieve HFT latency</strong> - with the right runtime</li>
             </ol>
@@ -829,12 +1128,12 @@ curl http://localhost:8080/api/pressure/status
             <div class="box" style="margin-bottom: 30px;">
                 <h3>TradeStreamEE Features</h3>
                 <ul style="font-size: 0.85em; text-align: left;">
-                    <li>Scenario-based GC stress testing (5 scenarios)</li>
+                    <li>Scenario-based GC stress testing (6 allocation modes)</li>
                     <li>Real-time pause time visualization</li>
-                    <li>Side-by-side C4 vs G1 comparison</li>
-                    <li>Zero-copy message pipeline (Aeron + SBE)</li>
-                    <li>Hazelcast clustering support</li>
-                    <li>Prometheus/Grafana monitoring</li>
+                    <li>Side-by-side C4 vs G1 comparison clusters</li>
+                    <li>Zero-copy message pipeline (Aeron 1.46.7 + SBE 1.34.0)</li>
+                    <li>Hazelcast 5.5 clustering with reliable topics</li>
+                    <li>Prometheus/Grafana monitoring stack</li>
                 </ul>
             </div>
             <h3>Learn More</h3>
@@ -844,6 +1143,35 @@ curl http://localhost:8080/api/pressure/status
                 <li>Aeron: <code>aeron.io</code></li>
                 <li>SBE: <code>real-logic.github.io/simple-binary-encoding</code></li>
             </ul>
+        </section>
+
+        <!-- Slide 21b: Lessons Learned -->
+        <section>
+            <h2>Lessons Learned</h2>
+            <h3>Practical Insights from Implementation</h3>
+            <div class="two-column">
+                <div class="box">
+                    <h3 style="color: #51cf66;">What Worked</h3>
+                    <ul style="font-size: 0.85em;">
+                        <li>SBE flyweight pattern eliminates allocation</li>
+                        <li>Aeron IPC provides true zero-copy</li>
+                        <li>C4 requires no tuning for consistent pauses</li>
+                        <li>Scenario-based testing reveals real behavior</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3 style="color: var(--payara-orange);">Watch Out For</h3>
+                    <ul style="font-size: 0.85em;">
+                        <li>GPGC reports as collector name, not "C4"</li>
+                        <li>WebSocket JSON conversion adds latency</li>
+                        <li>1-in-50 sampling needed for UI stability</li>
+                        <li>Docker shared memory sizing for Aeron</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="box" style="margin-top: 20px;">
+                <p style="font-size: 0.9em;"><strong>Key Insight:</strong> The application code stays simple. The GC choice handles the complexity of memory management without code changes.</p>
+            </div>
         </section>
 
         <!-- Slide 22: Thank You -->
@@ -866,6 +1194,7 @@ curl http://localhost:8080/api/pressure/status
     Reveal.initialize({
         hash: true,
         slideNumber: true,
+        loop: true,
         transition: 'slide',
         backgroundTransition: 'fade',
         plugins: [RevealMarkdown, RevealHighlight, RevealNotes],
