@@ -1,8 +1,8 @@
 # TradeStreamEE: High-Frequency Trading Reference Architecture
 
-TradeStreamEE demonstrates how Jakarta EE applications can achieve low-latency, high-throughput performance by combining modern messaging (Aeron), efficient serialization (SBE), and a concurrent garbage collector like Azul C4.
+TradeStreamEE shows how Jakarta EE applications can achieve low-latency, high-throughput performance by combining modern messaging (Aeron), efficient serialization (SBE), and a concurrent garbage collector like Azul C4.
 
-The application simulates a high-frequency trading dashboard that ingests tens of thousands of market data messages per second, processes them in real-time, and broadcasts updates to a web frontend without the latency spikes associated with traditional Java garbage collection.
+The application simulates a high-frequency trading dashboard that ingests 30,000-100,000 market data messages per second, processes them in real-time, and broadcasts updates to a web frontend without the latency spikes associated with traditional Java garbage collection.
 
 ## Core Technologies
 
@@ -16,13 +16,13 @@ Ultra-low latency messaging that bypasses the network stack when components run 
 
 Simple Binary Encoding is the financial industry standard for high-frequency trading. Encodes data as compact binary rather than human-readable text, eliminating parsing overhead and reducing memory allocation.
 
-### Payara Micro (Jakarta EE Runtime)
+### Payara Micro 7.2025.2 (Jakarta EE Runtime)
 
 A cloud-native Jakarta EE 11 application server that provides Jakarta CDI for dependency injection, Jakarta WebSocket for real-time browser communication, and Jakarta REST for REST endpoints. Lightweight (~100MB) and fast-starting.
 
-### Azul Platform Prime (Runtime)
+### Azul Platform Prime 21 (Runtime)
 
-A JVM with the C4 garbage collector that performs cleanup concurrently with application execution, avoiding the stop-the-world pauses that cause latency spikes in traditional JVMs.
+A JVM with the C4 (Continuously Concurrent Compacting Collector) garbage collector. C4 performs cleanup concurrently with application execution, avoiding the stop-the-world pauses that cause latency spikes in traditional JVMs. Azul markets C4 as a "pauseless" collector due to its sub-millisecond pause times across all heap sizes.
 
 Integration: Payara Micro manages the Aeron publisher/subscriber lifecycle via CDI. The publisher encodes market data into binary using SBE, sends it through Aeron's shared memory transport, and the subscriber decodes it without allocating Java objects. This minimal garbage generation allows C4's concurrent collection to handle cleanup while maintaining flat latency at high throughput.
 
@@ -33,7 +33,8 @@ Enterprise Java applications must often balance two competing requirements:
 1. High Throughput: Ingesting massive data streams (IoT, Financial Data).
 2. Low Latency: Processing data without stop-the-world pauses.
 
-Standard JVMs (using G1GC or ParallelGC) can exhibit latency spikes under high load, potentially causing UI freezes or missed SLAs. TradeStreamEE demonstrates that by combining a modern, broker-less transport (Aeron) with a pauseless runtime (Azul C4), standard Jakarta EE applications can achieve microsecond-level latency and high throughput.
+Standard JVMs (using G1GC or ParallelGC) exhibit latency spikes under high load, potentially causing UI freezes or missed SLAs.
+TradeStreamEE shows that through combining a modern, broker-less transport (Aeron) with a concurrent runtime (Azul C4), standard Jakarta EE applications can achieve microsecond-level latency and high throughput.
 
 ### Comparison Methodology
 
@@ -49,7 +50,9 @@ This isolation ensures that observed performance differences are attributable so
 
 ### Primary Use Case: Side-by-Side JVM Comparison
 
-TradeStreamEE enables side-by-side JVM comparison by deploying both clusters simultaneously under identical workloads. Both clusters execute the same application binary and configuration, isolating the garbage collector as the sole variable. This approach allows for real-time observation of performance differences in a shared environment, providing a more objective comparison than traditional serial benchmarking.
+TradeStreamEE enables side-by-side JVM comparison by deploying both clusters simultaneously under identical workloads.
+Both clusters execute the same application binary and configuration, isolating the garbage collector as the sole variable.
+This approach allows for real-time observation of performance differences in a shared environment.
 
 ```bash
 ./start-comparison.sh all
@@ -62,7 +65,7 @@ Once deployed, access the applications:
 - C4 Cluster: http://localhost:8080/trader-stream-ee/
 - G1 Cluster: http://localhost:9080/trader-stream-ee/
 
-The "GC Pause Time (Live)" chart in Grafana will demonstrate the performance characteristics: C4 typically maintains a consistent latency profile, while G1GC may exhibit spikes and sawtooth patterns under load.
+The "GC Pause Time (Live)" chart in Grafana shows the performance characteristics: C4 maintains consistent latency (≤1ms pauses), while G1GC exhibits spikes and sawtooth patterns under load.
 
 Other options:
 
@@ -75,12 +78,12 @@ Other options:
 
 Use `./start.sh` for testing individual configurations or architectural modes. This runs ONE JVM at a time for focused testing.
 
-| Scenario                 | Command                      | JVM                 | Architecture      | Purpose                                                          |
-|:-------------------------|:-----------------------------|:--------------------|:------------------|:-----------------------------------------------------------------|
-| Modern Stack             | `./start.sh azul-aeron`      | Azul Prime (C4)     | Aeron (Optimized) | Peak performance with pauseless GC + zero-copy transport         |
-| Legacy Baseline          | `./start.sh standard-direct` | Standard JDK (G1GC) | Direct (Heavy)    | Baseline: high allocation on G1GC, expect jitter                 |
-| Fixing Legacy Code       | `./start.sh azul-direct`     | Azul Prime (C4)     | Direct (Heavy)    | Show how C4 stabilizes high-allocation apps without code changes |
-| Optimizing Standard Java | `./start.sh standard-aeron`  | Standard JDK (G1GC) | Aeron (Optimized) | Test if architectural optimization helps G1GC performance        |
+| Scenario                 | Command                      | JVM                    | Architecture      | Purpose                                                          |
+|:-------------------------|:-----------------------------|:-----------------------|:------------------|:-----------------------------------------------------------------|
+| Modern Stack             | `./start.sh azul-aeron`      | Azul Prime (C4)        | Aeron (Optimized) | Peak performance with concurrent GC + zero-copy transport        |
+| Legacy Baseline          | `./start.sh standard-direct` | Eclipse Temurin (G1GC) | Direct (Heavy)    | Baseline: high allocation on G1GC, expect jitter                 |
+| Fixing Legacy Code       | `./start.sh azul-direct`     | Azul Prime (C4)        | Direct (Heavy)    | Show how C4 stabilizes high-allocation apps without code changes |
+| Optimizing Standard Java | `./start.sh standard-aeron`  | Eclipse Temurin (G1GC) | Aeron (Optimized) | Test if architectural optimization helps G1GC performance        |
 
 Utilities:
 
@@ -101,21 +104,21 @@ The application implements a Hybrid Architecture:
 3. Application Layer (Jakarta EE 11):
    * Payara Micro 7 serves as the container.
    * CDI manages the lifecycle of the Aeron Publisher and Subscriber.
-   * Jakarta Concurrency 3.1 leverages Virtual Threads for high-throughput memory pressure simulation.
+   * Jakarta Concurrency 3.1 uses Virtual Threads for high-throughput memory pressure simulation.
    * WebSockets push updates to the browser.
 4. Runtime Layer:
-   * Azul Platform Prime uses the C4 Collector to clean up the "garbage" created by the WebSocket layer concurrently, ensuring a flat latency profile.
+   * Azul Platform Prime uses the C4 Collector to clean up garbage created by the WebSocket layer concurrently, ensuring a flat latency profile.
 
 ## Tech Stack
 
-| Component  | Technology                          | Role                                    |
-|:-----------|:------------------------------------|:----------------------------------------|
-| Runtime    | Azul Platform Prime (Zulu Prime 21) | The Pauseless JVM engine.               |
-| App Server | Payara Micro 7 (Jakarta EE 11)      | Cloud-native Jakarta EE runtime.        |
-| Transport  | Aeron                               | Low-latency, high-throughput messaging. |
-| Encoding   | SBE (Simple Binary Encoding)        | Binary serialization (FIX standard).    |
-| Frontend   | HTML5 / Chart.js                    | Real-time visualization via WebSockets. |
-| Build      | Docker / Maven                      | Containerized deployment.               |
+| Component  | Technology                            | Role                                      |
+|:-----------|:--------------------------------------|:------------------------------------------|
+| Runtime    | Azul Platform Prime 21                | Concurrent JVM with C4 garbage collector. |
+| App Server | Payara Micro 7.2025.2 (Jakarta EE 11) | Cloud-native Jakarta EE runtime.          |
+| Transport  | Aeron                                 | Low-latency, high-throughput messaging.   |
+| Encoding   | SBE (Simple Binary Encoding)          | Binary serialization (FIX standard).      |
+| Frontend   | HTML5 / Chart.js                      | Real-time visualization via WebSockets.   |
+| Build      | Docker / Maven                        | Containerized deployment.                 |
 
 ## Ingestion Architectures
 
@@ -161,7 +164,7 @@ Implementation:
 Performance Characteristics:
 
 - High Allocation: Gigabytes of temporary String objects per second
-- GC Pressure: Frequent pauses on G1GC; C4's concurrent collection avoids stop-the-world pauses but still performs work
+- GC Pressure: Frequent pauses on G1GC; C4's concurrent collection maintains sub-millisecond pauses
 
 ### AERON Mode (Optimized Path, Default)
 
@@ -180,9 +183,9 @@ Implementation:
 
 Performance Characteristics:
 
-- Low Allocation: Almost no garbage in the ingestion hot-path
+- Low Allocation: Minimal garbage in the ingestion hot-path
 - High Throughput: Aeron IPC handles millions of messages/sec with sub-microsecond latency
-- Both JVMs benefit from reduced allocation, but C4 maintains flat latency profile
+- Both JVMs benefit from reduced allocation; C4 maintains consistent latency profile
 
 ## Configuration & Tuning
 
@@ -221,11 +224,11 @@ Infrastructure improvements:
 - GC Logging: Detailed event logging with decorators for analysis
 - Rate-Limited Logging: Prevents log flooding during high-throughput operations
 
-Note: Azul Platform Prime uses C4 by default; we don't specify `-XX:+UseZGC` since C4 is the native, optimized collector for Azul Prime.
+Note: Azul Platform Prime uses C4 by default; we don't specify `-XX:+UseG1GC` since C4 is the native, optimized collector for Azul Prime.
 
 ### GC Monitoring & Stress Testing
 
-The application includes comprehensive GC monitoring and memory pressure testing capabilities to demonstrate JVM performance differences:
+The application includes comprehensive GC monitoring and memory pressure testing capabilities to show JVM performance differences:
 
 #### GC Statistics Collection
 
@@ -261,9 +264,9 @@ Test Scenarios:
 Expected Behavior:
 
 * G1: Stop-the-world pauses that scale with live set size, remembered set scanning overhead, compaction pauses under fragmentation
-* C4: Zero pauses across all scenarios due to concurrent collection, no remembered sets, concurrent compaction
+* C4: Pauses ≤1ms across all scenarios due to concurrent collection, no remembered sets, concurrent compaction
 
-Each scenario uses 4 parallel virtual threads to generate allocation load. This multi-threaded pattern demonstrates G1's stop-the-world impact when all application threads must pause simultaneously.
+Each scenario uses 4 parallel virtual threads to generate allocation load. This multi-threaded pattern shows G1's stop-the-world impact when all application threads must pause simultaneously.
 
 #### GC Scenario Control
 
@@ -274,7 +277,7 @@ The web UI includes scenario selection controls that allow:
 * Side-by-side pause time visualization with phase breakdown
 * Observation of collector behavior under specific pathological conditions
 
-This feature enables targeted demonstration of G1's architectural limitations versus C4's concurrent collection model.
+This feature enables targeted observation of G1's architectural limitations versus C4's concurrent collection model.
 
 ## Monitoring & Observability
 
@@ -387,8 +390,8 @@ Working Tests (170/170 passing):
 Coverage Metrics:
 
 - Tests: 170 unit tests with 100% pass rate
-- Monitoring Coverage: >90% (SLAMonitor, GCStatsService)
-- REST API Coverage: >85% (Resources and DTOs)
+- Monitoring Coverage: ≥90% (SLAMonitor, GCStatsService)
+- REST API Coverage: ≥85% (Resources and DTOs)
 - Instruction Coverage: High coverage for business logic; integration logic relies on `test.sh`.
 
 ### Test Categories
@@ -418,6 +421,7 @@ For readers unfamiliar with high-frequency trading concepts, this glossary expla
 | Price Ladder                  | The hierarchical structure of bid and ask prices in an order book. Bid prices decrease as you move away from the best bid; ask prices increase as you move away from the best ask.                                                                                            |
 | Crossed Market                | An abnormal market condition where the best bid price is higher than the best ask price. This should never occur in normal trading and indicates a data error or system malfunction.                                                                                          |
 | Flash Crash                   | A sudden, severe market downturn followed by rapid recovery, often triggered by algorithmic trading systems. The 2010 Flash Crash saw the Dow Jones drop nearly 1,000 points in minutes. These events create extreme allocation bursts as systems process massive order flow. |
+| SLA (Service Level Agreement) | Performance guarantees, such as "99.9% of trades execute within 5ms". GC pauses can cause SLA violations if they exceed latency budgets.                                                                                                                                      |
 
 ### Memory & Performance
 
@@ -469,8 +473,15 @@ For readers unfamiliar with high-frequency trading concepts, this glossary expla
 | Ingestion Pipeline / Ingestion Layer | The component responsible for receiving and processing incoming market data feeds. Must handle extreme throughput (millions of messages/sec) with minimal latency.         |
 | Hot Path / Critical Path             | The code execution path that runs most frequently and must be highly optimized. In HFT, the ingestion and order routing paths are hot paths where even nanoseconds matter. |
 | Market Event                         | Significant market occurrences that trigger increased trading activity: market open/close, economic announcements, earnings releases, or sudden price movements.           |
-| SLA (Service Level Agreement)        | Performance guarantees, such as "99.9% of trades execute within 5ms". GC pauses can cause SLA violations if they exceed latency budgets.                                   |
+
+## References
+
+- [Azul C4 Garbage Collection Documentation](https://docs.azul.com/prime/c4-garbage-collection.html)
+- [Azul Platform Prime Product Page](https://www.azul.com/products/components/pgc/)
+- [Explanation of Azul's "Pauseless" Garbage Collector](https://stackoverflow.com/questions/4491260/explanation-of-azuls-pauseless-garbage-collector)
+- [What To Expect When Evaluating Azul Platform Prime](https://docs.azul.com/prime/what-to-expect)
+- [Apache Kafka Performance on Azul Platform Prime vs Vanilla OpenJDK](https://www.azul.com/blog/apache-kafka-performance-on-azul-platform-prime-vs-vanilla-openjdk/)
 
 ## License
 
-This project is a reference implementation provided for demonstration purposes.
+This project is a reference implementation showing low-latency Java techniques for educational purposes.

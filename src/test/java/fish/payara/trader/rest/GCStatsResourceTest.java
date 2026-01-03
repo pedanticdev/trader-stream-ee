@@ -23,78 +23,82 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("GCStatsResource Tests")
 class GCStatsResourceTest {
 
-  @Mock private GCStatsService gcStatsService;
-  @Mock private MemoryPressureService memoryPressureService;
-  @Mock private MarketDataPublisher publisher;
-  @Mock private SLAMonitorService slaMonitor;
-  @Mock private GCPauseMonitor gcPauseMonitor;
+    @Mock
+    private GCStatsService gcStatsService;
+    @Mock
+    private MemoryPressureService memoryPressureService;
+    @Mock
+    private MarketDataPublisher publisher;
+    @Mock
+    private SLAMonitorService slaMonitor;
+    @Mock
+    private GCPauseMonitor gcPauseMonitor;
 
-  @InjectMocks private GCStatsResource resource;
+    @InjectMocks
+    private GCStatsResource resource;
 
-  @Test
-  @DisplayName("Should return SLA stats")
-  void shouldReturnSLAStats() {
-    SLAMonitorService.SLAStats mockStats = new SLAMonitorService.SLAStats(100, 5, 2, 1, 5.0, 3);
-    when(slaMonitor.getStats()).thenReturn(mockStats);
+    @Test
+    @DisplayName("Should return SLA stats")
+    void shouldReturnSLAStats() {
+        SLAMonitorService.SLAStats mockStats = new SLAMonitorService.SLAStats(100, 5, 2, 1, 5.0, 3);
+        when(slaMonitor.getStats()).thenReturn(mockStats);
 
-    Response response = resource.getSLAStats();
+        Response response = resource.getSLAStats();
 
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    assertEquals(mockStats, response.getEntity());
-  }
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        assertEquals(mockStats, response.getEntity());
+    }
 
-  @Test
-  @DisplayName("Should reset SLA stats")
-  void shouldResetSLAStats() {
-    Response response = resource.resetSLAStats();
+    @Test
+    @DisplayName("Should reset SLA stats")
+    void shouldResetSLAStats() {
+        Response response = resource.resetSLAStats();
 
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    verify(slaMonitor).reset();
-  }
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        verify(slaMonitor).reset();
+    }
 
-  @Test
-  @DisplayName("Should return GC pause stats")
-  void shouldReturnGCPauseStats() {
-    GCPauseMonitor.GCPauseStats mockStats =
-        new GCPauseMonitor.GCPauseStats(10, 100, 10.0, 10, 20, 30, 40, 50, 5, 2, 1, 10);
-    when(gcPauseMonitor.getStats()).thenReturn(mockStats);
+    @Test
+    @DisplayName("Should return GC pause stats")
+    void shouldReturnGCPauseStats() {
+        GCPauseMonitor.GCPauseStats mockStats = new GCPauseMonitor.GCPauseStats(10, 100, 10.0, 10, 20, 30, 40, 50, 5, 2, 1, 10);
+        when(gcPauseMonitor.getStats()).thenReturn(mockStats);
 
-    Response response = resource.getGCPauseStats();
+        Response response = resource.getGCPauseStats();
 
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    assertEquals(mockStats, response.getEntity());
-  }
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        assertEquals(mockStats, response.getEntity());
+    }
 
-  @Test
-  @DisplayName("Should return accurate comparison data")
-  void shouldReturnAccurateComparisonData() {
-    when(memoryPressureService.getCurrentMode()).thenReturn(AllocationMode.STEADY_LOAD);
-    when(publisher.getMessagesPublished()).thenReturn(5000L);
-    when(gcStatsService.collectGCStats()).thenReturn(Collections.emptyList());
+    @Test
+    @DisplayName("Should return accurate comparison data")
+    void shouldReturnAccurateComparisonData() {
+        when(memoryPressureService.getCurrentMode()).thenReturn(AllocationMode.STEADY_LOAD);
+        when(publisher.getMessagesPublished()).thenReturn(5000L);
+        when(gcStatsService.collectGCStats()).thenReturn(Collections.emptyList());
 
-    GCPauseMonitor.GCPauseStats mockPauseStats =
-        new GCPauseMonitor.GCPauseStats(10, 100, 10.0, 10, 20, 30, 40, 50, 5, 2, 1, 10);
-    when(gcPauseMonitor.getStats()).thenReturn(mockPauseStats);
+        GCPauseMonitor.GCPauseStats mockPauseStats = new GCPauseMonitor.GCPauseStats(10, 100, 10.0, 10, 20, 30, 40, 50, 5, 2, 1, 10);
+        when(gcPauseMonitor.getStats()).thenReturn(mockPauseStats);
 
-    Response response = resource.getComparison();
+        Response response = resource.getComparison();
 
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    @SuppressWarnings("unchecked")
-    Map<String, Object> entity = (Map<String, Object>) response.getEntity();
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> entity = (Map<String, Object>) response.getEntity();
 
-    assertEquals(AllocationMode.STEADY_LOAD, entity.get("allocationMode"));
-    assertEquals(5000L, entity.get("messageRate"));
-    assertEquals(10.0, ((Number) entity.get("pauseP50Ms")).doubleValue());
-    assertEquals(50L, entity.get("pauseMaxMs"));
-    assertEquals(5L, entity.get("slaViolations10ms"));
-  }
+        assertEquals(AllocationMode.STEADY_LOAD, entity.get("allocationMode"));
+        assertEquals(5000L, entity.get("messageRate"));
+        assertEquals(10.0, ((Number) entity.get("pauseP50Ms")).doubleValue());
+        assertEquals(50L, entity.get("pauseMaxMs"));
+        assertEquals(5L, entity.get("slaViolations10ms"));
+    }
 
-  @Test
-  @DisplayName("Should reset GC stats")
-  void shouldResetGCStats() {
-    Response response = resource.resetStats();
+    @Test
+    @DisplayName("Should reset GC stats")
+    void shouldResetGCStats() {
+        Response response = resource.resetStats();
 
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    verify(gcStatsService).resetStats();
-  }
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        verify(gcStatsService).resetStats();
+    }
 }

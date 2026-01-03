@@ -287,15 +287,13 @@
         </header>
 
         <article>
-            <p>In high-frequency trading (HFT) and financial services, every microsecond counts. The difference between profit and loss often comes down to how quickly your system can process market data and execute trades. For years, Java has been viewed with skepticism in the world of low-latency finance, primarily due to its notorious "stop-the-world" garbage collection pauses that can wreck predictable performance.</p>
+            <p>In high-frequency trading (HFT) and financial services, latency determines profitability. The difference between profit and loss comes down to how quickly your system can process market data and execute trades. For years, Java has been viewed with skepticism in low-latency finance, primarily due to its "stop-the-world" garbage collection pauses that can wreck predictable performance.</p>
 
-            <p>But what if I told you that Java is now one of the best choices for latency-sensitive financial applications?</p>
-
-            <p>I developed TradeStreamEE, a sophisticated high-frequency trading dashboard to demonstrate that HFT is not only possible but also highly performant in Enterprise Java, particularly when combining Azul Platform Prime with the C4 garbage collector and Payara Micro. This technology stack changes Java's performance profile, offering measurable, real-world improvements that are now leading financial institutions to reconsider their current technology choices.</p>
+            <p>Java is now a viable platform for latency-sensitive financial applications. TradeStreamEE, a high-frequency trading reference architecture, shows HFT-class performance on Enterprise Java by combining Azul Platform Prime with the C4 garbage collector and Payara Micro. This technology stack changes Java's performance profile, offering measurable improvements that make Enterprise Java competitive for low-latency workloads.</p>
 
             <h2>The Evidence: Scenario-Based GC Stress Testing</h2>
 
-            <p>Rather than applying generic high-allocation pressure, TradeStreamEE uses scenario-based testing that targets specific garbage collector weaknesses. Each scenario exposes fundamental algorithmic differences between G1 and C4.</p>
+            <p>TradeStreamEE uses scenario-based testing that targets specific garbage collector weaknesses rather than applying generic high-allocation pressure. Each scenario exposes fundamental algorithmic differences between G1 and C4.</p>
 
             <p>The test scenarios include:</p>
 
@@ -307,7 +305,7 @@
                 <li><strong>CROSS_GEN_REFS:</strong> 150 MB/sec with 800 MB in old generation holding references to young objects. Tests remembered set overhead.</li>
             </ul>
 
-            <p>Each scenario uses 4 parallel threads to generate allocation load, mirroring production web servers and trading systems where multiple threads compete for heap space. The allocation rates (100-300 MB/sec) are calibrated to demonstrate normal GC behavior rather than pathological thrashing, ensuring consistent results across 2GB-4GB heap configurations.</p>
+            <p>Each scenario uses 4 parallel threads to generate allocation load, mirroring production web servers and trading systems where multiple threads compete for heap space. The allocation rates (100-300 MB/sec) are calibrated to show normal GC behavior rather than pathological thrashing, ensuring consistent results across 2GB-4GB heap configurations.</p>
 
             <p>Here is the raw JSON returned from our Payara endpoints during a PROMOTION_STORM scenario:</p>
 
@@ -328,20 +326,20 @@
 
             <div class="highlight-block">
                 <p>The Results</p>
-                <p>Under PROMOTION_STORM (300 MB/sec with high old generation traffic), the application's garbage collection pauses peaked at 1 millisecond. The 50th percentile (median) was 0ms. G1 under the same scenario exhibited pauses of 50-200ms as mixed collections struggled to keep pace with promotion rates.</p>
+                <p>Under PROMOTION_STORM (300 MB/sec with high old generation traffic), the application's garbage collection pauses peaked at 1 millisecond. The 50th percentile (median) was 0ms. In comparable testing, G1 showed significantly higher pause times as mixed collections struggled to keep pace with promotion rates.</p>
             </div>
 
             <h2>Payara Micro: Enterprise Jakarta EE for Demanding Applications</h2>
 
-            <p>While Azul C4 eliminates Java's performance limitations, Payara Micro provides the enterprise-grade Jakarta EE runtime that makes sophisticated financial applications possible.</p>
+            <p>While Azul C4 addresses Java's GC limitations, Payara Micro provides the enterprise-grade Jakarta EE runtime that enables sophisticated financial applications.</p>
 
-            <p>What makes Payara Micro well suited for financial services is its thoughtful balance of enterprise features and performance optimization. The platform weighs just 100MB and starts in seconds, making it perfect for the microservices architectures that dominate modern financial technology stacks. But do not be deceived by the small footprint. It packs the full power of Jakarta EE 11, featuring critical implementations like Jakarta CDI for dependency injection, WebSocket support for real-time communication, and Jakarta REST for RESTful APIs.</p>
+            <p>Payara Micro balances enterprise features with performance optimization. The runtime weighs approximately 100MB and starts in seconds, making it suitable for the microservices architectures common in modern financial technology stacks. Despite the small footprint, it provides the full capabilities of Jakarta EE 11, including Jakarta CDI for dependency injection, WebSocket support for real-time communication, and Jakarta REST for RESTful APIs.</p>
 
             <h3>Built-in Clustering with Hazelcast</h3>
 
-            <p>Using Hazelcast under the hood, Payara provides automatic data replication across cluster nodes. Through such deep integration, creating a cluster of Payara Micro instances is a breeze.</p>
+            <p>Using Hazelcast under the hood, Payara provides automatic data replication across cluster nodes. Through this integration, creating a cluster of Payara Micro instances requires minimal configuration.</p>
 
-            <p>In our code, we didn't have to write complex distributed consensus logic. We simply injected the Hazelcast instance to track global throughput across the cluster:</p>
+            <p>In our code, we injected the Hazelcast instance to track global throughput across the cluster without writing distributed consensus logic:</p>
 
             <pre><code class="language-java">// Payara + Hazelcast: Instant cluster-wide metrics without complex setup
 @Inject private HazelcastInstance hazelcastInstance;
@@ -353,15 +351,15 @@ public void init() {
         hazelcastInstance.getCPSubsystem().getAtomicLong("cluster-message-count");
 }</code></pre>
 
-            <p>This means financial firms can build highly available trading systems that can withstand node failures without losing market data or transaction state.</p>
+            <p>Financial firms can build highly available trading systems that withstand node failures without losing market data or transaction state.</p>
 
-            <h2>Architecture Deep Dive Into TradeStreamEE</h2>
+            <h2>Architecture Deep Dive: TradeStreamEE</h2>
 
-            <p>The TradeStreamEE application serves as a perfect showcase for what's possible when you combine Azul C4 and Payara Micro. The architecture demonstrates thoughtful engineering that addresses the specific challenges of financial trading systems.</p>
+            <p>The TradeStreamEE application shows what is possible when you combine Azul C4 and Payara Micro. The architecture addresses the specific challenges of financial trading systems.</p>
 
-            <h3>The "Hero": Zero-Copy SBE</h3>
+            <h3>Core Technology: Zero-Copy SBE</h3>
 
-            <p>At the core of the system is Aeron IPC with Simple Binary Encoding (SBE), technologies that enable zero-copy message processing. The approach is elegant: instead of creating new Java objects for every market data message, the system uses "flyweight" objects that act as windows over shared memory buffers. This eliminates object allocation entirely during the critical path of message processing.</p>
+            <p>At the core of the system is Aeron IPC with Simple Binary Encoding (SBE), technologies that enable zero-copy message processing. Instead of creating new Java objects for every market data message, the system uses "flyweight" objects that act as views over shared memory buffers. This eliminates object allocation during the critical path of message processing.</p>
 
             <pre><code class="language-java">// SBE Flyweight pattern - zero object allocation during processing
 private final TradeDecoder tradeDecoder = new TradeDecoder();
@@ -371,7 +369,7 @@ private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
 public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
     headerDecoder.wrap(buffer, offset);
 
-    // Move the "window" to the data without allocating a new object
+    // Move the "view" to the data without allocating a new object
     tradeDecoder.wrap(buffer, offset + headerDecoder.encodedLength(),
                      headerDecoder.blockLength(), headerDecoder.version());
 
@@ -381,11 +379,11 @@ public void onFragment(DirectBuffer buffer, int offset, int length, Header heade
     final long quantity = tradeDecoder.quantity();
 }</code></pre>
 
-            <h3>The "Villain": Scenario-Based Memory Pressure</h3>
+            <h3>Stress Testing: Scenario-Based Memory Pressure</h3>
 
-            <p>To demonstrate collector behavior under specific pathological conditions, the <code>MemoryPressureService</code> implements five distinct scenarios. Each targets a known G1 weakness while C4 handles the workload without pause.</p>
+            <p>To show collector behavior under specific pathological conditions, the <code>MemoryPressureService</code> implements five distinct scenarios. Each targets a known G1 weakness while C4 handles the workload without pause.</p>
 
-            <p>The CROSS_GEN_REFS scenario is particularly instructive. It creates old generation objects that hold references to newly allocated young objects, triggering G1's write barriers and remembered set maintenance:</p>
+            <p>The CROSS_GEN_REFS scenario creates old generation objects that hold references to newly allocated young objects, triggering G1's write barriers and remembered set maintenance:</p>
 
             <pre><code class="language-java">// Cross-generational reference stress test
 private static class RefHolder {
@@ -413,28 +411,28 @@ private void createCrossGenerationalRefsMultiThreaded(int totalBytes, int numThr
 
             <h2>The Business Impact</h2>
 
-            <p>The business implications of this technology combination extend far beyond technical performance metrics. For trading firms, predictable latency directly translates to competitive advantage in the market.</p>
+            <p>The business implications of this technology combination extend beyond technical performance metrics. For trading firms, predictable latency directly translates to competitive advantage in the market.</p>
 
-            <p>Perhaps more importantly, the operational complexity that has traditionally plagued Java performance tuning virtually disappears. The standard approach to Java latency problems involved teams of performance engineers spending months tuning JVM parameters (<code>-XX:NewRatio</code>, <code>-XX:SurvivorRatio</code>). With Azul C4 and Payara Micro, most of that complexity evaporates. C4 adapts automatically to workload patterns, eliminating the need for manual parameter tuning.</p>
+            <p>Operational complexity also decreases significantly. Traditional Java performance tuning often requires considerable effort to optimize JVM parameters (<code>-XX:NewRatio</code>, <code>-XX:SurvivorRatio</code>). With Azul C4 and Payara Micro, C4 adapts automatically to workload patterns, eliminating the need for manual parameter tuning.</p>
 
-            <p>In our tests, a single Payara Micro instance effortlessly handled ingestion rates exceeding 30 million messages, with zero degradation in SLA compliance. This means financial firms can process more trades per second, handle higher client volumes without performance degradation, and maintain consistent service levels even during market stress events.</p>
+            <p>In our tests, a single Payara Micro instance handled sustained ingestion at rates exceeding 30,000 messages per second with zero GC pauses exceeding 1ms. Financial firms can process more trades per second, handle higher client volumes without performance degradation, and maintain consistent service levels during market stress events.</p>
 
             <h2>Conclusion</h2>
 
-            <p>Azul C4 and Payara Micro fundamentally redefine the potential of Java for low-latency financial applications. This is more than an incremental gain; it's a paradigm shift.</p>
+            <p>Azul C4 and Payara Micro redefine the capabilities of Java for low-latency financial applications. This represents a fundamental shift in what is possible with Enterprise Java.</p>
 
-            <p>By combining the operational maturity of Payara with the runtime supremacy of Azul Platform Prime, organizations can have their cake and eat it too. You can build maintainable, secure, and scalable Jakarta EE applications that meet the most demanding latency SLAs of the financial industry.</p>
+            <p>By combining the operational maturity of Payara with the superior runtime performance of Azul Platform Prime, organizations can achieve both development productivity and runtime performance. You can build maintainable, secure, and scalable Jakarta EE applications that meet the strict latency SLAs required by financial trading systems.</p>
 
-            <p>The question is no longer whether Java can handle low-latency financial workloads. With Azul C4 and Payara, it's now one of the best choices available.</p>
+            <p>Java can handle low-latency financial workloads. With Azul C4 and Payara, it is a competitive choice.</p>
 
             <div class="cta-section">
                 <h3>Ready to See It in Action?</h3>
-                <p>The theory is compelling, but the real proof is in the running system. I encourage you to:</p>
+                <p>The theory is compelling, but the real proof is in the running system. Explore the following:</p>
                 <ul>
-                    <li><strong>Explore the Code:</strong> <a href="https://github.com/pedanticdev/trader-stream-ee" target="_blank" rel="noopener">Check out the TradeStreamEE repository on GitHub</a> to see the complete implementation. The codebase demos best practices for low-latency Java development.</li>
-                    <li><strong>Try Payara Micro:</strong> <a href="https://payara.fish/downloads/" target="_blank" rel="noopener">Download Payara Micro</a> and experience the lightweight, enterprise-grade application server for yourself.</li>
-                    <li><strong>Try Payara Qube:</strong> <a href="https://payara.fish/qube" target="_blank" rel="noopener">Deploy to Payara Qube</a> (formerly Payara Cloud) for effortless cloud deployment without the infrastructure overhead.</li>
-                    <li><strong>Evaluate Azul Platform Prime:</strong> <a href="https://www.azul.com/products/prime/" target="_blank" rel="noopener">Request a trial of Azul Platform Prime</a> to see C4 garbage collection in action. The performance improvements are immediately noticeable, especially under memory pressure.</li>
+                    <li><strong>Explore the Code:</strong> <a href="https://github.com/pedanticdev/trader-stream-ee" target="_blank" rel="noopener">Check out the TradeStreamEE repository on GitHub</a> to see the complete implementation. The codebase shows best practices for low-latency Java development.</li>
+                    <li><strong>Try Payara Micro:</strong> <a href="https://payara.fish/downloads/" target="_blank" rel="noopener">Download Payara Micro</a> and experience the lightweight, enterprise-grade application server.</li>
+                    <li><strong>Try Payara Qube:</strong> <a href="https://payara.fish/qube" target="_blank" rel="noopener">Deploy to Payara Qube</a> (formerly Payara Cloud) for cloud deployment without infrastructure overhead.</li>
+                    <li><strong>Evaluate Azul Platform Prime:</strong> <a href="https://www.azul.com/products/prime/" target="_blank" rel="noopener">Request a trial of Azul Platform Prime</a> to see C4 garbage collection in action. The performance improvements are noticeable under memory pressure.</li>
                     <li><strong>Run Your Own Tests:</strong> Use the built-in scenario-based stress testing in TradeStreamEE. The five scenarios (STEADY_LOAD, GROWING_HEAP, PROMOTION_STORM, FRAGMENTATION, CROSS_GEN_REFS) target specific GC weaknesses, allowing direct comparison between G1 and C4 behavior under controlled conditions.</li>
                 </ul>
             </div>
