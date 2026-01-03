@@ -21,152 +21,137 @@ import org.agrona.concurrent.IdleStrategy;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * Aeron Ingress Singleton Bean Launches an embedded MediaDriver and subscribes to market data
- * stream. Uses SBE decoders for zero-copy message processing. Runs in a dedicated thread to
- * continuously poll for messages. IMPORTANT: This must initialize BEFORE MarketDataPublisher
+ * Aeron Ingress Singleton Bean Launches an embedded MediaDriver and subscribes to market data stream. Uses SBE decoders for zero-copy message processing. Runs
+ * in a dedicated thread to continuously poll for messages. IMPORTANT: This must initialize BEFORE MarketDataPublisher
  */
 @ApplicationScoped
 public class AeronSubscriberBean {
 
-  private static final Logger LOGGER = Logger.getLogger(AeronSubscriberBean.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(AeronSubscriberBean.class.getName());
 
-  private static final String CHANNEL = "aeron:ipc";
-  private static final int STREAM_ID = 1001;
-  private static final int FRAGMENT_LIMIT = 10;
+    private static final String CHANNEL = "aeron:ipc";
+    private static final int STREAM_ID = 1001;
+    private static final int FRAGMENT_LIMIT = 10;
 
-  private MediaDriver mediaDriver;
-  private Aeron aeron;
-  private Subscription subscription;
-  private volatile boolean running = false;
-  private Future<?> pollingFuture;
+    private MediaDriver mediaDriver;
+    private Aeron aeron;
+    private Subscription subscription;
+    private volatile boolean running = false;
+    private Future<?> pollingFuture;
 
-  @Inject private MarketDataFragmentHandler fragmentHandler;
+    @Inject
+    private MarketDataFragmentHandler fragmentHandler;
 
-  @Inject @VirtualThreadExecutor private ManagedExecutorService managedExecutorService;
+    @Inject
+    @VirtualThreadExecutor
+    private ManagedExecutorService managedExecutorService;
 
-  @Inject
-  @ConfigProperty(name = "TRADER_INGESTION_MODE", defaultValue = "AERON")
-  private String ingestionMode;
+    @Inject
+    @ConfigProperty(name = "TRADER_INGESTION_MODE", defaultValue = "AERON")
+    private String ingestionMode;
 
-  void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
-    managedExecutorService.submit(this::init);
-  }
-
-  public void init() {
-    if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
-      LOGGER.info("Running in DIRECT mode - Skipping Aeron/MediaDriver initialization.");
-      return;
+    void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
+        managedExecutorService.submit(this::init);
     }
 
-    LOGGER.info("Initializing Aeron Subscriber Bean...");
+    public void init() {
+        if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
+            LOGGER.info("Running in DIRECT mode - Skipping Aeron/MediaDriver initialization.");
+            return;
+        }
 
-    try {
-      LOGGER.info("Launching embedded MediaDriver...");
-      mediaDriver =
-          MediaDriver.launchEmbedded(
-              new MediaDriver.Context()
-                  .threadingMode(ThreadingMode.SHARED)
-                  .dirDeleteOnStart(true)
-                  .dirDeleteOnShutdown(true));
+        LOGGER.info("Initializing Aeron Subscriber Bean...");
 
-      LOGGER.info("MediaDriver launched at: " + mediaDriver.aeronDirectoryName());
-      LOGGER.info("Connecting Aeron client...");
-      aeron =
-          Aeron.connect(
-              new Aeron.Context()
-                  .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-                  .errorHandler(this::onError)
-                  .availableImageHandler(
-                      image -> LOGGER.info("Available image: " + image.sourceIdentity()))
-                  .unavailableImageHandler(
-                      image -> LOGGER.info("Unavailable image: " + image.sourceIdentity())));
-      LOGGER.info("Adding subscription on channel: " + CHANNEL + ", stream: " + STREAM_ID);
-      subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
-      startPolling();
-      LOGGER.info("Aeron Subscriber Bean initialized successfully");
+        try {
+            LOGGER.info("Launching embedded MediaDriver...");
+            mediaDriver = MediaDriver
+                            .launchEmbedded(new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirDeleteOnStart(true).dirDeleteOnShutdown(true));
 
-    } catch (Exception e) {
-      LOGGER.log(Level.SEVERE, "Failed to initialize Aeron Subscriber Bean", e);
-      cleanup();
-      throw new RuntimeException("Failed to initialize Aeron", e);
+            LOGGER.info("MediaDriver launched at: " + mediaDriver.aeronDirectoryName());
+            LOGGER.info("Connecting Aeron client...");
+            aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                            .errorHandler(this::onError)
+                            .availableImageHandler(image -> LOGGER.info("Available image: " + image.sourceIdentity()))
+                            .unavailableImageHandler(image -> LOGGER.info("Unavailable image: " + image.sourceIdentity())));
+            LOGGER.info("Adding subscription on channel: " + CHANNEL + ", stream: " + STREAM_ID);
+            subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+            startPolling();
+            LOGGER.info("Aeron Subscriber Bean initialized successfully");
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to initialize Aeron Subscriber Bean", e);
+            cleanup();
+            throw new RuntimeException("Failed to initialize Aeron", e);
+        }
     }
-  }
 
-  /** Start background task to continuously poll for messages */
-  private void startPolling() {
-    running = true;
-    pollingFuture =
-        managedExecutorService.submit(
-            () -> {
-              LOGGER.info("Aeron polling task started");
+    /** Start background task to continuously poll for messages */
+    private void startPolling() {
+        running = true;
+        pollingFuture = managedExecutorService.submit(() -> {
+            LOGGER.info("Aeron polling task started");
 
-              final IdleStrategy idleStrategy =
-                  new BackoffIdleStrategy(
-                      100,
-                      10,
-                      TimeUnit.MICROSECONDS.toNanos(1),
-                      TimeUnit.MICROSECONDS.toNanos(100));
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
-              while (running && !Thread.currentThread().isInterrupted()) {
+            while (running && !Thread.currentThread().isInterrupted()) {
                 try {
-                  final int fragmentsRead = subscription.poll(fragmentHandler, FRAGMENT_LIMIT);
+                    final int fragmentsRead = subscription.poll(fragmentHandler, FRAGMENT_LIMIT);
 
-                  idleStrategy.idle(fragmentsRead);
+                    idleStrategy.idle(fragmentsRead);
 
                 } catch (Exception e) {
-                  LOGGER.log(Level.SEVERE, "Error polling subscription", e);
+                    LOGGER.log(Level.SEVERE, "Error polling subscription", e);
                 }
-              }
+            }
 
-              LOGGER.info("Aeron polling task stopped");
-            });
-  }
-
-  /** Error handler for Aeron */
-  private void onError(Throwable throwable) {
-    LOGGER.log(Level.SEVERE, "Aeron error occurred", throwable);
-  }
-
-  @PreDestroy
-  public void shutdown() {
-    LOGGER.info("Shutting down Aeron Subscriber Bean...");
-    running = false;
-
-    if (pollingFuture != null) {
-      pollingFuture.cancel(true);
+            LOGGER.info("Aeron polling task stopped");
+        });
     }
 
-    cleanup();
-    LOGGER.info("Aeron Subscriber Bean shut down");
-  }
-
-  /** Clean up all Aeron resources */
-  private void cleanup() {
-    CloseHelper.quietClose(subscription);
-    CloseHelper.quietClose(aeron);
-    CloseHelper.quietClose(mediaDriver);
-  }
-
-  /** Get subscription statistics */
-  public String getStatus() {
-    if (subscription != null) {
-      return String.format(
-          "Channel: %s, Stream: %d, Images: %d, Running: %b",
-          subscription.channel(), subscription.streamId(), subscription.imageCount(), running);
+    /** Error handler for Aeron */
+    private void onError(Throwable throwable) {
+        LOGGER.log(Level.SEVERE, "Aeron error occurred", throwable);
     }
-    return "Not initialized";
-  }
 
-  /** Get the Aeron directory name for connecting publishers */
-  public String getAeronDirectoryName() {
-    if (mediaDriver != null) {
-      return mediaDriver.aeronDirectoryName();
+    @PreDestroy
+    public void shutdown() {
+        LOGGER.info("Shutting down Aeron Subscriber Bean...");
+        running = false;
+
+        if (pollingFuture != null) {
+            pollingFuture.cancel(true);
+        }
+
+        cleanup();
+        LOGGER.info("Aeron Subscriber Bean shut down");
     }
-    return null;
-  }
 
-  /** Check if the MediaDriver is ready */
-  public boolean isReady() {
-    return mediaDriver != null && aeron != null && subscription != null && running;
-  }
+    /** Clean up all Aeron resources */
+    private void cleanup() {
+        CloseHelper.quietClose(subscription);
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(mediaDriver);
+    }
+
+    /** Get subscription statistics */
+    public String getStatus() {
+        if (subscription != null) {
+            return String.format("Channel: %s, Stream: %d, Images: %d, Running: %b", subscription.channel(), subscription.streamId(), subscription.imageCount(),
+                            running);
+        }
+        return "Not initialized";
+    }
+
+    /** Get the Aeron directory name for connecting publishers */
+    public String getAeronDirectoryName() {
+        if (mediaDriver != null) {
+            return mediaDriver.aeronDirectoryName();
+        }
+        return null;
+    }
+
+    /** Check if the MediaDriver is ready */
+    public boolean isReady() {
+        return mediaDriver != null && aeron != null && subscription != null && running;
+    }
 }

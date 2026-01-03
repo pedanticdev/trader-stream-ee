@@ -7,6 +7,7 @@ WORKDIR /app
 # Copy Maven wrapper and pom.xml first for better layer caching
 COPY mvnw .
 COPY mvnw.cmd .
+COPY spotless ./spotless
 COPY .mvn .mvn
 COPY pom.xml .
 

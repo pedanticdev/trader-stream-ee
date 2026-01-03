@@ -14,4 +14,5 @@ import java.lang.annotation.Target;
 @Qualifier
 @Retention(RUNTIME)
 @Target({METHOD, FIELD, PARAMETER, TYPE})
-public @interface VirtualThreadExecutor {}
+public @interface VirtualThreadExecutor {
+}

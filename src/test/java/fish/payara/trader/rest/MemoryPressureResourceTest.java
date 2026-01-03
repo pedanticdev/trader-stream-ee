@@ -18,61 +18,62 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("MemoryPressureResource Tests")
 class MemoryPressureResourceTest {
 
-  @Mock private MemoryPressureService pressureService;
+    @Mock
+    private MemoryPressureService pressureService;
 
-  @InjectMocks private MemoryPressureResource resource;
+    @InjectMocks
+    private MemoryPressureResource resource;
 
-  @Test
-  @DisplayName("Should return current status")
-  void shouldReturnCurrentStatus() {
-    when(pressureService.getCurrentMode()).thenReturn(AllocationMode.STEADY_LOAD);
-    when(pressureService.isRunning()).thenReturn(true);
+    @Test
+    @DisplayName("Should return current status")
+    void shouldReturnCurrentStatus() {
+        when(pressureService.getCurrentMode()).thenReturn(AllocationMode.STEADY_LOAD);
+        when(pressureService.isRunning()).thenReturn(true);
 
-    Response response = resource.getStatus();
+        Response response = resource.getStatus();
 
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    @SuppressWarnings("unchecked")
-    Map<String, Object> entity = (Map<String, Object>) response.getEntity();
-    assertEquals("STEADY_LOAD", entity.get("currentMode"));
-    assertEquals(true, entity.get("running"));
-  }
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> entity = (Map<String, Object>) response.getEntity();
+        assertEquals("STEADY_LOAD", entity.get("currentMode"));
+        assertEquals(true, entity.get("running"));
+    }
 
-  @Test
-  @DisplayName("Should set allocation mode successfully")
-  void shouldSetAllocationModeSuccessfully() {
-    Response response = resource.setMode("steady_load");
+    @Test
+    @DisplayName("Should set allocation mode successfully")
+    void shouldSetAllocationModeSuccessfully() {
+        Response response = resource.setMode("steady_load");
 
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    verify(pressureService).setAllocationMode(AllocationMode.STEADY_LOAD);
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        verify(pressureService).setAllocationMode(AllocationMode.STEADY_LOAD);
 
-    @SuppressWarnings("unchecked")
-    Map<String, Object> entity = (Map<String, Object>) response.getEntity();
-    assertTrue((Boolean) entity.get("success"));
-    assertEquals("STEADY_LOAD", entity.get("mode"));
-  }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> entity = (Map<String, Object>) response.getEntity();
+        assertTrue((Boolean) entity.get("success"));
+        assertEquals("STEADY_LOAD", entity.get("mode"));
+    }
 
-  @Test
-  @DisplayName("Should return bad request for invalid mode")
-  void shouldReturnBadRequestForInvalidMode() {
-    Response response = resource.setMode("invalid_mode");
+    @Test
+    @DisplayName("Should return bad request for invalid mode")
+    void shouldReturnBadRequestForInvalidMode() {
+        Response response = resource.setMode("invalid_mode");
 
-    assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
-    @SuppressWarnings("unchecked")
-    Map<String, Object> entity = (Map<String, Object>) response.getEntity();
-    assertFalse((Boolean) entity.get("success"));
-    assertTrue(((String) entity.get("error")).contains("Invalid mode"));
-  }
+        assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> entity = (Map<String, Object>) response.getEntity();
+        assertFalse((Boolean) entity.get("success"));
+        assertTrue(((String) entity.get("error")).contains("Invalid mode"));
+    }
 
-  @Test
-  @DisplayName("Should return all modes")
-  void shouldReturnAllModes() {
-    Response response = resource.getModes();
+    @Test
+    @DisplayName("Should return all modes")
+    void shouldReturnAllModes() {
+        Response response = resource.getModes();
 
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    @SuppressWarnings("unchecked")
-    Map<String, Map<String, Object>> entity =
-        (Map<String, Map<String, Object>>) response.getEntity();
-    assertTrue(entity.containsKey("STEADY_LOAD"));
-    assertTrue(entity.containsKey("PROMOTION_STORM"));
-  }
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, Object>> entity = (Map<String, Map<String, Object>>) response.getEntity();
+        assertTrue(entity.containsKey("STEADY_LOAD"));
+        assertTrue(entity.containsKey("PROMOTION_STORM"));
+    }
 }
