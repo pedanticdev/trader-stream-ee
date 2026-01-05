@@ -1,3 +1,9 @@
+# JVM Configuration Notes:
+# ==========================
+# The JAVA_OPTS environment variables below OVERRIDE the ENV JAVA_OPTS defined in
+# Dockerfile.scale. These are the authoritative flags used for cluster deployments.
+# If you update flags here, ensure consistency across all instances (c4-1, c4-2, c4-3).
+
 services:
   traefik-c4:
     image: traefik:v3.6.5
@@ -46,6 +52,8 @@ services:
         -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
         -XX:+AlwaysPreTouch
         -XX:+UseTransparentHugePages
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
         -Djava.net.preferIPv4Stack=true
     volumes:
@@ -82,6 +90,10 @@ services:
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
         -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -XX:+AlwaysPreTouch
+        -XX:+UseTransparentHugePages
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
     volumes:
       - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
@@ -117,6 +129,10 @@ services:
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
         -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -XX:+AlwaysPreTouch
+        -XX:+UseTransparentHugePages
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
     volumes:
       - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro

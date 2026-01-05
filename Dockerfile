@@ -36,7 +36,12 @@ COPY --from=build /app/target/*.war ROOT.war
 EXPOSE 8080
 
 # Default JVM Options for Azul Platform Prime
-# Note: These are defaults - can be overridden via docker-compose or docker run -e
+#
+# NOTE: These JAVA_OPTS are used for single-instance deployments (start.sh script).
+# For cluster deployments (start-comparison.sh), these values are overridden by
+# docker-compose-{c4,g1}.yml environment variables. See those files for actual
+# runtime flags in cluster mode.
+#
 # Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
@@ -46,6 +51,8 @@ ENV JAVA_OPTS="-Xms8g \
     -XX:+AlwaysPreTouch \
     -XX:+UseTransparentHugePages \
     -XX:-UseBiasedLocking \
+    -XX:+UseStringDeduplication \
+    -XX:+OptimizeStringConcat \
     -Djava.net.preferIPv4Stack=true"
 
 # Health check

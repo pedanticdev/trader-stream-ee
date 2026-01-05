@@ -37,7 +37,12 @@ EXPOSE 8080
 EXPOSE 5701
 
 # Default JVM Options for Azul Platform Prime
-# Note: Reduced heap size for multi-instance deployments
+#
+# NOTE: These JAVA_OPTS are defaults for the cluster image. However, when launched
+# via docker-compose-c4.yml, these values are overridden by environment variables
+# in that file. See docker-compose-c4.yml for actual runtime flags in cluster mode.
+#
+# Reduced heap size (4GB vs 8GB) for multi-instance deployments.
 # Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
 ENV JAVA_OPTS="-Xms4g \
     -Xmx4g \
@@ -47,6 +52,8 @@ ENV JAVA_OPTS="-Xms4g \
     -XX:+AlwaysPreTouch \
     -XX:+UseTransparentHugePages \
     -XX:-UseBiasedLocking \
+    -XX:+UseStringDeduplication \
+    -XX:+OptimizeStringConcat \
     -Djava.net.preferIPv4Stack=true"
 
 # Health check

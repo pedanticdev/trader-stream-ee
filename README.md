@@ -211,16 +211,36 @@ Common JVM options:
 
 ```dockerfile
 # Azul Prime (C4) - 8GB single instance example
-ENV JAVA_OPTS="-Xms8g -Xmx8g -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
+ENV JAVA_OPTS="-Xms8g -Xmx8g \
+    -XX:+AlwaysPreTouch \
+    -XX:+UseTransparentHugePages \
+    -XX:-UseBiasedLocking \
+    -XX:+UseStringDeduplication \
+    -XX:+OptimizeStringConcat \
+    -XX:+UseContainerSupport \
+    -XX:MaxRAMPercentage=75.0 \
+    -Djava.net.preferIPv4Stack=true"
 
 # Standard JDK (G1GC) - 4GB cluster example
-ENV JAVA_OPTS="-Xms4g -Xmx4g -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -Djava.net.preferIPv4Stack=true"
+ENV JAVA_OPTS="-Xms4g -Xmx4g \
+    -XX:+UseG1GC \
+    -XX:+AlwaysPreTouch \
+    -XX:+UseTransparentHugePages \
+    -XX:+UseStringDeduplication \
+    -XX:+OptimizeStringConcat \
+    -XX:+UseContainerSupport \
+    -XX:MaxRAMPercentage=75.0 \
+    -Djava.net.preferIPv4Stack=true"
 ```
 
 Infrastructure improvements:
 
 - Pre-touch Memory (`-XX:+AlwaysPreTouch`): Pre-allocates heap pages to eliminate runtime allocation overhead
 - Transparent Huge Pages (`-XX:+UseTransparentHugePages`): Reduces TLB misses for large memory operations
+- String Deduplication (`-XX:+UseStringDeduplication`): Automatically deduplicates duplicate strings in the background, reducing heap pressure for JSON-heavy workloads (applied to both C4 and G1GC for fair comparison)
+- String Concat Optimization (`-XX:+OptimizeStringConcat`): Optimizes StringBuilder chains used extensively in JSON construction
+- Container Memory Awareness (`-XX:+UseContainerSupport` + `-XX:MaxRAMPercentage=75.0`): Enables JVM to respect container memory limits and allocate heap dynamically (75% of container memory)
+- Biased Locking Disabled (`-XX:-UseBiasedLocking`): Disabled for C4 (no generational object aging), applied consistently for fair comparison
 - GC Logging: Detailed event logging with decorators for analysis
 - Rate-Limited Logging: Prevents log flooding during high-throughput operations
 

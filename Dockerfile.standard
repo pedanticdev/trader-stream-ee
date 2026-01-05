@@ -36,12 +36,20 @@ COPY --from=build /app/target/*.war ROOT.war
 EXPOSE 8080
 
 # Standard JVM Options (G1GC)
+#
+# NOTE: These JAVA_OPTS are used for single-instance deployments (start.sh script).
+# For cluster deployments (start-comparison.sh), these values are overridden by
+# docker-compose-g1.yml environment variables. See that file for actual runtime
+# flags in cluster mode.
+#
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
     -XX:+UseG1GC \
     -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \
     -XX:+AlwaysPreTouch \
     -XX:+UseTransparentHugePages \
+    -XX:+UseStringDeduplication \
+    -XX:+OptimizeStringConcat \
     -Djava.net.preferIPv4Stack=true"
 
 # Health check
