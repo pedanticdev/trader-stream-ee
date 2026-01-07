@@ -33,6 +33,9 @@ ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/pay
 # Copy WAR file from build stage
 COPY --from=build /app/target/*.war trader-stream-ee.war
 
+# Create recordings directory for JFR output
+RUN mkdir -p /opt/payara/recordings && chmod 777 /opt/payara/recordings
+
 EXPOSE 8080
 EXPOSE 5701
 
@@ -44,6 +47,7 @@ EXPOSE 5701
 #
 # Reduced heap size (4GB vs 8GB) for multi-instance deployments.
 #
+# JFR is enabled by default - disable via JFR_ENABLED=false environment variable
 ENV JAVA_OPTS="-Xms4g \
     -Xmx4g \
     -XX:+UseG1GC \
@@ -52,7 +56,10 @@ ENV JAVA_OPTS="-Xms4g \
     -XX:+UseTransparentHugePages \
     -XX:+UseStringDeduplication \
     -XX:+OptimizeStringConcat \
-    -Djava.net.preferIPv4Stack=true"
+    -Djava.net.preferIPv4Stack=true \
+    -XX:StartFlightRecording=\${JFR_ENABLED:-name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g} \
+    -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256 \
+    -Xlog:jfr*=info"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

@@ -33,6 +33,9 @@ ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/pay
 # Copy WAR file from build stage
 COPY --from=build /app/target/*.war ROOT.war
 
+# Create recordings directory for JFR output
+RUN mkdir -p /opt/payara/recordings && chmod 777 /opt/payara/recordings
+
 EXPOSE 8080
 
 # Default JVM Options for Azul Platform Prime
@@ -43,6 +46,8 @@ EXPOSE 8080
 # runtime flags in cluster mode.
 #
 # Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
+#
+# JFR is enabled by default - disable via JFR_ENABLED=false environment variable
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
     -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \
@@ -53,7 +58,10 @@ ENV JAVA_OPTS="-Xms8g \
     -XX:-UseBiasedLocking \
     -XX:+UseStringDeduplication \
     -XX:+OptimizeStringConcat \
-    -Djava.net.preferIPv4Stack=true"
+    -Djava.net.preferIPv4Stack=true \
+    -XX:StartFlightRecording=\${JFR_ENABLED:-name=production,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g} \
+    -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256 \
+    -Xlog:jfr*=info"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

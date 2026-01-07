@@ -4,6 +4,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.cp.IAtomicLong;
 import fish.payara.trader.concurrency.VirtualThreadExecutor;
+import fish.payara.trader.jfr.MarketDataEvents;
 import fish.payara.trader.sbe.*;
 import fish.payara.trader.websocket.MarketDataBroadcaster;
 import io.aeron.Aeron;
@@ -38,14 +39,13 @@ public class MarketDataPublisher {
     private static final String CHANNEL = "aeron:ipc";
     private static final int STREAM_ID = 1001;
     private static final int BUFFER_SIZE = 4096;
-    private static final int SAMPLE_RATE = 50; // Broadcast 1 in 50 messages to prevent flooding
+    private static final int SAMPLE_RATE = 50;
 
     private static final String[] SYMBOLS = {"AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "NVDA", "META", "NFLX"};
 
     private Aeron aeron;
     private Publication publication;
 
-    // SBE encoders (reusable flyweights)
     private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     private final TradeEncoder tradeEncoder = new TradeEncoder();
     private final QuoteEncoder quoteEncoder = new QuoteEncoder();
@@ -65,7 +65,7 @@ public class MarketDataPublisher {
     private volatile boolean running = false;
     private boolean isDirectMode;
     private long lastWarningLogTime = 0;
-    private static final long WARNING_LOG_INTERVAL_MS = 5000; // Log warnings at most once per 5 seconds
+    private static final long WARNING_LOG_INTERVAL_MS = 5000;
 
     private Future<?> publisherFuture;
     private Future<?> statsFuture;
@@ -91,17 +91,13 @@ public class MarketDataPublisher {
     @VirtualThreadExecutor
     private ManagedExecutorService managedExecutorService;
 
-    // Cluster-wide message counter (shared across all instances)
     private IAtomicLong clusterMessageCounter;
 
     void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
-        // managedExecutorService.submit(this::init);
         init();
     }
 
     public void init() {
-        // Initialize cluster-wide message counter on ALL instances (even non-publishers)
-        // This allows all instances to read the shared counter value via Hazelcast CP Subsystem
         if (hazelcastInstance != null) {
             try {
                 clusterMessageCounter = hazelcastInstance.getCPSubsystem().getAtomicLong("cluster-message-count");
@@ -111,7 +107,6 @@ public class MarketDataPublisher {
             }
         }
 
-        // Check if publisher should be enabled on this instance
         if (enablePublisherEnv != null && !"true".equalsIgnoreCase(enablePublisherEnv)) {
             LOGGER.info("Market Data Publisher DISABLED on this instance (ENABLE_PUBLISHER=" + enablePublisherEnv + ")");
             LOGGER.info("This instance will only consume messages from the cluster topic via Hazelcast");
@@ -129,11 +124,9 @@ public class MarketDataPublisher {
             return;
         }
 
-        // Initialize buffer only if in AERON mode
         this.buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_SIZE));
 
         try {
-            // Wait for AeronSubscriberBean to be ready (both observers fire at roughly same time)
             LOGGER.info("Waiting for AeronSubscriberBean to be ready...");
             int waitAttempts = 0;
             while (!subscriberBean.isReady() && waitAttempts < 60) {
@@ -199,15 +192,13 @@ public class MarketDataPublisher {
             LOGGER.info("Market data publisher task started - burst pattern: 1,500 messages per 5μs (rate limited by Aeron backpressure)");
 
             final int BASE_BURST_SIZE = 500;
-            final long PARK_NANOS = 5_000; // 5 microseconds base rate
+            final long PARK_NANOS = 5_000;
 
             while (running && !Thread.currentThread().isInterrupted()) {
                 try {
-                    // Apply burst multiplier for realistic market spikes
                     int burstMultiplier = getBurstMultiplier();
                     int adjustedBurstSize = BASE_BURST_SIZE * burstMultiplier;
 
-                    // Log burst transitions
                     if (burstMultiplier > 1) {
                         long secondOfMinute = (System.currentTimeMillis() / 1000) % 60;
                         if (secondOfMinute == 20 || secondOfMinute == 45) {
@@ -229,7 +220,6 @@ public class MarketDataPublisher {
 
                 } catch (Throwable e) {
                     LOGGER.log(Level.SEVERE, "Critical error in publisher loop", e);
-                    // Brief pause on error, then continue
                     LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                 }
             }
@@ -282,17 +272,31 @@ public class MarketDataPublisher {
         long secondOfMinute = (System.currentTimeMillis() / 1000) % 60;
 
         if (secondOfMinute >= 20 && secondOfMinute < 25) {
-            return 5; // News event - 5x burst
+            MarketDataEvents.BurstModeActivated event = new MarketDataEvents.BurstModeActivated();
+            if (event.isEnabled()) {
+                event.multiplier = 5;
+                event.reason = "News Event";
+                event.secondOfMinute = secondOfMinute;
+                event.commit();
+            }
+            return 5;
         } else if (secondOfMinute >= 45 && secondOfMinute < 50) {
-            return 3; // Market close - 3x spike
+            MarketDataEvents.BurstModeActivated event = new MarketDataEvents.BurstModeActivated();
+            if (event.isEnabled()) {
+                event.multiplier = 3;
+                event.reason = "Market Close";
+                event.secondOfMinute = secondOfMinute;
+                event.commit();
+            }
+            return 3;
         }
 
-        return 1; // Normal
+        return 1;
     }
 
     /** Publish a Trade message */
     private void publishTrade() {
-        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current(); // Use ThreadLocalRandom
+        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
         if (isDirectMode) {
             final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
             final double price = 100.0 + currentRandom.nextDouble() * 400.0;
@@ -301,21 +305,30 @@ public class MarketDataPublisher {
 
             String json = String.format("{\"type\":\"trade\",\"timestamp\":%d,\"tradeId\":%d,\"symbol\":\"%s\",\"price\":%.4f,\"quantity\":%d,\"side\":\"%s\"}",
                             System.currentTimeMillis(), tradeIdGenerator.incrementAndGet(), symbol, price, quantity, side);
+
+            MarketDataEvents.TradePublished tradeEvent = new MarketDataEvents.TradePublished();
+            if (tradeEvent.isEnabled()) {
+                tradeEvent.symbol = symbol;
+                tradeEvent.price = (long) (price * 10000);
+                tradeEvent.quantity = quantity;
+                tradeEvent.side = side;
+                tradeEvent.commit();
+            }
+
             if (++sampleCounter % SAMPLE_RATE == 0) {
                 broadcaster.broadcastWithArtificialLoad(json);
             }
             messagesPublished.incrementAndGet();
-            // Increment cluster-wide counter
             if (clusterMessageCounter != null) {
                 try {
                     clusterMessageCounter.incrementAndGet();
                 } catch (Exception e) {
-                    // Ignore cluster counter errors, not critical
                 }
             }
             return;
         }
 
+        long encodeStart = System.nanoTime();
         int bufferOffset = 0;
         final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
 
@@ -327,16 +340,29 @@ public class MarketDataPublisher {
 
         bufferOffset += headerEncoder.encodedLength();
 
+        final long encodedPrice = (long) ((100.0 + currentRandom.nextDouble() * 400.0) * 10000);
+        final int encodedQuantity = currentRandom.nextInt(1000) + 100;
+        final Side encodedSide = currentRandom.nextBoolean() ? Side.BUY : Side.SELL;
+
         tradeEncoder.wrap(buffer, bufferOffset)
                         .timestamp(System.currentTimeMillis())
                         .tradeId(tradeIdGenerator.incrementAndGet())
-                        .price((long) ((100.0 + currentRandom.nextDouble() * 400.0) * 10000)) // $100-$500
-                        .quantity(currentRandom.nextInt(1000) + 100)
-                        .side(currentRandom.nextBoolean() ? Side.BUY : Side.SELL)
+                        .price(encodedPrice)
+                        .quantity(encodedQuantity)
+                        .side(encodedSide)
                         .symbol(symbol);
 
         final int length = headerEncoder.encodedLength() + tradeEncoder.encodedLength();
-        offer(buffer, 0, length, "Trade");
+
+        MarketDataEvents.SbeEncode encodeEvent = new MarketDataEvents.SbeEncode();
+        if (encodeEvent.isEnabled()) {
+            encodeEvent.messageType = "Trade";
+            encodeEvent.encodedBytes = length;
+            encodeEvent.encodeTimeNanos = System.nanoTime() - encodeStart;
+            encodeEvent.commit();
+        }
+
+        offer(buffer, 0, length, "Trade", symbol, encodedPrice, encodedQuantity, encodedSide.name());
     }
 
     /** Publish a Quote message */
@@ -350,6 +376,16 @@ public class MarketDataPublisher {
             final int bidSize = currentRandom.nextInt(10000) + 100;
             final int askSize = currentRandom.nextInt(10000) + 100;
 
+            MarketDataEvents.QuotePublished quoteEvent = new MarketDataEvents.QuotePublished();
+            if (quoteEvent.isEnabled()) {
+                quoteEvent.symbol = symbol;
+                quoteEvent.bidPrice = (long) (bidPrice * 10000);
+                quoteEvent.askPrice = (long) (askPrice * 10000);
+                quoteEvent.bidSize = bidSize;
+                quoteEvent.askSize = askSize;
+                quoteEvent.commit();
+            }
+
             String json = String.format(
                             "{\"type\":\"quote\",\"timestamp\":%d,\"symbol\":\"%s\",\"bid\":{\"price\":%.4f,\"size\":%d},\"ask\":{\"price\":%.4f,\"size\":%d}}",
                             System.currentTimeMillis(), symbol, bidPrice, bidSize, askPrice, askSize);
@@ -357,17 +393,16 @@ public class MarketDataPublisher {
                 broadcaster.broadcastWithArtificialLoad(json);
             }
             messagesPublished.incrementAndGet();
-            // Increment cluster-wide counter
             if (clusterMessageCounter != null) {
                 try {
                     clusterMessageCounter.incrementAndGet();
                 } catch (Exception e) {
-                    // Ignore cluster counter errors, not critical
                 }
             }
             return;
         }
 
+        long encodeStart = System.nanoTime();
         int bufferOffset = 0;
         final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
         final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
@@ -380,16 +415,40 @@ public class MarketDataPublisher {
 
         bufferOffset += headerEncoder.encodedLength();
 
+        final long bidPrice = (long) ((basePrice - 0.01) * 10000);
+        final long askPrice = (long) ((basePrice + 0.01) * 10000);
+        final int bidSize = currentRandom.nextInt(10000) + 100;
+        final int askSize = currentRandom.nextInt(10000) + 100;
+
         quoteEncoder.wrap(buffer, bufferOffset)
                         .timestamp(System.currentTimeMillis())
-                        .bidPrice((long) ((basePrice - 0.01) * 10000))
-                        .bidSize(currentRandom.nextInt(10000) + 100)
-                        .askPrice((long) ((basePrice + 0.01) * 10000))
-                        .askSize(currentRandom.nextInt(10000) + 100)
+                        .bidPrice(bidPrice)
+                        .bidSize(bidSize)
+                        .askPrice(askPrice)
+                        .askSize(askSize)
                         .symbol(symbol);
 
         final int length = headerEncoder.encodedLength() + quoteEncoder.encodedLength();
+
+        MarketDataEvents.SbeEncode encodeEvent = new MarketDataEvents.SbeEncode();
+        if (encodeEvent.isEnabled()) {
+            encodeEvent.messageType = "Quote";
+            encodeEvent.encodedBytes = length;
+            encodeEvent.encodeTimeNanos = System.nanoTime() - encodeStart;
+            encodeEvent.commit();
+        }
+
         offer(buffer, 0, length, "Quote");
+
+        MarketDataEvents.QuotePublished quoteEvent = new MarketDataEvents.QuotePublished();
+        if (quoteEvent.isEnabled()) {
+            quoteEvent.symbol = symbol;
+            quoteEvent.bidPrice = bidPrice;
+            quoteEvent.askPrice = askPrice;
+            quoteEvent.bidSize = bidSize;
+            quoteEvent.askSize = askSize;
+            quoteEvent.commit();
+        }
     }
 
     /** Publish a MarketDepth message */
@@ -400,6 +459,14 @@ public class MarketDataPublisher {
             final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
             final long timestamp = System.currentTimeMillis();
             final long seq = sequenceNumber.incrementAndGet();
+
+            MarketDataEvents.MarketDepthPublished depthEvent = new MarketDataEvents.MarketDepthPublished();
+            if (depthEvent.isEnabled()) {
+                depthEvent.symbol = symbol;
+                depthEvent.depthLevels = 5;
+                depthEvent.sequenceNumber = seq;
+                depthEvent.commit();
+            }
 
             StringBuilder bidsJson = new StringBuilder("[");
             for (int i = 0; i < 5; i++) {
@@ -423,12 +490,10 @@ public class MarketDataPublisher {
                 broadcaster.broadcastWithArtificialLoad(json);
             }
             messagesPublished.incrementAndGet();
-            // Increment cluster-wide counter
             if (clusterMessageCounter != null) {
                 try {
                     clusterMessageCounter.incrementAndGet();
                 } catch (Exception e) {
-                    // Ignore cluster counter errors, not critical
                 }
             }
             return;
@@ -467,8 +532,6 @@ public class MarketDataPublisher {
     /** Publish a Heartbeat message */
     private void publishHeartbeat() {
         if (isDirectMode) {
-            // In DIRECT mode, we just increment counter but don't broadcast heartbeats to UI
-            // as they are mainly for system health checks in the Aeron log
             messagesPublished.incrementAndGet();
             return;
         }
@@ -499,7 +562,6 @@ public class MarketDataPublisher {
 
             if (result > 0) {
                 messagesPublished.incrementAndGet();
-                // Increment cluster-wide counter
                 if (clusterMessageCounter != null) {
                     try {
                         clusterMessageCounter.incrementAndGet();
@@ -509,13 +571,22 @@ public class MarketDataPublisher {
                 consecutiveFailures.set(0);
                 return;
             } else if (result == Publication.BACK_PRESSURED) {
+                MarketDataEvents.BackpressureEvent bpEvent = new MarketDataEvents.BackpressureEvent();
+                if (bpEvent.isEnabled()) {
+                    bpEvent.messageType = messageType;
+                    bpEvent.consecutiveFailures = consecutiveFailures.get() + 1;
+                    bpEvent.result = "BACK_PRESSURED";
+                    bpEvent.commit();
+                }
                 continue;
             } else if (result == Publication.NOT_CONNECTED) {
                 logWarningRateLimited("Publication not connected");
+                emitBackpressureEvent(messageType, result);
                 handlePublishFailure(messageType);
                 return;
             } else {
                 logWarningRateLimited("Offer failed for " + messageType + ": " + result);
+                emitBackpressureEvent(messageType, result);
                 handlePublishFailure(messageType);
                 return;
             }
@@ -523,6 +594,64 @@ public class MarketDataPublisher {
 
         logWarningRateLimited("Failed to publish " + messageType + " after retries");
         handlePublishFailure(messageType);
+    }
+
+    /** Offer Trade message with JFR event emission */
+    private void offer(UnsafeBuffer buffer, int offset, int length, String messageType, String symbol, long price, int quantity, String side) {
+        long result;
+        int retries = 3;
+
+        while (retries > 0) {
+            result = publication.offer(buffer, offset, length);
+
+            if (result > 0) {
+                messagesPublished.incrementAndGet();
+                if (clusterMessageCounter != null) {
+                    try {
+                        clusterMessageCounter.incrementAndGet();
+                    } catch (Exception e) {
+                    }
+                }
+                consecutiveFailures.set(0);
+
+                MarketDataEvents.TradePublished event = new MarketDataEvents.TradePublished();
+                if (event.isEnabled()) {
+                    event.symbol = symbol;
+                    event.price = price;
+                    event.quantity = quantity;
+                    event.side = side;
+                    event.commit();
+                }
+                return;
+            } else if (result == Publication.BACK_PRESSURED) {
+                emitBackpressureEvent("Trade", result);
+                continue;
+            } else if (result == Publication.NOT_CONNECTED) {
+                logWarningRateLimited("Publication not connected");
+                emitBackpressureEvent("Trade", result);
+                handlePublishFailure("Trade");
+                return;
+            } else {
+                logWarningRateLimited("Offer failed for Trade: " + result);
+                emitBackpressureEvent("Trade", result);
+                handlePublishFailure("Trade");
+                return;
+            }
+        }
+
+        logWarningRateLimited("Failed to publish Trade after retries");
+        handlePublishFailure("Trade");
+    }
+
+    private void emitBackpressureEvent(String messageType, long resultCode) {
+        MarketDataEvents.BackpressureEvent event = new MarketDataEvents.BackpressureEvent();
+        if (event.isEnabled()) {
+            event.messageType = messageType;
+            event.consecutiveFailures = consecutiveFailures.get() + 1;
+            event.result = resultCode == Publication.BACK_PRESSURED ? "BACK_PRESSURED"
+                            : resultCode == Publication.NOT_CONNECTED ? "NOT_CONNECTED" : String.valueOf(resultCode);
+            event.commit();
+        }
     }
 
     private void logWarningRateLimited(String message) {
@@ -556,7 +685,6 @@ public class MarketDataPublisher {
             statsFuture.cancel(true);
         }
 
-        // Let threads notice the running flag before tearing down Aeron resources
         try {
             Thread.sleep(100);
         } catch (InterruptedException e) {
