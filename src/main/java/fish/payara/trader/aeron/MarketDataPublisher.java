@@ -1,6 +1,7 @@
 package fish.payara.trader.aeron;
 
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.cp.IAtomicLong;
 import fish.payara.trader.concurrency.VirtualThreadExecutor;
 import fish.payara.trader.sbe.*;
@@ -138,10 +139,11 @@ public class MarketDataPublisher {
             while (!subscriberBean.isReady() && waitAttempts < 60) {
                 Thread.sleep(500);
                 waitAttempts++;
+                LOGGER.info("Waiting for AeronSubscriberBean to be ready... " + waitAttempts + " wait count");
             }
 
             if (!subscriberBean.isReady()) {
-                LOGGER.severe("AeronSubscriberBean did not become ready in time");
+                LOGGER.severe("AeronSubscriberBean did not become ready in time after " + waitAttempts + " wait count");
                 return;
             }
 
@@ -176,11 +178,25 @@ public class MarketDataPublisher {
         }
     }
 
-    /** Start background thread to continuously publish market data at high throughput */
+    /**
+     * Start background thread to continuously publish market data at high throughput.
+     *
+     * <p>
+     * <b>Burst Pattern:</b> Each burst publishes 1,500 messages (500 iterations of Trade + Quote + MarketDepth), followed by a 5μs park. This yields a
+     * theoretical upper limit of ~300M messages/sec, but actual throughput is limited by Aeron backpressure and SBE encoding overhead.
+     *
+     * <p>
+     * <b>Message Counting:</b> In AERON mode, messages are counted AFTER successful publication via {@code offer()} (i.e., "delivered" count). In DIRECT mode,
+     * messages are counted immediately upon generation (i.e., "attempted" count).
+     *
+     * <p>
+     * <b>Burst Multiplier:</b> Time-based multiplier simulates market events: 1x normal, 5x during news events (seconds 20-25 of each minute), 3x during market
+     * close (seconds 45-50).
+     */
     private void startPublishing() {
         running = true;
         publisherFuture = managedExecutorService.submit(() -> {
-            LOGGER.info("Market data publisher task started - targeting 50k-100k messages/sec with burst patterns");
+            LOGGER.info("Market data publisher task started - burst pattern: 1,500 messages per 5μs (rate limited by Aeron backpressure)");
 
             final int BASE_BURST_SIZE = 500;
             final long PARK_NANOS = 5_000; // 5 microseconds base rate
@@ -276,8 +292,8 @@ public class MarketDataPublisher {
 
     /** Publish a Trade message */
     private void publishTrade() {
+        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current(); // Use ThreadLocalRandom
         if (isDirectMode) {
-            final ThreadLocalRandom currentRandom = ThreadLocalRandom.current(); // Use ThreadLocalRandom
             final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
             final double price = 100.0 + currentRandom.nextDouble() * 400.0;
             final int quantity = currentRandom.nextInt(1000) + 100;
@@ -301,7 +317,6 @@ public class MarketDataPublisher {
         }
 
         int bufferOffset = 0;
-        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
         final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
 
         headerEncoder.wrap(buffer, bufferOffset)
@@ -326,8 +341,8 @@ public class MarketDataPublisher {
 
     /** Publish a Quote message */
     private void publishQuote() {
+        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
         if (isDirectMode) {
-            final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
             final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
             final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
             final double bidPrice = basePrice - 0.01;
@@ -354,7 +369,6 @@ public class MarketDataPublisher {
         }
 
         int bufferOffset = 0;
-        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
         final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
         final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
 
@@ -380,8 +394,8 @@ public class MarketDataPublisher {
 
     /** Publish a MarketDepth message */
     private void publishMarketDepth() {
+        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
         if (isDirectMode) {
-            final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
             final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
             final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
             final long timestamp = System.currentTimeMillis();
@@ -421,7 +435,6 @@ public class MarketDataPublisher {
         }
 
         int bufferOffset = 0;
-        final ThreadLocalRandom currentRandom = ThreadLocalRandom.current();
         final String symbol = SYMBOLS[currentRandom.nextInt(SYMBOLS.length)];
         final double basePrice = 100.0 + currentRandom.nextDouble() * 400.0;
 
@@ -491,7 +504,6 @@ public class MarketDataPublisher {
                     try {
                         clusterMessageCounter.incrementAndGet();
                     } catch (Exception e) {
-                        // Ignore cluster counter errors, not critical
                     }
                 }
                 consecutiveFailures.set(0);
@@ -544,6 +556,13 @@ public class MarketDataPublisher {
             statsFuture.cancel(true);
         }
 
+        // Let threads notice the running flag before tearing down Aeron resources
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         if (publication != null) {
             publication.close();
         }
@@ -562,6 +581,8 @@ public class MarketDataPublisher {
         if (clusterMessageCounter != null) {
             try {
                 return clusterMessageCounter.get();
+            } catch (HazelcastInstanceNotActiveException e) {
+                LOGGER.log(Level.FINE, "Cluster message counter unavailable (Hazelcast shutting down)");
             } catch (Exception e) {
                 LOGGER.log(Level.WARNING, "Failed to read cluster message counter", e);
             }
