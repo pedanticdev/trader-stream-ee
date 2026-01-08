@@ -49,6 +49,12 @@ EXPOSE 8080
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
     -XX:+UseG1GC \
+    -XX:G1HeapRegionSize=16m \
+    -XX:MaxGCPauseMillis=10 \
+    -XX:InitiatingHeapOccupancyPercent=40 \
+    -XX:ParallelGCThreads=12 \
+    -XX:ConcGCThreads=4 \
+    -XX:-ExplicitGCInvokesConcurrent \
     -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \
     -XX:+AlwaysPreTouch \
     -XX:+UseTransparentHugePages \

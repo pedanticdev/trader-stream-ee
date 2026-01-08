@@ -3,6 +3,7 @@ package fish.payara.trader.rest;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.DefaultValue;
@@ -14,11 +15,10 @@ import jdk.jfr.RecordingState;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * <p>
  * Requires JDK Flight Recorder to be enabled (included with Azul Platform Prime and Oracle JDK).
  */
-@Path("/api/jfr")
+@Path("/jfr")
 public class JfrRecordingResource {
 
     private static final Logger LOGGER = Logger.getLogger(JfrRecordingResource.class.getName());
@@ -90,35 +90,33 @@ public class JfrRecordingResource {
 
         Map<String, String> options = new HashMap<>();
         options.put("name", name);
-        final long recordingId;
-        try (Recording recording = new Recording(options)) {
 
-            recording.setMaxSize(maxSizeBytes);
-            recording.setMaxAge(Duration.ofSeconds(durationSeconds));
+        Recording recording = new Recording(options);
+        recording.setMaxSize(maxSizeBytes);
+        recording.setMaxAge(Duration.ofSeconds(durationSeconds));
 
-            recording.enable("jdk.CPUInformation");
-            recording.enable("jdk.GCPhaseParallel");
-            recording.enable("jdk.ObjectAllocationInNewTLAB");
-            recording.enable("jdk.ObjectAllocationOutsideTLAB");
-            recording.enable("jdk.VirtualThreadStart");
-            recording.enable("jdk.VirtualThreadEnd");
-            recording.enable("jdk.ExecutionSample").with("period", "10 ms");
+        recording.enable("jdk.CPUInformation");
+        recording.enable("jdk.GCPhaseParallel");
+        recording.enable("jdk.ObjectAllocationInNewTLAB");
+        recording.enable("jdk.ObjectAllocationOutsideTLAB");
+        recording.enable("jdk.VirtualThreadStart");
+        recording.enable("jdk.VirtualThreadEnd");
+        recording.enable("jdk.ExecutionSample").with("period", "10 ms");
 
-            recording.enable("trade.published");
-            recording.enable("quote.published");
-            recording.enable("marketdepth.published");
-            recording.enable("message.batch.processed");
-            recording.enable("websocket.broadcast");
-            recording.enable("sbe.encode");
-            recording.enable("sbe.decode");
-            recording.enable("gc.sla.violation");
-            recording.enable("aeron.backpressure");
-            recording.enable("burst.mode.activated");
+        recording.enable("trade.published");
+        recording.enable("quote.published");
+        recording.enable("marketdepth.published");
+        recording.enable("message.batch.processed");
+        recording.enable("websocket.broadcast");
+        recording.enable("sbe.encode");
+        recording.enable("sbe.decode");
+        recording.enable("gc.sla.violation");
+        recording.enable("aeron.backpressure");
+        recording.enable("burst.mode.activated");
 
-            recording.start();
+        recording.start();
 
-            recordingId = recording.getId();
-        }
+        final long recordingId = recording.getId();
         CompletableFuture.runAsync(() -> {
             try {
                 Thread.sleep(durationSeconds * 1000L);
@@ -198,6 +196,90 @@ public class JfrRecordingResource {
         stats.put("activeRecordings", activeCount);
 
         return Response.ok(stats).build();
+    }
+
+    /** List all .jfr files available for download */
+    @GET
+    @Path("/files")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response listFiles() {
+        try {
+            if (!Files.exists(RECORDINGS_DIR)) {
+                return Response.ok(Map.of("files", List.of(), "message", "Recordings directory does not exist")).build();
+            }
+
+            List<Map<String, Object>> files = Files.list(RECORDINGS_DIR).filter(p -> p.toString().endsWith(".jfr")).map(p -> {
+                try {
+                    BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
+                    Map<String, Object> file = new HashMap<>();
+                    file.put("filename", p.getFileName().toString());
+                    file.put("size", attrs.size());
+                    file.put("sizeFormatted", formatBytes(attrs.size()));
+                    file.put("lastModified", attrs.lastModifiedTime().toMillis());
+                    file.put("lastModifiedFormatted", Instant.ofEpochMilli(attrs.lastModifiedTime().toMillis()).toString());
+                    file.put("downloadUrl", "/api/jfr/download/" + p.getFileName().toString());
+                    return file;
+                } catch (IOException e) {
+                    LOGGER.log(Level.WARNING, "Failed to read attributes for: " + p, e);
+                    return null;
+                }
+            }).filter(Objects::nonNull).toList();
+
+            return Response.ok(Map.of("files", files, "count", files.size())).build();
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to list recording files", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(Map.of("error", "Failed to list files", "message", e.getMessage())).build();
+        }
+    }
+
+    /** Download a specific JFR file */
+    @GET
+    @Path("/download/{filename}")
+    public Response downloadFile(@PathParam("filename") String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", "Filename is required")).type(MediaType.APPLICATION_JSON).build();
+        }
+
+        java.nio.file.Path filePath = RECORDINGS_DIR.resolve(filename);
+
+        if (!Files.exists(filePath)) {
+            return Response.status(Response.Status.NOT_FOUND)
+                            .entity(Map.of("error", "File not found", "filename", filename))
+                            .type(MediaType.APPLICATION_JSON)
+                            .build();
+        }
+
+        if (!filename.endsWith(".jfr")) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", "Only .jfr files are allowed")).type(MediaType.APPLICATION_JSON).build();
+        }
+
+        try {
+            byte[] fileContent = Files.readAllBytes(filePath);
+            String contentDisposition = "attachment; filename=\"" + filename + "\"";
+
+            return Response.ok(fileContent)
+                            .type("application/octet-stream")
+                            .header("Content-Disposition", contentDisposition)
+                            .header("Content-Length", fileContent.length)
+                            .build();
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to read file: " + filename, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                            .entity(Map.of("error", "Failed to read file", "message", e.getMessage()))
+                            .type(MediaType.APPLICATION_JSON)
+                            .build();
+        }
+    }
+
+    /** Format bytes to human-readable size */
+    private String formatBytes(long bytes) {
+        if (bytes < 1024)
+            return bytes + " B";
+        if (bytes < 1024 * 1024)
+            return String.format("%.2f KB", bytes / 1024.0);
+        if (bytes < 1024 * 1024 * 1024)
+            return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
+        return String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
     }
 
     /** Dump a recording to disk */

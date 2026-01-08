@@ -61,7 +61,6 @@ public class MarketDataPublisher {
     private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
     private static final int MAX_CONSECUTIVE_FAILURES = 50;
     private long sampleCounter = 0;
-    private volatile boolean initialized = false;
     private volatile boolean running = false;
     private boolean isDirectMode;
     private long lastWarningLogTime = 0;
@@ -117,7 +116,6 @@ public class MarketDataPublisher {
 
         if ("DIRECT".equalsIgnoreCase(ingestionMode)) {
             LOGGER.info("Running in DIRECT mode - Bypassing Aeron/SBE setup.");
-            initialized = true;
             isDirectMode = true;
 
             startPublishing();
@@ -159,7 +157,6 @@ public class MarketDataPublisher {
 
             if (publication.isConnected()) {
                 LOGGER.info("Market Data Publisher initialized successfully");
-                initialized = true;
 
                 startPublishing();
             } else {
@@ -555,9 +552,8 @@ public class MarketDataPublisher {
     /** Offer buffer to Aeron publication with retry logic */
     private void offer(UnsafeBuffer buffer, int offset, int length, String messageType) {
         long result;
-        int retries = 3;
 
-        while (retries > 0) {
+        for (int retries = 3; retries > 0; retries--) {
             result = publication.offer(buffer, offset, length);
 
             if (result > 0) {
@@ -578,7 +574,9 @@ public class MarketDataPublisher {
                     bpEvent.result = "BACK_PRESSURED";
                     bpEvent.commit();
                 }
-                continue;
+                if (retries > 1) {
+                    continue;
+                }
             } else if (result == Publication.NOT_CONNECTED) {
                 logWarningRateLimited("Publication not connected");
                 emitBackpressureEvent(messageType, result);
@@ -599,9 +597,8 @@ public class MarketDataPublisher {
     /** Offer Trade message with JFR event emission */
     private void offer(UnsafeBuffer buffer, int offset, int length, String messageType, String symbol, long price, int quantity, String side) {
         long result;
-        int retries = 3;
 
-        while (retries > 0) {
+        for (int retries = 3; retries > 0; retries--) {
             result = publication.offer(buffer, offset, length);
 
             if (result > 0) {
@@ -625,7 +622,9 @@ public class MarketDataPublisher {
                 return;
             } else if (result == Publication.BACK_PRESSURED) {
                 emitBackpressureEvent("Trade", result);
-                continue;
+                if (retries > 1) {
+                    continue;
+                }
             } else if (result == Publication.NOT_CONNECTED) {
                 logWarningRateLimited("Publication not connected");
                 emitBackpressureEvent("Trade", result);

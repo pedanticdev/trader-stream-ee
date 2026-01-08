@@ -2,23 +2,50 @@
 
 set -e
 
-MODE="${1:-}"
+ARGS=("$@")
+MONITORING=false
+INGESTION_MODE="AERON"
 
-# Show help
-if [ "$MODE" = "--help" ] || [ "$MODE" = "-h" ]; then
-    echo "Usage: ./start-comparison.sh [all]"
-    echo ""
-    echo "  (no args)  - Start C4 and G1 application clusters only"
-    echo "  all        - Start full stack including Prometheus/Grafana/Loki monitoring"
-    echo "  --help     - Show this help message"
-    echo ""
-    exit 0
-fi
+for arg in "${ARGS[@]}"; do
+    case $arg in
+        all)
+            MONITORING=true
+            ;;
+        aeron|AERON)
+            INGESTION_MODE="AERON"
+            ;;
+        direct|DIRECT)
+            INGESTION_MODE="DIRECT"
+            ;;
+        --help|-h)
+            echo "Usage: ./start-comparison.sh [all] [aeron|direct]"
+            echo ""
+            echo "  (no args)  - Start C4 and G1 clusters in AERON mode (apps only)"
+            echo "  all        - Include full monitoring stack (Prometheus/Grafana/Loki)"
+            echo "  aeron      - Use AERON ingestion mode (default, optimized)"
+            echo "  direct     - Use DIRECT ingestion mode (GC stress test)"
+            echo ""
+            echo "Examples:"
+            echo "  ./start-comparison.sh           # AERON mode, apps only"
+            echo "  ./start-comparison.sh all       # AERON mode, with monitoring"
+            echo "  ./start-comparison.sh direct    # DIRECT mode, apps only"
+            echo "  ./start-comparison.sh all direct # DIRECT mode, with monitoring"
+            echo ""
+            exit 0
+            ;;
+    esac
+done
+
+export TRADER_INGESTION_MODE="$INGESTION_MODE"
 
 echo "================================================ட்டான்"
 echo "  TradeStreamEE - JVM Performance Comparison"
 echo "  C4 vs G1GC Side-by-Side Demo"
 echo "================================================ட்டான்"
+echo ""
+echo "Configuration:"
+echo "  Ingestion Mode: $INGESTION_MODE"
+echo "  Monitoring:     $([ "$MONITORING" = true ] && echo "enabled" || echo "disabled")"
 echo ""
 
 # Check if Docker is installed
@@ -51,7 +78,7 @@ echo ""
 # Create base monitoring directory structure for logs
 mkdir -p monitoring/logs/{c4-{1,2,3},g1-{1,2,3}}
 
-if [ "$MODE" = "all" ]; then
+if [ "$MONITORING" = true ]; then
     echo "Mode: Full deployment with monitoring stack"
     # Create full monitoring directory structure
     mkdir -p monitoring/{prometheus,grafana/{provisioning/{datasources,dashboards},dashboards},loki,promtail}
@@ -81,7 +108,7 @@ docker build -t trader-stream-ee:c4 -f Dockerfile.scale .
 docker build -t trader-stream-ee:g1 -f Dockerfile.scale.standard .
 echo "✓ Images built"
 
-if [ "$MODE" = "all" ]; then
+if [ "$MONITORING" = true ]; then
     # Start monitoring stack
     echo "Starting monitoring stack (Prometheus, Grafana, Loki)..."
     run_compose -f docker-compose-monitoring.yml up -d
@@ -126,7 +153,7 @@ echo "  C4 Cluster:     http://localhost:8080/trader-stream-ee/"
 echo "  G1 Cluster:     http://localhost:9080/trader-stream-ee/"
 echo ""
 
-if [ "$MODE" = "all" ]; then
+if [ "$MONITORING" = true ]; then
     echo "Monitoring:"
     echo "  Prometheus:     http://localhost:9090"
     echo "  Grafana:        http://localhost:3000 (admin/admin)"
@@ -137,6 +164,8 @@ fi
 echo "Load Balancers:"
 echo "  Traefik C4:     http://localhost:8084"
 echo "  Traefik G1:     http://localhost:9084"
+echo ""
+echo "Ingestion Mode: $INGESTION_MODE"
 echo ""
 echo "To apply stress test:"
 echo "  curl -X POST http://localhost:8080/trader-stream-ee/api/memory/mode/EXTREME"

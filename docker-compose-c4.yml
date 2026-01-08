@@ -43,7 +43,7 @@ services:
       - "5701"
     shm_size: 512m
     environment:
-      - TRADER_INGESTION_MODE=AERON
+      - TRADER_INGESTION_MODE=${TRADER_INGESTION_MODE:-AERON}
       - PAYARA_INSTANCE_NAME=c4-instance-1
       - HAZELCAST_MEMBER_NAME=trader-stream-c4-1
       - ENABLE_PUBLISHER=true
@@ -83,7 +83,7 @@ services:
       - "5701"
     shm_size: 512m
     environment:
-      - TRADER_INGESTION_MODE=AERON
+      - TRADER_INGESTION_MODE=${TRADER_INGESTION_MODE:-AERON}
       - PAYARA_INSTANCE_NAME=c4-instance-2
       - HAZELCAST_MEMBER_NAME=trader-stream-c4-2
       - ENABLE_PUBLISHER=true
@@ -122,7 +122,7 @@ services:
       - "5701"
     shm_size: 512m
     environment:
-      - TRADER_INGESTION_MODE=AERON
+      - TRADER_INGESTION_MODE=${TRADER_INGESTION_MODE:-AERON}
       - PAYARA_INSTANCE_NAME=c4-instance-3
       - HAZELCAST_MEMBER_NAME=trader-stream-c4-3
       - ENABLE_PUBLISHER=true

@@ -347,6 +347,165 @@ Scenario Details:
 | FRAGMENTATION   | 200 MB/s | 1 GB fragmented        | Tests compaction with small objects       |
 | CROSS_GEN_REFS  | 150 MB/s | 800 MB old gen         | Tests remembered set scanning overhead    |
 
+### Java Flight Recorder (JFR)
+
+TradeStreamEE includes Java Flight Recorder integration for deep performance analysis and production profiling.
+JFR provides low-overhead continuous monitoring with the ability to capture detailed event traces for post-mortem analysis.
+
+#### Custom JFR Events
+
+The application defines domain-specific JFR events that correlate application behavior with JVM performance:
+
+| Event Name                | Description                                | Use Case                                  |
+|:--------------------------|:-------------------------------------------|:------------------------------------------|
+| `trade.published`         | Trade execution published to Aeron         | Measure publishing throughput and timing  |
+| `quote.published`         | Quote (bid/ask) published                  | Monitor quote rate per symbol             |
+| `marketdepth.published`   | Level 2 order book depth update            | Track L2 data frequency                   |
+| `sbe.encode`              | SBE binary encoding operation              | Analyze serialization latency             |
+| `sbe.decode`              | SBE binary decoding operation              | Measure deserialization overhead          |
+| `aeron.backpressure`      | Aeron publication backpressure detected    | Identify flow control issues              |
+| `burst.mode.activated`    | Burst mode triggered (1x/3x/5x multiplier) | Correlate burst patterns with GC behavior |
+| `gc.sla.violation`        | GC pause exceeded 10ms SLA threshold       | Track latency SLA breaches                |
+| `websocket.broadcast`     | Message broadcast to WebSocket clients     | Monitor frontend delivery rate            |
+| `message.batch.processed` | Batch of market messages processed         | Observe batch processing timing           |
+
+These events appear in JFR alongside standard JVM events (GC, allocation, CPU), enabling correlation between domain metrics (message rates, encoding latency) and runtime behavior (GC pauses, heap usage).
+
+#### JFR Configuration
+
+JFR is enabled by default in all Docker images with two recording modes:
+
+**Default Recording (Continuous)**
+- Runs from JVM startup
+- Circular buffer: 1 hour max age, 1GB max size
+- Dumps to disk on JVM exit (`dumponexit=true`)
+- Location: `/opt/payara/recordings/recording.jfr`
+- Purpose: Post-mortem analysis if JVM crashes or exits
+
+**Ad-hoc Snapshots (On-Demand)**
+- Started via web UI or REST API
+- Time-bounded captures (default: 60 seconds)
+- Dump immediately after capture window
+- Purpose: Capture specific test scenarios (stress tests, benchmark runs)
+
+#### JFR Web UI
+
+The web dashboard includes a JFR management interface accessible via the **JFR** button in the header:
+
+1. **List Recordings**: View all available `.jfr` files with size and timestamp
+2. **Download**: Click to download recordings for local analysis in JDK Mission Control
+3. **Capture Snapshot**: Start a new 60-second recording capture
+
+Example workflow:
+
+```bash
+# 1. Navigate to http://localhost:8080/trader-stream-ee/
+# 2. Click "JFR" button in header
+# 3. Click "Capture 60s Snapshot"
+# 4. Wait 60 seconds (or run a stress test scenario)
+# 5. Click "Download" on the new recording
+# 6. Open in JDK Mission Control for analysis
+```
+
+#### JFR REST API
+
+Programmatic control via REST endpoints:
+
+```bash
+# Check JFR availability and status
+curl http://localhost:8080/api/jfr/status
+
+# List all recordings (active and stopped)
+curl http://localhost:8080/api/jfr/recordings
+
+# List available .jfr files for download
+curl http://localhost:8080/api/jfr/files
+
+# Start a time-bounded recording
+curl -X POST "http://localhost:8080/api/jfr/recording/start?name=gc-stress&durationSeconds=120"
+
+# Stop a recording early
+curl -X POST "http://localhost:8080/api/jfr/recording/stop?id={recordingId}"
+
+# Download a specific recording
+curl -O http://localhost:8080/api/jfr/download/{filename}.jfr
+```
+
+#### Analyzing Recordings
+
+**Using JDK Mission Control (JMC)**
+
+```bash
+# Download from container
+docker cp trader-stream-c4-1:/opt/payara/recordings/{filename}.jfr ./analysis.jfr
+
+# Open in JMC
+jmc analysis.jfr
+```
+
+Key JMC views for HFT analysis:
+- **Automatic Analysis** (⚡): Flags GC pauses, allocation hotspots, thread contention
+- **Timeline**: Visualize event occurrence over time (zoom into GC pauses)
+- **Memory → GC Graph**: Correlate heap usage with pause times
+- **Event Browser**: Filter custom events (`trade.published`, `aeron.backpressure`)
+- **Code → Hot Methods**: Identify CPU bottlenecks in ingestion path
+
+**Using CLI (jfr command)**
+
+```bash
+# Summary statistics
+docker exec trader-stream-c4-1 jfr summary /opt/payara/recordings/{filename}.jfr
+
+# Print specific events
+docker exec trader-stream-c4-1 jfr print --events trade.published /opt/payara/recordings/{filename}.jfr
+
+# View metadata (event types)
+docker exec trader-stream-c4-1 jfr metadata /opt/payara/recordings/{filename}.jfr
+```
+
+#### Analysis Use Cases
+
+**GC Latency Investigation**
+1. Capture snapshot during stress test scenario
+2. Open in JMC → Timeline view
+3. Zoom into GC pause lanes
+4. Check if `trade.published` events continue during pauses (C4) or stop (G1GC)
+
+**Backpressure Analysis**
+1. Filter Event Browser for `aeron.backpressure`
+2. Examine stack traces to identify source
+3. Correlate with GC pause timing
+4. Check if burst mode activation precedes backpressure
+
+**Encoding Performance**
+1. View `sbe.encode` events
+2. Analyze `encodeTimeNanos` distribution
+3. Identify symbols with largest payloads
+4. Correlate with allocation rate (`jdk.ObjectAllocationInNewTLAB`)
+
+#### JVM Options
+
+JFR flags configured in Dockerfiles:
+
+```dockerfile
+# Default recording (continuous, dumps on exit)
+-XX:StartFlightRecording=name=production,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g
+
+# Flight recorder options
+-XX:FlightRecorderOptions=samplethreads=true,stackdepth=256
+
+# JFR logging
+-Xlog:jfr*=info
+```
+
+**Disable JFR** (if needed):
+
+```bash
+export JFR_ENABLED=false  # Disables default recording via StartFlightRecording
+```
+
+Note: Ad-hoc snapshots still work even when default recording is disabled.
+
 ## Project Structure
 
 ```text
@@ -355,14 +514,14 @@ src/main/
 │   ├── aeron/          # Aeron Publisher, Subscriber, FragmentHandler
 │   ├── sbe/            # Generated SBE Codecs (Flyweights)
 │   ├── websocket/      # Jakarta WebSocket Endpoint
-│   ├── rest/           # Status, GC Stats, and Memory Pressure Resources
+│   ├── rest/           # Status, GC Stats, Memory Pressure, and JFR Resources
 │   ├── gc/             # GC statistics collection and monitoring
 │   ├── pressure/       # Memory pressure testing services
 │   └── monitoring/     # GC monitoring services (GCPauseMonitor, MemoryPressure)
 ├── resources/sbe/
 │   └── market-data.xml # SBE Schema Definition
 └── webapp/
-    └── index.html      # Dashboard UI (Chart.js + WebSocket)
+    └── index.html      # Dashboard UI (Chart.js + WebSocket) with JFR controls
 
 monitoring/
 ├── grafana/
