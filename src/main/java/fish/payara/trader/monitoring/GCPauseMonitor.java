@@ -2,6 +2,7 @@ package fish.payara.trader.monitoring;
 
 import com.sun.management.GarbageCollectionNotificationInfo;
 import com.sun.management.GcInfo;
+import fish.payara.trader.jfr.MarketDataEvents;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -116,17 +117,30 @@ public class GCPauseMonitor implements NotificationListener {
             violationsOver100ms.incrementAndGet();
             violationsOver50ms.incrementAndGet();
             violationsOver10ms.incrementAndGet();
+            emitSlaViolation(pauseMs, ">100ms");
         } else if (pauseMs > 50) {
             violationsOver50ms.incrementAndGet();
             violationsOver10ms.incrementAndGet();
+            emitSlaViolation(pauseMs, ">50ms");
         } else if (pauseMs > 10) {
             violationsOver10ms.incrementAndGet();
+            emitSlaViolation(pauseMs, ">10ms");
         }
 
         if (pauseMs > 100) {
             LOGGER.warning(String.format("Large GC pause detected: %d ms [%s - %s]", pauseMs, gcName, gcAction));
         } else if (pauseMs > 50) {
             LOGGER.info(String.format("Notable GC pause: %d ms [%s - %s]", pauseMs, gcName, gcAction));
+        }
+    }
+
+    private void emitSlaViolation(long pauseMs, String threshold) {
+        MarketDataEvents.SlaViolation event = new MarketDataEvents.SlaViolation();
+        if (event.isEnabled()) {
+            event.pauseTimeMillis = pauseMs;
+            event.threshold = threshold;
+            event.violationsInWindow = violationsOver10ms.get();
+            event.commit();
         }
     }
 

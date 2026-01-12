@@ -3,11 +3,17 @@ package fish.payara.trader.rest;
 import fish.payara.trader.aeron.MarketDataPublisher;
 import fish.payara.trader.gc.GCStats;
 import fish.payara.trader.gc.GCStatsService;
+import fish.payara.trader.monitoring.GCPauseMonitor;
+import fish.payara.trader.monitoring.SLAMonitorService;
 import fish.payara.trader.pressure.MemoryPressureService;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
@@ -32,10 +38,10 @@ public class GCStatsResource {
     private MarketDataPublisher publisher;
 
     @Inject
-    private fish.payara.trader.monitoring.SLAMonitorService slaMonitor;
+    private SLAMonitorService slaMonitor;
 
     @Inject
-    private fish.payara.trader.monitoring.GCPauseMonitor gcPauseMonitor;
+    private GCPauseMonitor gcPauseMonitor;
 
     @GET
     @Path("/sla")

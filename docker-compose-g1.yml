@@ -1,3 +1,9 @@
+# JVM Configuration Notes:
+# ==========================
+# The JAVA_OPTS environment variables below OVERRIDE the ENV JAVA_OPTS defined in
+# Dockerfile.scale.standard. These are the authoritative flags used for cluster deployments.
+# If you update flags here, ensure consistency across all instances (g1-1, g1-2, g1-3).
+
 services:
   traefik-g1:
     image: traefik:v3.6.5
@@ -37,16 +43,29 @@ services:
       - "5701"
     shm_size: 512m
     environment:
-      - TRADER_INGESTION_MODE=AERON
+      - TRADER_INGESTION_MODE=${TRADER_INGESTION_MODE:-AERON}
       - PAYARA_INSTANCE_NAME=g1-instance-1
       - HAZELCAST_MEMBER_NAME=trader-stream-g1-1
       - ENABLE_PUBLISHER=true
       - JVM_TYPE=eclipse-temurin-g1
       - JAVA_OPTS=-Xms4g -Xmx4g
         -XX:+UseG1GC
+        -XX:G1HeapRegionSize=16m
+        -XX:MaxGCPauseMillis=10
+        -XX:InitiatingHeapOccupancyPercent=40
+        -XX:ParallelGCThreads=12
+        -XX:ConcGCThreads=4
+        -XX:-ExplicitGCInvokesConcurrent
         -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
         -XX:+AlwaysPreTouch
         -XX:+UseTransparentHugePages
+        -XX:+UseStringDeduplication
+        -XX:+OptimizeStringConcat
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g
+        -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256
+        -Xlog:jfr*=info
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
         -Djava.net.preferIPv4Stack=true
     volumes:
@@ -76,15 +95,31 @@ services:
       - "5701"
     shm_size: 512m
     environment:
-      - TRADER_INGESTION_MODE=AERON
+      - TRADER_INGESTION_MODE=${TRADER_INGESTION_MODE:-AERON}
       - PAYARA_INSTANCE_NAME=g1-instance-2
       - HAZELCAST_MEMBER_NAME=trader-stream-g1-2
       - ENABLE_PUBLISHER=true
       - JVM_TYPE=eclipse-temurin-g1
       - JAVA_OPTS=-Xms4g -Xmx4g
         -XX:+UseG1GC
+        -XX:G1HeapRegionSize=16m
+        -XX:MaxGCPauseMillis=10
+        -XX:InitiatingHeapOccupancyPercent=40
+        -XX:ParallelGCThreads=12
+        -XX:ConcGCThreads=4
+        -XX:-ExplicitGCInvokesConcurrent
         -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -XX:+AlwaysPreTouch
+        -XX:+UseTransparentHugePages
+        -XX:+UseStringDeduplication
+        -XX:+OptimizeStringConcat
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g
+        -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256
+        -Xlog:jfr*=info
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
+        -Djava.net.preferIPv4Stack=true
     volumes:
       - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
@@ -112,15 +147,31 @@ services:
       - "5701"
     shm_size: 512m
     environment:
-      - TRADER_INGESTION_MODE=AERON
+      - TRADER_INGESTION_MODE=${TRADER_INGESTION_MODE:-AERON}
       - PAYARA_INSTANCE_NAME=g1-instance-3
       - HAZELCAST_MEMBER_NAME=trader-stream-g1-3
       - ENABLE_PUBLISHER=true
       - JVM_TYPE=eclipse-temurin-g1
       - JAVA_OPTS=-Xms4g -Xmx4g
         -XX:+UseG1GC
+        -XX:G1HeapRegionSize=16m
+        -XX:MaxGCPauseMillis=10
+        -XX:InitiatingHeapOccupancyPercent=40
+        -XX:ParallelGCThreads=12
+        -XX:ConcGCThreads=4
+        -XX:-ExplicitGCInvokesConcurrent
         -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -XX:+AlwaysPreTouch
+        -XX:+UseTransparentHugePages
+        -XX:+UseStringDeduplication
+        -XX:+OptimizeStringConcat
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g
+        -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256
+        -Xlog:jfr*=info
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
+        -Djava.net.preferIPv4Stack=true
     volumes:
       - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
