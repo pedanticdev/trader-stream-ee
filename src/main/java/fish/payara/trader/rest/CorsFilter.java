@@ -7,9 +7,6 @@ import jakarta.ws.rs.ext.Provider;
 
 /**
  * CORS filter for cross-origin requests during comparison demo. Allows frontend on one port to fetch data from the other cluster.
- *
- * <p>
- * Registered automatically via {@code @Provider} annotation for JAX-RS resources.
  */
 @Provider
 public class CorsFilter implements ContainerResponseFilter {
