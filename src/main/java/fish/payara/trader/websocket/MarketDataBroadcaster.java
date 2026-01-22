@@ -2,6 +2,7 @@ package fish.payara.trader.websocket;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.topic.ITopic;
+import fish.payara.trader.jfr.MarketDataEvents;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -108,6 +109,10 @@ public class MarketDataBroadcaster {
         }
 
         long startTime = System.currentTimeMillis();
+        int sessionCount = sessions.size();
+
+        // Extract message type from JSON for JFR event
+        String messageType = extractMessageType(jsonMessage);
 
         sessions.removeIf(session -> {
             if (!session.isOpen()) {
@@ -123,11 +128,43 @@ public class MarketDataBroadcaster {
         });
 
         long latency = System.currentTimeMillis() - startTime;
+
+        // JFR event for WebSocket broadcast
+        MarketDataEvents.WebSocketBroadcast wsEvent = new MarketDataEvents.WebSocketBroadcast();
+        if (wsEvent.isEnabled()) {
+            wsEvent.clientCount = sessionCount;
+            wsEvent.messageSizeBytes = jsonMessage.length();
+            wsEvent.messageType = messageType;
+            wsEvent.commit();
+        }
+
         if (slaMonitor != null) {
             slaMonitor.recordOperation(latency);
         }
 
         logStatistics();
+    }
+
+    /**
+     * Extract message type from JSON for JFR event. Parses {"type":"..."} pattern from the message.
+     */
+    private String extractMessageType(String jsonMessage) {
+        if (jsonMessage == null || jsonMessage.isEmpty()) {
+            return "unknown";
+        }
+        int typeStart = jsonMessage.indexOf("\"type\":");
+        if (typeStart == -1) {
+            return "unknown";
+        }
+        int valueStart = jsonMessage.indexOf("\"", typeStart + 7);
+        if (valueStart == -1) {
+            return "unknown";
+        }
+        int valueEnd = jsonMessage.indexOf("\"", valueStart + 1);
+        if (valueEnd == -1) {
+            return "unknown";
+        }
+        return jsonMessage.substring(valueStart + 1, valueEnd);
     }
 
     /**

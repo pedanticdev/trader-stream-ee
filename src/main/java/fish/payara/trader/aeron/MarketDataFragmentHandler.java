@@ -1,5 +1,6 @@
 package fish.payara.trader.aeron;
 
+import fish.payara.trader.jfr.MarketDataEvents;
 import fish.payara.trader.sbe.*;
 import fish.payara.trader.websocket.MarketDataBroadcaster;
 import io.aeron.logbuffer.FragmentHandler;
@@ -43,6 +44,8 @@ public class MarketDataFragmentHandler implements FragmentHandler {
 
     @Override
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
+        long startTime = System.nanoTime();
+
         try {
             headerDecoder.wrap(buffer, offset);
 
@@ -81,6 +84,17 @@ public class MarketDataFragmentHandler implements FragmentHandler {
             }
 
             messagesProcessed++;
+
+            // JFR event for batch processing
+            long processingTime = System.nanoTime() - startTime;
+            MarketDataEvents.BatchProcessed batchEvent = new MarketDataEvents.BatchProcessed();
+            if (batchEvent.isEnabled()) {
+                batchEvent.messageCount = 1;
+                batchEvent.processingTimeNanos = processingTime;
+                batchEvent.source = "AERON";
+                batchEvent.commit();
+            }
+
             if (shouldBroadcast) {
                 messagesBroadcast++;
             }
@@ -93,9 +107,7 @@ public class MarketDataFragmentHandler implements FragmentHandler {
 
     /** Process Trade message using SBE decoder (zero-copy) */
     private void processTrade(DirectBuffer buffer, int offset, int blockLength, int version, boolean shouldBroadcast) {
-        if (!shouldBroadcast) {
-            return;
-        }
+        long decodeStart = System.nanoTime();
 
         tradeDecoder.wrap(buffer, offset, blockLength, version);
 
@@ -108,6 +120,20 @@ public class MarketDataFragmentHandler implements FragmentHandler {
         final int symbolLength = tradeDecoder.symbolLength();
         tradeDecoder.getSymbol(symbolBuffer, 0, symbolLength);
         final String symbol = new String(symbolBuffer, 0, symbolLength);
+
+        // JFR event for SBE decoding performance
+        long decodeTime = System.nanoTime() - decodeStart;
+        MarketDataEvents.SbeDecode decodeEvent = new MarketDataEvents.SbeDecode();
+        if (decodeEvent.isEnabled()) {
+            decodeEvent.messageType = "Trade";
+            decodeEvent.decodedBytes = blockLength;
+            decodeEvent.decodeTimeNanos = decodeTime;
+            decodeEvent.commit();
+        }
+
+        if (!shouldBroadcast) {
+            return;
+        }
 
         sb.setLength(0);
         sb.append("{\"type\":\"trade\",\"timestamp\":")
