@@ -79,7 +79,6 @@ public class GCTestUtil {
     /** Forces a garbage collection and waits for completion */
     public static void forceGC() {
         System.gc();
-        System.runFinalization();
 
         // Small delay to allow GC to complete
         try {

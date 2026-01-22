@@ -67,6 +67,12 @@
             <artifactId>sbe-all</artifactId>
             <version>${sbe.version}</version>
         </dependency>
+        <!-- SnakeYAML for demo preset configuration -->
+        <dependency>
+            <groupId>org.snakeyaml</groupId>
+            <artifactId>snakeyaml-engine</artifactId>
+            <version>2.7</version>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>
