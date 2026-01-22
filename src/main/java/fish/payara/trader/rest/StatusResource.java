@@ -45,7 +45,6 @@ public class StatusResource {
         status.put("instance", instanceName);
         status.put("subscriber", subscriber.getStatus());
 
-        // Include both local and cluster-wide message counts
         Map<String, Object> publisherStats = new HashMap<>();
         publisherStats.put("localMessagesPublished", publisher.getMessagesPublished());
         publisherStats.put("clusterMessagesPublished", publisher.getClusterMessagesPublished());

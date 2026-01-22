@@ -8,24 +8,10 @@ import java.util.List;
 /**
  * Response DTO for GC comparison data. Provides comprehensive GC metrics for C4 vs G1 comparison.
  */
-public record GCComparisonResponse(
-                // Instance identification
-                String instanceName, String jvmVendor, String jvmName, String gcCollectors, boolean isAzulC4,
-
-                // Memory configuration
-                long heapSizeMB, String allocationMode, int allocationRateMBps, long messageRate,
-
-                // GC statistics
-                List<GCStats> gcStats,
-
-                // Pause percentiles
-                double pauseP50Ms, double pauseP95Ms, double pauseP99Ms, double pauseP999Ms, double pauseMaxMs, double pauseAvgMs,
-
-                // Pause counts
-                long totalPauseCount, long totalPauseTimeMs,
-
-                // SLA violations
-                long slaViolations10ms, long slaViolations50ms, long slaViolations100ms, int pauseSampleSize) {
+public record GCComparisonResponse(String instanceName, String jvmVendor, String jvmName, String gcCollectors, boolean isAzulC4, long heapSizeMB,
+                String allocationMode, int allocationRateMBps, long messageRate, List<GCStats> gcStats, double pauseP50Ms, double pauseP95Ms, double pauseP99Ms,
+                double pauseP999Ms, double pauseMaxMs, double pauseAvgMs, long totalPauseCount, long totalPauseTimeMs, long slaViolations10ms,
+                long slaViolations50ms, long slaViolations100ms, int pauseSampleSize) {
     /**
      * Creates response from collected GC data.
      */

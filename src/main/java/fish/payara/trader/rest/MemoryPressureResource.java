@@ -45,7 +45,6 @@ public class MemoryPressureResource {
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("error", "Invalid mode: " + modeStr);
-            // Valid modes are all values of AllocationMode
             StringBuilder validModes = new StringBuilder();
             for (AllocationMode m : AllocationMode.values()) {
                 validModes.append(m.name()).append(", ");

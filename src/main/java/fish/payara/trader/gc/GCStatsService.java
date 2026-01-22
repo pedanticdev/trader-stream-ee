@@ -211,7 +211,6 @@ public class GCStatsService implements NotificationListener {
             stats.setUsedMemory(heapUsage.getUsed());
             stats.setFreeMemory(heapUsage.getMax() - heapUsage.getUsed());
 
-            // Add phase breakdown if available
             ConcurrentLinkedDeque<GCPhaseBreakdown> phaseHist = phaseHistory.get(gcName);
             if (phaseHist != null && !phaseHist.isEmpty()) {
                 stats.setPhaseBreakdown(calculatePhaseStats(new ArrayList<>(phaseHist)));
@@ -265,7 +264,6 @@ public class GCStatsService implements NotificationListener {
             }
         }
 
-        // Calculate percentiles for each phase
         for (Map.Entry<String, List<Long>> entry : phaseGroups.entrySet()) {
             String phaseName = entry.getKey();
             List<Long> durations = entry.getValue();

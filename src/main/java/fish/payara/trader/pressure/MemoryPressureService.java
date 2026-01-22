@@ -131,7 +131,6 @@ public class MemoryPressureService {
             }
 
             LOGGER.info("Memory pressure generator stopped");
-            // Cleanup
             liveSet.clear();
             liveSetBytesAllocated.set(0);
             promotableObjects.clear();
@@ -166,7 +165,6 @@ public class MemoryPressureService {
             executeCrossRefsScenario(mode);
             break;
         default :
-            // Do nothing for NONE
             break;
         }
     }
@@ -193,7 +191,6 @@ public class MemoryPressureService {
         int targetMB = mode.getLiveSetSizeMB();
         int duration = mode.getGrowthDurationSeconds();
 
-        // Calculate current target based on linear growth
         int currentTargetMB = elapsed >= duration ? targetMB : startMB + (int) ((targetMB - startMB) * elapsed / duration);
 
         maintainLiveSet(currentTargetMB);
@@ -217,14 +214,12 @@ public class MemoryPressureService {
         allocateTransientGarbageMultiThreaded(transientBytes, 4);
         allocatePromotableGarbageMultiThreaded(promotableBytes, 4);
 
-        // Move from thread-safe queue to local live set management
         byte[] promoted;
         while ((promoted = promotableObjects.poll()) != null) {
             liveSet.add(promoted);
             liveSetBytesAllocated.addAndGet(promoted.length);
         }
 
-        // Now trim live set if needed (remove oldest)
         long targetBytes = mode.getLiveSetSizeMB() * 1024L * 1024L;
         while (liveSetBytesAllocated.get() > targetBytes && !liveSet.isEmpty()) {
             byte[] removed = liveSet.removeFirst();
@@ -249,8 +244,6 @@ public class MemoryPressureService {
         int rateMBPerSec = mode.getAllocationRateMBPerSec();
         int bytesPerIteration = (rateMBPerSec * 1024 * 1024) / 10;
 
-        // Create young objects and link them from old gen holders
-        // This triggers G1's write barriers and remembered set updates
         createCrossGenerationalRefsMultiThreaded(bytesPerIteration, 4);
     }
 
@@ -261,7 +254,6 @@ public class MemoryPressureService {
         long targetBytes = targetMB * 1024L * 1024L;
         long currentBytes = crossRefBytesAllocated.get();
 
-        // Add holders if below target
         while (currentBytes < targetBytes) {
             RefHolder holder = new RefHolder(1024 * 1024); // ~1MB each
             crossRefHolders.add(holder);
@@ -269,7 +261,6 @@ public class MemoryPressureService {
             crossRefBytesAllocated.set(currentBytes);
         }
 
-        // Remove holders if above target
         while (currentBytes > targetBytes && !crossRefHolders.isEmpty()) {
             crossRefHolders.removeFirst();
             currentBytes -= 1024 * 1024;
@@ -296,7 +287,6 @@ public class MemoryPressureService {
             futures[t] = CompletableFuture.runAsync(() -> {
                 int remaining = bytesPerThread;
                 while (remaining > 0) {
-                    // Create young object (1-4KB each for variety)
                     int size = ThreadLocalRandom.current().nextInt(1024, 4097);
                     if (size > remaining)
                         size = remaining;
@@ -343,7 +333,6 @@ public class MemoryPressureService {
 
         for (int t = 0; t < numThreads; t++) {
             futures[t] = CompletableFuture.runAsync(() -> {
-                // Create objects that live long enough to be promoted
                 byte[] obj = new byte[bytesPerThread];
                 ThreadLocalRandom.current().nextBytes(obj);
                 promotableObjects.add(obj);
@@ -381,7 +370,6 @@ public class MemoryPressureService {
         long targetBytes = targetMB * 1024L * 1024L;
         long currentBytes = liveSetBytesAllocated.get();
 
-        // Add objects if below target
         while (currentBytes < targetBytes) {
             byte[] obj = new byte[1024 * 1024]; // 1 MB object
             ThreadLocalRandom.current().nextBytes(obj);
@@ -390,7 +378,6 @@ public class MemoryPressureService {
             liveSetBytesAllocated.set(currentBytes);
         }
 
-        // Remove objects if above target
         while (currentBytes > targetBytes && !liveSet.isEmpty()) {
             liveSet.removeFirst();
             currentBytes -= 1024 * 1024;

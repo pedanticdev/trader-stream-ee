@@ -734,4 +734,11 @@ public class MarketDataPublisher {
         lastRateCheckTime = now;
         return Math.max(rate, 0);
     }
+
+    /**
+     * Check if the publisher is actively running and publishing messages. Used by health check endpoints to verify system readiness.
+     */
+    public boolean isRunning() {
+        return running;
+    }
 }
