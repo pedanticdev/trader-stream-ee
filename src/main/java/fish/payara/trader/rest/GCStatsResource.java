@@ -1,11 +1,14 @@
 package fish.payara.trader.rest;
 
 import fish.payara.trader.aeron.MarketDataPublisher;
+import fish.payara.trader.dto.GCComparisonResponse;
 import fish.payara.trader.gc.GCStats;
 import fish.payara.trader.gc.GCStatsService;
 import fish.payara.trader.monitoring.GCPauseMonitor;
 import fish.payara.trader.monitoring.SLAMonitorService;
+import fish.payara.trader.pressure.AllocationMode;
 import fish.payara.trader.pressure.MemoryPressureService;
+import fish.payara.trader.util.InstanceUtils;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -16,7 +19,6 @@ import jakarta.ws.rs.core.Response;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -75,14 +77,7 @@ public class GCStatsResource {
     @Path("/comparison")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getComparison() {
-        Map<String, Object> comparison = new HashMap<>();
-
-        // Identify which instance is responding
-        String instanceName = System.getenv("PAYARA_INSTANCE_NAME");
-        if (instanceName == null) {
-            instanceName = "standalone";
-        }
-        comparison.put("instanceName", instanceName);
+        String instanceName = InstanceUtils.getInstanceName();
 
         String jvmVendor = System.getProperty("java.vm.vendor");
         String jvmName = System.getProperty("java.vm.name");
@@ -91,34 +86,15 @@ public class GCStatsResource {
 
         boolean isAzulC4 = gcName.toLowerCase().contains("c4") || jvmName.toLowerCase().contains("zing");
 
-        comparison.put("jvmVendor", jvmVendor);
-        comparison.put("jvmName", jvmName);
-        comparison.put("gcCollectors", gcName);
-        comparison.put("isAzulC4", isAzulC4);
-        comparison.put("heapSizeMB", Runtime.getRuntime().maxMemory() / (1024 * 1024));
-        comparison.put("allocationMode", memoryPressureService.getCurrentMode());
-        comparison.put("allocationRateMBps", memoryPressureService.getCurrentMode().getAllocationRateMBPerSec());
-        comparison.put("messageRate", publisher.getMessagesPublished());
+        AllocationMode currentMode = memoryPressureService.getCurrentMode();
+        List<GCStats> gcStats = gcStatsService.collectGCStats();
+        GCPauseMonitor.GCPauseStats pauseStats = gcPauseMonitor.getStats();
 
-        List<GCStats> stats = gcStatsService.collectGCStats();
-        comparison.put("gcStats", stats);
+        GCComparisonResponse response = GCComparisonResponse.from(instanceName, jvmVendor, jvmName, gcName, isAzulC4,
+                        Runtime.getRuntime().maxMemory() / (1024 * 1024), currentMode.name(), currentMode.getAllocationRateMBPerSec(),
+                        publisher.getMessagesPublished(), gcStats, pauseStats);
 
-        fish.payara.trader.monitoring.GCPauseMonitor.GCPauseStats pauseStats = gcPauseMonitor.getStats();
-        comparison.put("pauseP50Ms", pauseStats.p50Ms);
-        comparison.put("pauseP95Ms", pauseStats.p95Ms);
-        comparison.put("pauseP99Ms", pauseStats.p99Ms);
-        comparison.put("pauseP999Ms", pauseStats.p999Ms);
-        comparison.put("pauseMaxMs", pauseStats.maxMs); // All-time max
-        comparison.put("pauseAvgMs", pauseStats.avgPauseMs);
-        comparison.put("totalPauseCount", pauseStats.totalPauseCount);
-        comparison.put("totalPauseTimeMs", pauseStats.totalPauseTimeMs);
-
-        comparison.put("slaViolations10ms", pauseStats.violationsOver10ms);
-        comparison.put("slaViolations50ms", pauseStats.violationsOver50ms);
-        comparison.put("slaViolations100ms", pauseStats.violationsOver100ms);
-        comparison.put("pauseSampleSize", pauseStats.sampleSize);
-
-        return Response.ok(comparison).build();
+        return Response.ok(response).build();
     }
 
     @GET
@@ -126,7 +102,7 @@ public class GCStatsResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getGCStats() {
         List<GCStats> stats = gcStatsService.collectGCStats();
-        LOGGER.info(String.format("GET /api/gc/stats - Returned %d GC collector stats", stats.size()));
+        LOGGER.info("GET /api/gc/stats - Returned " + stats.size() + " GC collector stats");
         return Response.ok(stats).build();
     }
 

@@ -76,6 +76,15 @@
             color: #1d4ed8;
         }
 
+        /* Comparison toggle button with white text for contrast */
+        .comparison-toggle {
+            color: white !important;
+        }
+
+        .comparison-toggle:hover {
+            color: white !important;
+        }
+
         h1 {
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             -webkit-background-clip: text;
@@ -873,6 +882,227 @@
             opacity: 0.8;
             text-transform: none;
         }
+
+        /* Comparison View Styles */
+        .comparison-toggle {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            border: 1px solid #7c3aed;
+        }
+
+        .comparison-toggle:hover {
+            background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+        }
+
+        .comparison-view {
+            display: none;
+        }
+
+        .comparison-view.active {
+            display: block;
+        }
+
+        .single-view.hidden {
+            display: none;
+        }
+
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .comparison-panel {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px var(--shadow), 0 1px 2px var(--shadow);
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .comparison-panel.c4 {
+            border-color: #10b981;
+        }
+
+        .comparison-panel.g1 {
+            border-color: #f59e0b;
+        }
+
+        .comparison-panel h3 {
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .comparison-panel .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .comparison-panel.c4 .badge {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .comparison-panel.g1 .badge {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* SLA Violation Flash Animation */
+        @keyframes slaFlash {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(239, 68, 68, 0.2); }
+        }
+
+        .sla-flash {
+            animation: slaFlash 0.3s ease-in-out 2;
+        }
+
+        .sla-flash-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            z-index: 9999;
+            display: none;
+            font-weight: 600;
+        }
+
+        .sla-flash-indicator.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Demo Presets Styles */
+        .demo-presets-section {
+            background: var(--card-bg);
+            padding: 20px 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px var(--shadow), 0 1px 2px var(--shadow);
+            margin-bottom: 16px;
+        }
+
+        .demo-presets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .demo-presets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .preset-btn {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            border: none;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .preset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .preset-btn.running {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .preset-btn .hint {
+            font-size: 0.75em;
+            opacity: 0.9;
+        }
+
+        /* Business Impact Panel */
+        .business-impact-panel {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            padding: 24px 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px var(--shadow), 0 1px 2px var(--shadow);
+            margin-bottom: 16px;
+        }
+
+        .business-impact-panel h3 {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .impact-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+
+        .impact-metric {
+            text-align: center;
+        }
+
+        .impact-metric .value {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: #10b981;
+        }
+
+        .impact-metric .value.at-risk {
+            color: #ef4444;
+        }
+
+        .impact-metric .label {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-top: 8px;
+        }
+
+        .impact-metric .sublabel {
+            font-size: 0.75em;
+            opacity: 0.6;
+        }
+
+        /* Dual Cluster Business Impact */
+        .dual-cluster-impact {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        .impact-cluster-section {
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .impact-cluster-section h4 {
+            margin: 0 0 16px 0;
+            font-size: 1em;
+            font-weight: 700;
+        }
     </style>
 </head>
 
@@ -885,6 +1115,9 @@
             </p>
         </div>
         <div style="display: flex; gap: 12px; align-items: center;">
+            <button onclick="toggleComparisonView()" class="nav-link comparison-toggle"
+                    style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); border: 1px solid #7c3aed; cursor: pointer; padding: 8px 16px;"
+                    id="comparisonBtn">🔄 Comparison</button>
             <select id="pollingInterval" onchange="setPollingInterval(this.value)"
                     style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid #64748b; cursor: pointer; padding: 8px 12px; border-radius: 6px; font-family: inherit;">
                 <option value="1000">Poll: 1s</option>
@@ -989,6 +1222,110 @@
         </div>
     </div>
 
+    <!-- Demo Presets Section -->
+    <div class="demo-presets-section">
+        <div class="demo-presets-header">
+            <h3 style="font-size: 1em; color: #64748b; font-weight: 600; text-transform: uppercase;">Demo Presets</h3>
+            <span id="presetStatus" style="font-size: 0.85em; color: #64748b;"></span>
+        </div>
+        <div class="demo-presets-grid">
+            <button onclick="runDemoPreset('MARKET_OPEN_SPIKE')" class="preset-btn" id="preset-MARKET_OPEN_SPIKE">
+                🚀 Market Open Spike
+                <span class="hint">30s • 5x burst allocation</span>
+            </button>
+            <button onclick="runDemoPreset('EXECUTIVE_30_SEC')" class="preset-btn" id="preset-EXECUTIVE_30_SEC">
+                ⚡ Executive 30-Sec
+                <span class="hint">30s • Quick sales demo</span>
+            </button>
+            <button onclick="runDemoPreset('TRADING_DAY_STRESS')" class="preset-btn" id="preset-TRADING_DAY_STRESS">
+                📊 Trading Day Stress
+                <span class="hint">180s • Mixed scenarios</span>
+            </button>
+            <button onclick="runDemoPreset('FRAGMENTATION_HELL')" class="preset-btn" id="preset-FRAGMENTATION_HELL">
+                🧩 Fragmentation Hell
+                <span class="hint">120s • Worst-case G1</span>
+            </button>
+            <button onclick="runDemoPreset('FULL_DAY')" class="preset-btn" id="preset-FULL_DAY">
+                🌙 Full Day Simulation
+                <span class="hint">300s • Complete picture</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Business Impact Panel -->
+    <div class="business-impact-panel">
+        <h3 style="font-size: 1.2em;">
+            💰 Business Impact
+            <span id="business-impact-subtitle" style="font-size: 0.8em; font-weight: 400; opacity: 0.8;">Real-time ROI calculation</span>
+        </h3>
+        <div id="single-cluster-business-impact" class="impact-metrics">
+            <div class="impact-metric">
+                <div class="value" id="impact-missed-trades">0</div>
+                <div class="label">Missed Trades</div>
+                <div class="sublabel">Due to GC pauses >10ms</div>
+            </div>
+            <div class="impact-metric">
+                <div class="value at-risk" id="impact-revenue">$0</div>
+                <div class="label">Revenue at Risk</div>
+                <div class="sublabel">At $25,000 per trade</div>
+            </div>
+            <div class="impact-metric">
+                <div class="value" id="impact-sla">100%</div>
+                <div class="label">SLA Compliance</div>
+                <div class="sublabel">Target: <10ms pauses</div>
+            </div>
+            <div class="impact-metric">
+                <div class="value" id="impact-infrastructure">40%</div>
+                <div class="label">Infrastructure Savings</div>
+                <div class="sublabel">3 C4 nodes vs 5 G1 nodes</div>
+            </div>
+        </div>
+        <div id="dual-cluster-business-impact" class="dual-cluster-impact" style="display: none;">
+            <div class="impact-cluster-section">
+                <h4 style="color: #3b82f6; margin-bottom: 16px;">C4 Cluster</h4>
+                <div class="impact-metrics">
+                    <div class="impact-metric">
+                        <div class="value" id="c4-impact-missed-trades">0</div>
+                        <div class="label">Missed Trades</div>
+                    </div>
+                    <div class="impact-metric">
+                        <div class="value at-risk" id="c4-impact-revenue">$0</div>
+                        <div class="label">Revenue at Risk</div>
+                    </div>
+                    <div class="impact-metric">
+                        <div class="value" id="c4-impact-sla">100%</div>
+                        <div class="label">SLA Compliance</div>
+                    </div>
+                </div>
+            </div>
+            <div class="impact-cluster-section">
+                <h4 style="color: #10b981; margin-bottom: 16px;">G1 Cluster</h4>
+                <div class="impact-metrics">
+                    <div class="impact-metric">
+                        <div class="value" id="g1-impact-missed-trades">0</div>
+                        <div class="label">Missed Trades</div>
+                    </div>
+                    <div class="impact-metric">
+                        <div class="value at-risk" id="g1-impact-revenue">$0</div>
+                        <div class="label">Revenue at Risk</div>
+                    </div>
+                    <div class="impact-metric">
+                        <div class="value" id="g1-impact-sla">100%</div>
+                        <div class="label">SLA Compliance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLA Violation Flash Indicator -->
+    <div id="slaFlashIndicator" class="sla-flash-indicator">
+        ⚠️ SLA VIOLATION<br>
+        <span id="slaFlashMessage">Pause exceeded 10ms threshold</span>
+    </div>
+
+    <!-- Single View Container (existing content) -->
+    <div class="single-view" id="singleView">
     <div class="gc-comparison-panel">
         <div class="gc-comparison-header">
             <h2>GC Performance Comparison</h2>
@@ -1292,6 +1629,70 @@
             </div>
         </div>
     </div>
+    </div><!-- End Single View -->
+
+    <!-- Comparison View Container (hidden by default) -->
+    <div class="comparison-view" id="comparisonView">
+        <div class="comparison-container">
+            <!-- C4 Panel -->
+            <div class="comparison-panel c4">
+                <h3>
+                    🟢 C4 Cluster (Azul Platform Prime)
+                    <span class="badge">localhost:8080</span>
+                </h3>
+                <div class="metrics-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: 700; color: #0f172a;" id="c4-p99">-</div>
+                        <div style="font-size: 0.75em; color: #64748b;">P99 Pause (ms)</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: 700; color: #0f172a;" id="c4-max">-</div>
+                        <div style="font-size: 0.75em; color: #64748b;">Max Pause (ms)</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: 700; color: #10b981;" id="c4-sla">0</div>
+                        <div style="font-size: 0.75em; color: #64748b;">SLA Violations</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: 700; color: #0f172a;" id="c4-rate">-</div>
+                        <div style="font-size: 0.75em; color: #64748b;">Msg Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- G1 Panel -->
+            <div class="comparison-panel g1">
+                <h3>
+                    🟡 G1 Cluster (OpenJDK)
+                    <span class="badge">localhost:9080</span>
+                </h3>
+                <div class="metrics-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: 700; color: #0f172a;" id="g1-p99">-</div>
+                        <div style="font-size: 0.75em; color: #64748b;">P99 Pause (ms)</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: 700; color: #0f172a;" id="g1-max">-</div>
+                        <div style="font-size: 0.75em; color: #64748b;">Max Pause (ms)</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: 700; color: #ef4444;" id="g1-sla">0</div>
+                        <div style="font-size: 0.75em; color: #64748b;">SLA Violations</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5em; font-weight: 700; color: #0f172a;" id="g1-rate">-</div>
+                        <div style="font-size: 0.75em; color: #64748b;">Msg Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delta Display -->
+        <div style="text-align: center; padding: 16px; background: var(--card-bg); border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 4px var(--shadow);">
+            <div style="font-size: 0.9em; color: #64748b; margin-bottom: 8px;">Real-time Delta</div>
+            <div id="deltaDisplay" style="font-size: 1.5em; font-weight: 700;">Waiting for data from both clusters...</div>
+        </div>
+    </div>
 </div>
 
 <div id="jfrModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
@@ -1564,36 +1965,56 @@
         const buttons = document.querySelectorAll('[onclick*="setPressureMode"]');
         let clickedButton = null;
         buttons.forEach(btn => {
-            // Simple check to find the button that was clicked if possible, 
-            // or we highlight based on mode in pollPressureStatus
             if (btn.textContent.includes(mode) || btn.id === 'btn-' + mode) {
                  btn.classList.add('processing');
                  clickedButton = btn;
             }
         });
 
-        fetch(API_BASE + '/pressure/mode/' + mode, { method: 'POST' })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.json();
-            })
-            .then(result => {
+        const isInComparisonMode = document.body.classList.contains('comparison-view-active');
+
+        // Helper function to set mode on a single cluster
+        const setModeOnCluster = (port, clusterName) => {
+            const url = `http://localhost:${port}/trader-stream-ee${window.location.pathname.split('/')[1] ? '/' + window.location.pathname.split('/')[1] : ''}/api/pressure/mode/${mode}`;
+            console.log(`Setting mode to ${mode} on ${clusterName}:`, url);
+            return fetch(url, { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) throw new Error(`${clusterName}: HTTP ${response.status}`);
+                    return response.json();
+                });
+        };
+
+        // Get promises for both clusters if in comparison mode
+        const promises = isInComparisonMode
+            ? [
+                setModeOnCluster(8080, 'C4'),
+                setModeOnCluster(9080, 'G1')
+            ]
+            : [setModeOnCluster(window.location.port, 'Current')];
+
+        Promise.all(promises)
+            .then(results => {
                 if (clickedButton) {
                     clickedButton.classList.remove('processing');
                 }
-                if (result.success) {
-                    addLog('Scenario set to: ' + mode);
+                const clusterNames = isInComparisonMode ? ['C4', 'G1'] : ['Current'];
+                results.forEach((result, i) => {
+                    if (result.success) {
+                        addLog(`${clusterNames[i]}: Scenario set to ${mode}`);
+                    } else {
+                        addLog(`${clusterNames[i]}: Error setting scenario: ${result.error}`);
+                    }
+                });
+                if (!isInComparisonMode) {
                     pollPressureStatus();
-                } else {
-                    addLog('Error setting scenario: ' + result.error);
                 }
             })
-            .catch(error => {
+            .catch(errors => {
                 if (clickedButton) {
                     clickedButton.classList.remove('processing');
                 }
-                console.error('Error setting pressure mode:', error);
-                addLog('Failed to set mode: ' + error.message);
+                console.error('Error setting pressure mode:', errors);
+                addLog('Failed to set mode: ' + (errors[0]?.message || 'Unknown error'));
             });
     }
 
@@ -2292,11 +2713,439 @@
         updateLastUpdated();
         setInterval(updateLastUpdated, 1000);
 
+        // Store original HTML of preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            originalPresetButtonHTML.set(btn.id, btn.innerHTML);
+        });
+
         updateFavicon('disconnected');
         updateTabTitle();
 
         setTimeout(connect, 1000);
+
+        // Initialize SLA WebSocket for violation notifications
+        initSLAWebSocket();
+
+        // Poll business impact metrics
+        setInterval(pollBusinessImpact, 2000);
     });
+
+    // ==================== NEW FEATURES ====================
+
+    // Comparison View Toggle
+    let isComparisonView = false;
+    let comparisonPollingInterval = null;
+
+    function toggleComparisonView() {
+        isComparisonView = !isComparisonView;
+        const singleView = document.getElementById('singleView');
+        const comparisonView = document.getElementById('comparisonView');
+        const btn = document.getElementById('comparisonBtn');
+
+        if (isComparisonView) {
+            singleView.classList.add('hidden');
+            comparisonView.classList.add('active');
+            document.body.classList.add('comparison-view-active');
+            btn.textContent = '📊 Single';
+            btn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+            addLog('Switched to comparison view - polling both clusters');
+            pollComparisonData();
+            pollBusinessImpact();
+            // Start polling every 2 seconds
+            if (comparisonPollingInterval) clearInterval(comparisonPollingInterval);
+            comparisonPollingInterval = setInterval(pollComparisonData, 2000);
+        } else {
+            singleView.classList.remove('hidden');
+            comparisonView.classList.remove('active');
+            document.body.classList.remove('comparison-view-active');
+            btn.textContent = '🔄 Comparison';
+            btn.style.background = 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)';
+            addLog('Switched to single view');
+            pollBusinessImpact();
+            if (comparisonPollingInterval) {
+                clearInterval(comparisonPollingInterval);
+                comparisonPollingInterval = null;
+            }
+        }
+    }
+
+    // Poll data for both clusters in comparison mode
+    function pollComparisonData() {
+        if (!isComparisonView) return;
+
+        // Poll C4 cluster (port 8080)
+        fetch('http://localhost:8080' + API_BASE + '/gc/comparison')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('c4-p99').textContent = (data.pauseP99Ms || 0).toFixed(2);
+                document.getElementById('c4-max').textContent = (data.pauseMaxMs || 0).toFixed(2);
+                document.getElementById('c4-sla').textContent = data.slaViolations10ms || 0;
+                document.getElementById('c4-rate').textContent = (data.messageRate || 0).toLocaleString();
+            })
+            .catch(e => console.log('C4 cluster not available'));
+
+        // Poll G1 cluster (port 9080)
+        fetch('http://localhost:9080' + API_BASE + '/gc/comparison')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('g1-p99').textContent = (data.pauseP99Ms || 0).toFixed(2);
+                document.getElementById('g1-max').textContent = (data.pauseMaxMs || 0).toFixed(2);
+                document.getElementById('g1-sla').textContent = data.slaViolations10ms || 0;
+                document.getElementById('g1-rate').textContent = (data.messageRate || 0).toLocaleString();
+            })
+            .catch(e => console.log('G1 cluster not available'));
+
+        // Update delta display
+        updateDeltaDisplay();
+    }
+
+    function updateDeltaDisplay() {
+        const c4P99 = parseFloat(document.getElementById('c4-p99').textContent) || 0;
+        const g1P99 = parseFloat(document.getElementById('g1-p99').textContent) || 0;
+        const c4Sla = parseInt(document.getElementById('c4-sla').textContent) || 0;
+        const g1Sla = parseInt(document.getElementById('g1-sla').textContent) || 0;
+
+        if (c4P99 > 0 && g1P99 > 0) {
+            const ratio = g1P99 / c4P99;
+            const deltaEl = document.getElementById('deltaDisplay');
+            deltaEl.innerHTML = '';
+            const span = document.createElement('span');
+            span.style.color = '#ef4444';
+            span.textContent = `G1 P99 is ${ratio.toFixed(1)}x worse than C4`;
+            deltaEl.appendChild(span);
+        } else if (c4Sla !== g1Sla && g1Sla > 0) {
+            const deltaEl = document.getElementById('deltaDisplay');
+            deltaEl.innerHTML = '';
+            const span = document.createElement('span');
+            span.style.color = '#ef4444';
+            span.textContent = `G1 has ${g1Sla} SLA violations vs C4's ${c4Sla}`;
+            deltaEl.appendChild(span);
+        }
+    }
+
+    // Demo Presets
+    let currentPresetExecution = null;
+    let currentPresetStep = 0;
+    let isDualClusterMode = false;
+    let dualClusterExecutions = { c4: null, g1: null };
+    let dualClusterTotalSteps = 0;
+    let dualClusterCurrentStep = 0;
+    const originalPresetButtonHTML = new Map();
+
+    // Detect if we're in comparison mode (both clusters visible)
+    function detectDualClusterMode() {
+        return document.body.classList.contains('comparison-view-active');
+    }
+
+    async function runDemoPreset(presetId) {
+        // Cancel any running preset and clean up UI before starting a new one
+        await cancelRunningPreset();
+        finishPresetExecution(false); // Reset UI state
+
+        isDualClusterMode = detectDualClusterMode();
+        dualClusterCurrentStep = 0;
+
+        // Immediate visual feedback
+        const btn = document.getElementById('preset-' + presetId);
+        if (btn) {
+            btn.classList.add('running');
+            btn.textContent = '⏳ Starting...';
+        }
+
+        try {
+            if (isDualClusterMode) {
+                // Fire to BOTH clusters in comparison mode
+                console.log('Starting preset on BOTH clusters:', presetId);
+                const c4Result = await startPresetOnCluster(presetId, 'C4', 8080);
+                const g1Result = await startPresetOnCluster(presetId, 'G1', 9080);
+
+                dualClusterExecutions.c4 = c4Result.executionId;
+                dualClusterExecutions.g1 = g1Result.executionId;
+                dualClusterTotalSteps = c4Result.totalSteps;
+
+                addLog(`Preset started on both clusters (C4: ${c4Result.executionId.substring(0, 6)}..., G1: ${g1Result.executionId.substring(0, 6)}...)`);
+                document.getElementById('presetStatus').textContent = `Running on both clusters (Step 1/${dualClusterTotalSteps})`;
+
+                if (btn) {
+                    btn.innerHTML = `⏳ Running...<span class="hint">Both clusters • Step 1/${dualClusterTotalSteps}</span>`;
+                }
+
+                // Execute first step on both
+                await executePresetStep();
+            } else {
+                // Single cluster mode - use current origin
+                console.log('Starting preset:', presetId, 'URL:', API_BASE + '/demo/preset/' + presetId + '/start');
+                const response = await fetch(API_BASE + '/demo/preset/' + presetId + '/start', { method: 'POST' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const result = await response.json();
+
+                addLog(`Starting preset: ${presetId} (execution: ${result.executionId})`);
+                currentPresetExecution = result.executionId;
+                currentPresetStep = 0;
+
+                // Update button text
+                if (btn) {
+                    btn.innerHTML = `⏳ Running...<span class="hint">Step 1/${result.totalSteps}</span>`;
+                }
+
+                // Execute first step
+                await executePresetStep();
+            }
+
+        } catch (error) {
+            console.error('Preset error:', error);
+            addLog('Failed to start preset: ' + error.message);
+            if (btn) {
+                btn.classList.remove('running');
+                btn.textContent = '❌ Failed - Click to retry';
+            }
+        }
+    }
+
+    async function startPresetOnCluster(presetId, clusterName, port, btn) {
+        const url = `http://localhost:${port}/trader-stream-ee/api/demo/preset/${presetId}/start`;
+        console.log(`Starting preset on ${clusterName}:`, url);
+
+        const response = await fetch(url, { method: 'POST' });
+        if (!response.ok) throw new Error(`${clusterName}: HTTP ${response.status}`);
+        const result = await response.json();
+
+        addLog(`${clusterName}: Execution ${result.executionId.substring(0, 8)}... started (${result.totalSteps} steps)`);
+        return result;
+    }
+
+    async function executePresetStep() {
+        // Check if we have an active execution (single or dual cluster)
+        if (!currentPresetExecution && (!dualClusterExecutions.c4 || !dualClusterExecutions.g1)) return;
+
+        try {
+            if (isDualClusterMode) {
+                // Execute step on BOTH clusters
+                const c4Result = await executeStepOnCluster('C4', 8080, dualClusterExecutions.c4, dualClusterCurrentStep);
+                const g1Result = await executeStepOnCluster('G1', 9080, dualClusterExecutions.g1, dualClusterCurrentStep);
+
+                // Check if complete
+                if (c4Result.isComplete || g1Result.isComplete) {
+                    addLog('✅ Dual-cluster preset execution complete!');
+                    finishPresetExecution(true);
+                    return;
+                }
+
+                // Schedule next step
+                if (dualClusterCurrentStep < dualClusterTotalSteps - 1) {
+                    dualClusterCurrentStep++;
+
+                    // Update button with progress
+                    const btn = document.querySelector('.preset-btn.running');
+                    if (btn) {
+                        btn.innerHTML = `⏳ Running...<span class="hint">Both clusters • Step ${dualClusterCurrentStep + 1}/${dualClusterTotalSteps}</span>`;
+                    }
+
+                    document.getElementById('presetStatus').textContent = `Running on both clusters: Step ${dualClusterCurrentStep + 1}/${dualClusterTotalSteps}`;
+                    setTimeout(executePresetStep, 3000); // Wait 3s before next step
+                }
+            } else {
+                // Single cluster mode
+                const url = API_BASE + '/demo/execution/' + currentPresetExecution + '/step/' + currentPresetStep;
+                console.log('Executing step:', currentPresetStep, 'URL:', url);
+                const response = await fetch(url, { method: 'POST' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const result = await response.json();
+
+                addLog(`Step ${currentPresetStep + 1}/${result.totalSteps} completed`);
+
+                // Check if complete
+                if (result.isComplete) {
+                    addLog('✅ Preset execution complete!');
+                    finishPresetExecution(true);
+                    return;
+                }
+
+                // Schedule next step
+                const steps = result.totalSteps || 1;
+                if (currentPresetStep < steps - 1) {
+                    currentPresetStep++;
+
+                    // Update button with progress
+                    const btn = document.querySelector('.preset-btn.running');
+                    if (btn) {
+                        btn.innerHTML = `⏳ Running...<span class="hint">Step ${currentPresetStep + 1}/${steps}</span>`;
+                    }
+
+                    document.getElementById('presetStatus').textContent = `Running: Step ${currentPresetStep + 1}/${steps}`;
+                    setTimeout(executePresetStep, 3000); // Wait 3s before next step
+                }
+            }
+
+        } catch (error) {
+            console.error('Step execution error:', error);
+            addLog('Failed to execute preset step: ' + error.message);
+            finishPresetExecution(false);
+        }
+    }
+
+    async function executeStepOnCluster(clusterName, port, executionId, stepIndex) {
+        const url = `http://localhost:${port}/trader-stream-ee/api/demo/execution/${executionId}/step/${stepIndex}`;
+        console.log(`Executing step on ${clusterName}:`, url);
+
+        const response = await fetch(url, { method: 'POST' });
+        if (!response.ok) {
+            console.warn(`${clusterName} step ${stepIndex} failed: ${response.status}`);
+            return { isComplete: false, totalSteps: dualClusterTotalSteps };
+        }
+        const result = await response.json();
+
+        addLog(`${clusterName}: Step ${stepIndex + 1}/${result.totalSteps} completed`);
+
+        // Return result for tracking
+        return result;
+    }
+
+    // Cancel any running preset execution
+    async function cancelRunningPreset() {
+        const isInComparisonMode = document.body.classList.contains('comparison-view-active');
+
+        if (isInComparisonMode) {
+            // Cancel both cluster executions
+            if (dualClusterExecutions.c4) {
+                try {
+                    await fetch(`http://localhost:8080/trader-stream-ee/api/demo/execution/${dualClusterExecutions.c4}/cancel`, { method: 'POST' });
+                    addLog('Cancelled C4 preset execution');
+                } catch (e) {
+                    console.log('Failed to cancel C4 execution:', e);
+                }
+            }
+            if (dualClusterExecutions.g1) {
+                try {
+                    await fetch(`http://localhost:9080/trader-stream-ee/api/demo/execution/${dualClusterExecutions.g1}/cancel`, { method: 'POST' });
+                    addLog('Cancelled G1 preset execution');
+                } catch (e) {
+                    console.log('Failed to cancel G1 execution:', e);
+                }
+            }
+        } else {
+            // Cancel single cluster execution
+            if (currentPresetExecution) {
+                try {
+                    await fetch(API_BASE + '/demo/execution/' + currentPresetExecution + '/cancel', { method: 'POST' });
+                    addLog('Cancelled preset execution');
+                } catch (e) {
+                    console.log('Failed to cancel execution:', e);
+                }
+            }
+        }
+    }
+
+    // Finish preset execution and clean up UI
+    function finishPresetExecution(success) {
+        // Reset state variables
+        currentPresetExecution = null;
+        currentPresetStep = 0;
+        dualClusterExecutions = { c4: null, g1: null };
+        dualClusterTotalSteps = 0;
+        dualClusterCurrentStep = 0;
+
+        // Restore all buttons to their original state
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.classList.remove('running');
+            const originalHTML = originalPresetButtonHTML.get(btn.id);
+            if (originalHTML) {
+                btn.innerHTML = originalHTML;
+            }
+        });
+
+        // Update status
+        const statusEl = document.getElementById('presetStatus');
+        if (statusEl) {
+            statusEl.textContent = success ? '✅ Execution complete' : '❌ Execution failed';
+        }
+    }
+
+    // SLA WebSocket for violation notifications
+    let slaWs = null;
+    function initSLAWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const contextPath = window.location.pathname.replace(/\/[^\/]*\.html.*$/, '').replace(/\/$/, '');
+        const wsUrl = `${protocol}//${window.location.host}${contextPath}/sla`;
+
+        slaWs = new WebSocket(wsUrl);
+
+        slaWs.onopen = () => addLog('SLA WebSocket connected');
+        slaWs.onerror = error => addLog('SLA WebSocket error');
+
+        slaWs.onmessage = event => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'sla-violation') {
+                handleSLAViolation(data);
+            }
+        };
+    }
+
+    function handleSLAViolation(data) {
+        // Flash the indicator
+        const indicator = document.getElementById('slaFlashIndicator');
+        const message = document.getElementById('slaFlashMessage');
+
+        message.textContent = `Pause: ${data.pauseTimeMs}ms (Threshold: ${data.threshold})`;
+        indicator.classList.add('show');
+
+        // Flash the entire body
+        document.body.classList.add('sla-flash');
+
+        // Hide after animation
+        setTimeout(() => {
+            indicator.classList.remove('show');
+            document.body.classList.remove('sla-flash');
+        }, 500);
+
+        addLog(`SLA Violation: ${data.pauseTimeMs}ms pause detected`);
+    }
+
+    // Business Impact Polling
+    function pollBusinessImpact() {
+        const isInComparisonMode = document.body.classList.contains('comparison-view-active');
+        const singleClusterView = document.getElementById('single-cluster-business-impact');
+        const dualClusterView = document.getElementById('dual-cluster-business-impact');
+        const subtitle = document.getElementById('business-impact-subtitle');
+
+        if (isInComparisonMode) {
+            // Show dual-cluster view
+            singleClusterView.style.display = 'none';
+            dualClusterView.style.display = 'grid';
+            subtitle.textContent = 'C4 vs G1 Cluster Comparison';
+
+            // Fetch from both clusters
+            Promise.all([
+                fetch('http://localhost:8080/trader-stream-ee/api/business/impact').then(r => r.json()),
+                fetch('http://localhost:9080/trader-stream-ee/api/business/impact').then(r => r.json())
+            ]).then(([c4Data, g1Data]) => {
+                // Update C4 metrics
+                document.getElementById('c4-impact-missed-trades').textContent = c4Data.missedTrades.toLocaleString();
+                document.getElementById('c4-impact-revenue').textContent = '$' + (c4Data.revenueAtRisk / 1000000).toFixed(1) + 'M';
+                document.getElementById('c4-impact-sla').textContent = c4Data.slaCompliancePercent.toFixed(1) + '%';
+
+                // Update G1 metrics
+                document.getElementById('g1-impact-missed-trades').textContent = g1Data.missedTrades.toLocaleString();
+                document.getElementById('g1-impact-revenue').textContent = '$' + (g1Data.revenueAtRisk / 1000000).toFixed(1) + 'M';
+                document.getElementById('g1-impact-sla').textContent = g1Data.slaCompliancePercent.toFixed(1) + '%';
+            }).catch(e => console.log('Failed to fetch dual-cluster business impact:', e));
+        } else {
+            // Show single-cluster view
+            singleClusterView.style.display = 'grid';
+            dualClusterView.style.display = 'none';
+            subtitle.textContent = 'Real-time ROI calculation';
+
+            fetch(API_BASE + '/business/impact')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('impact-missed-trades').textContent = data.missedTrades.toLocaleString();
+                    const revenueEl = document.getElementById('impact-revenue');
+                    revenueEl.textContent = '$' + (data.revenueAtRisk / 1000000).toFixed(1) + 'M';
+                    document.getElementById('impact-sla').textContent = data.slaCompliancePercent.toFixed(1) + '%';
+                })
+                .catch(e => console.log('Failed to fetch business impact'));
+        }
+    }
 </script>
 </body>
 
