@@ -1,5 +1,6 @@
 package fish.payara.trader.rest;
 
+import com.hazelcast.core.HazelcastInstance;
 import fish.payara.trader.aeron.MarketDataPublisher;
 import fish.payara.trader.monitoring.GCPauseMonitor;
 import fish.payara.trader.util.InstanceUtils;
@@ -28,6 +29,9 @@ public class HealthResource {
 
     @Inject
     private GCPauseMonitor gcPauseMonitor;
+
+    @Inject
+    private HazelcastInstance hazelcastInstance;
 
     @GET
     @Path("/check")
@@ -67,6 +71,9 @@ public class HealthResource {
         health.put("jvmName", jvm.name());
         health.put("gcCollectors", jvm.gcCollectors());
         health.put("javaVersion", System.getProperty("java.version"));
+
+        boolean clusterMode = hazelcastInstance != null && hazelcastInstance.getCluster().getMembers().size() > 1;
+        health.put("clusterMode", clusterMode);
 
         health.put("status", allHealthy ? "healthy" : "unhealthy");
         health.put("readyForDemo", allHealthy);

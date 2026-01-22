@@ -33,6 +33,10 @@ ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/pay
 # Copy WAR file from build stage
 COPY --from=build /app/target/*.war ROOT.war
 
+# Copy entrypoint script for JFR configuration
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Create recordings directory for JFR output
 RUN mkdir -p /opt/payara/recordings && chmod 777 /opt/payara/recordings
 
@@ -47,7 +51,7 @@ EXPOSE 8080
 #
 # Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
 #
-# JFR is enabled by default - disable via JFR_ENABLED=false environment variable
+# JFR is enabled by default - entrypoint script handles JFR_ENABLED environment variable
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
     -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \
@@ -59,13 +63,17 @@ ENV JAVA_OPTS="-Xms8g \
     -XX:+UseStringDeduplication \
     -XX:+OptimizeStringConcat \
     -Djava.net.preferIPv4Stack=true \
-    -XX:StartFlightRecording=\${JFR_ENABLED:-name=production,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g} \
-    -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256 \
     -Xlog:jfr*=info"
+
+# Set recording name for JFR
+ENV RECORDING_NAME="production"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/trader-stream-ee/api/status || exit 1
+
+# Use entrypoint to handle JFR configuration
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Run Payara Micro with the WAR
 CMD java ${JAVA_OPTS} -jar payara-micro.jar --deploy ROOT.war --contextroot trader-stream-ee --nohazelcast

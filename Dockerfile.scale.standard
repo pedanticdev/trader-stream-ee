@@ -63,8 +63,8 @@ ENV JAVA_OPTS="-Xms4g \
     -XX:+UseStringDeduplication \
     -XX:+OptimizeStringConcat \
     -Djava.net.preferIPv4Stack=true \
-    -XX:StartFlightRecording=\${JFR_ENABLED:-name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g} \
-    -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256 \
+    -XX:StartFlightRecording=\${JFR_ENABLED:-name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal} \
+    -XX:FlightRecorderOptions=stackdepth=256 \
     -Xlog:jfr*=info"
 
 # Health check

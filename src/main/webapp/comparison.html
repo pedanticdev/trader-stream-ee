@@ -507,6 +507,63 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Cluster Mode Warning */
+        .cluster-warning {
+            background: var(--bg-secondary);
+            padding: 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px var(--shadow);
+            text-align: center;
+            max-width: 600px;
+            margin: 40px auto;
+        }
+
+        .cluster-warning-icon {
+            font-size: 3em;
+            margin-bottom: 16px;
+        }
+
+        .cluster-warning-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .cluster-warning-text {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .cluster-warning-steps {
+            text-align: left;
+            background: var(--bg-primary);
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .cluster-warning-steps code {
+            background: var(--bg-secondary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .cluster-warning-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .cluster-warning-steps li {
+            margin-bottom: 8px;
+        }
+
+        /* Utility class to hide elements */
+        .hidden {
+            display: none !important;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .comparison-grid {
@@ -694,6 +751,27 @@
                 </div>
             </div>
         </div>
+
+        <div class="cluster-warning hidden" id="cluster-warning">
+            <div class="cluster-warning-icon">⚠️</div>
+            <div class="cluster-warning-title">Cluster Mode Required</div>
+            <div class="cluster-warning-text">
+                The comparison dashboard requires running in cluster mode with two TradeStreamEE instances.
+                Please start the comparison environment to see C4 vs G1GC side-by-side.
+            </div>
+            <div class="cluster-warning-steps">
+                <strong>To start cluster mode:</strong>
+                <ol>
+                    <li>Open a terminal in the project directory</li>
+                    <li>Run <code>./start-comparison.sh all</code> or <code>./demo-quick-start.sh all</code></li>
+                    <li>Wait for both clusters to start (30-60 seconds)</li>
+                    <li>Refresh this page</li>
+                </ol>
+            </div>
+            <div class="cluster-warning-text">
+                <em>Or visit the <a href="/trader-stream-ee/index.html" style="color: #3b82f6;">single-cluster dashboard</a> to monitor a single instance.</em>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -702,6 +780,65 @@
         let g1Chart = null;
         let c4Data = { pauses: [], labels: [], violations: 0, p99: 0 };
         let g1Data = { pauses: [], labels: [], violations: 0, p99: 0 };
+
+        // Check if running in cluster mode
+        async function checkClusterMode() {
+            try {
+                // Check local health endpoint for cluster mode flag
+                const localResponse = await fetch('/trader-stream-ee/api/health/check');
+                if (!localResponse.ok) {
+                    return false;
+                }
+                const health = await localResponse.json();
+
+                // Verify G1 instance (port 9080) is accessible
+                let g1Accessible = false;
+                try {
+                    const g1Response = await fetch('http://localhost:9080/trader-stream-ee/api/health/ready', {
+                        signal: AbortSignal.timeout(3000)
+                    });
+                    g1Accessible = g1Response.ok;
+                } catch (e) {
+                    // G1 instance not accessible
+                }
+
+                const isClusterMode = health.clusterMode === true && g1Accessible;
+
+                // Toggle visibility of comparison elements based on cluster mode
+                const comparisonGrid = document.querySelector('.comparison-grid');
+                const deltaSection = document.querySelector('.delta-section');
+                const presetControls = document.querySelector('.preset-controls');
+                const clusterWarning = document.getElementById('cluster-warning');
+
+                if (isClusterMode) {
+                    // Show comparison elements
+                    comparisonGrid?.classList.remove('hidden');
+                    deltaSection?.classList.remove('hidden');
+                    presetControls?.classList.remove('hidden');
+                    clusterWarning?.classList.add('hidden');
+                } else {
+                    // Hide comparison elements, show warning
+                    comparisonGrid?.classList.add('hidden');
+                    deltaSection?.classList.add('hidden');
+                    presetControls?.classList.add('hidden');
+                    clusterWarning?.classList.remove('hidden');
+                }
+
+                return isClusterMode;
+            } catch (e) {
+                console.error('Failed to check cluster mode:', e);
+                // Default to showing warning on error
+                const comparisonGrid = document.querySelector('.comparison-grid');
+                const deltaSection = document.querySelector('.delta-section');
+                const presetControls = document.querySelector('.preset-controls');
+                const clusterWarning = document.getElementById('cluster-warning');
+                comparisonGrid?.classList.add('hidden');
+                deltaSection?.classList.add('hidden');
+                presetControls?.classList.add('hidden');
+                clusterWarning?.classList.remove('hidden');
+                return false;
+            }
+        }
 
         // Initialize charts
         function initCharts() {
@@ -944,7 +1081,16 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check cluster mode first
+            const isClusterMode = await checkClusterMode();
+
+            // Only initialize comparison features if in cluster mode
+            if (!isClusterMode) {
+                console.log('Not in cluster mode - comparison features disabled');
+                return;
+            }
+
             initCharts();
 
             // Connect to both clusters

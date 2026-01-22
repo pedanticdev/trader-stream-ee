@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
@@ -35,7 +36,10 @@ public class DemoPresetService {
     private HazelcastInstance hazelcastInstance;
 
     private Map<String, PresetExecutionContext> getActiveExecutions() {
-        return hazelcastInstance.getMap(EXECUTIONS_MAP_NAME);
+        if(hazelcastInstance != null) {
+            return hazelcastInstance.getMap(EXECUTIONS_MAP_NAME);
+        }
+        return Map.of();
     }
 
     /**
@@ -62,7 +66,7 @@ public class DemoPresetService {
             return null;
         }
 
-        String executionId = java.util.UUID.randomUUID().toString();
+        String executionId = UUID.randomUUID().toString();
         PresetExecutionContext context = new PresetExecutionContext(executionId, presetId, preset, System.currentTimeMillis());
 
         getActiveExecutions().put(executionId, context);

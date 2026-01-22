@@ -63,8 +63,8 @@ services:
         -XX:+OptimizeStringConcat
         -XX:+UseContainerSupport
         -XX:MaxRAMPercentage=75.0
-        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g
-        -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256
+        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal
+        -XX:FlightRecorderOptions=stackdepth=256
         -Xlog:jfr*=info
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
         -Djava.net.preferIPv4Stack=true
@@ -115,8 +115,8 @@ services:
         -XX:+OptimizeStringConcat
         -XX:+UseContainerSupport
         -XX:MaxRAMPercentage=75.0
-        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g
-        -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256
+        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal
+        -XX:FlightRecorderOptions=stackdepth=256
         -Xlog:jfr*=info
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
         -Djava.net.preferIPv4Stack=true
@@ -167,8 +167,8 @@ services:
         -XX:+OptimizeStringConcat
         -XX:+UseContainerSupport
         -XX:MaxRAMPercentage=75.0
-        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g
-        -XX:FlightRecorderOptions=samplethreads=true,stackdepth=256
+        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal
+        -XX:FlightRecorderOptions=stackdepth=256
         -Xlog:jfr*=info
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
         -Djava.net.preferIPv4Stack=true
