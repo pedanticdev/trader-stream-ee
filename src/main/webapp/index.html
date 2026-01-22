@@ -899,9 +899,8 @@
             <button onclick="exportStats('json')" class="nav-link"
                     style="background: transparent; border: 1px solid #3b82f6; cursor: pointer; padding: 8px 16px;">Export
                 JSON</button>
-            <button onclick="exportStats('csv')" class="nav-link"
-                    style="background: transparent; border: 1px solid #3b82f6; cursor: pointer; padding: 8px 16px;">Export
-                CSV</button>
+            <button onclick="showJfrModal()" class="nav-link"
+                    style="background: transparent; border: 1px solid #7c3aed; cursor: pointer; padding: 8px 16px;">JFR</button>
             <a href="blog.html" class="nav-link">Read Blog</a>
         </div>
     </header>
@@ -1294,6 +1293,28 @@
         </div>
     </div>
 </div>
+
+<div id="jfrModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 8px; padding: 24px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="font-size: 1.5em; margin: 0; color: #1e293b;">JFR Recordings</h2>
+            <button onclick="closeJfrModal()" style="background: transparent; border: none; font-size: 1.5em; cursor: pointer; padding: 0; color: #64748b;">&times;</button>
+        </div>
+        <div id="jfrLoading" style="text-align: center; padding: 40px; color: #64748b;">Loading recordings...</div>
+        <div id="jfrContent" style="display: none;">
+            <div id="jfrRecordingsList"></div>
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center;">
+                <button onclick="startNewRecording()" style="background: #7c3aed; margin: 0 auto;">Capture 60s Snapshot</button>
+            </div>
+        </div>
+        <div id="jfrEmpty" style="display: none; text-align: center; padding: 40px; color: #64748b;">
+            <p style="font-size: 1.1em; margin-bottom: 16px;">No recordings found</p>
+            <button onclick="startNewRecording()" style="background: #7c3aed;">Capture 60s Snapshot</button>
+        </div>
+        <div id="jfrError" style="display: none; text-align: center; padding: 40px; color: #ef4444;"></div>
+    </div>
+</div>
+
 <script>
     let ws = null, messageCount = 0, lastMessageTime = 0, messagesLastSecond = 0;
     let lastGcCount = 0, lastGcPollTime = 0;
@@ -2154,6 +2175,113 @@
         URL.revokeObjectURL(url);
 
         addLog(`Stats exported as ${format.toUpperCase()}: ${filename}`);
+    }
+
+    function showJfrModal() {
+        document.getElementById('jfrModal').style.display = 'flex';
+        document.getElementById('jfrLoading').style.display = 'block';
+        document.getElementById('jfrContent').style.display = 'none';
+        document.getElementById('jfrEmpty').style.display = 'none';
+        document.getElementById('jfrError').style.display = 'none';
+
+        fetch(API_BASE + '/jfr/files')
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('jfrLoading').style.display = 'none';
+
+                if (!data.files || data.files.length === 0) {
+                    document.getElementById('jfrEmpty').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('jfrContent').style.display = 'block';
+                const listEl = document.getElementById('jfrRecordingsList');
+                listEl.textContent = '';
+
+                data.files.forEach(file => {
+                    const item = document.createElement('div');
+                    item.style.cssText = 'padding: 12px; margin-bottom: 8px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;';
+
+                    const wrapper = document.createElement('div');
+                    wrapper.style.cssText = 'display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;';
+
+                    const infoDiv = document.createElement('div');
+                    infoDiv.style.cssText = 'flex: 1; min-width: 200px;';
+
+                    const nameDiv = document.createElement('div');
+                    nameDiv.style.cssText = 'font-weight: 600; color: #1e293b; margin-bottom: 4px;';
+                    nameDiv.textContent = file.filename;
+
+                    const metaDiv = document.createElement('div');
+                    metaDiv.style.cssText = 'font-size: 0.85em; color: #64748b;';
+                    metaDiv.textContent = `${file.sizeFormatted} • ${new Date(file.lastModified).toLocaleString()}`;
+
+                    infoDiv.appendChild(nameDiv);
+                    infoDiv.appendChild(metaDiv);
+
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.textContent = 'Download';
+                    downloadBtn.style.cssText = 'background: #7c3aed; padding: 8px 16px; font-size: 0.9em;';
+                    downloadBtn.onclick = () => downloadJfr(file.filename);
+
+                    wrapper.appendChild(infoDiv);
+                    wrapper.appendChild(downloadBtn);
+                    item.appendChild(wrapper);
+                    listEl.appendChild(item);
+                });
+            })
+            .catch(error => {
+                document.getElementById('jfrLoading').style.display = 'none';
+                const errorEl = document.getElementById('jfrError');
+                errorEl.style.display = 'block';
+                errorEl.textContent = 'Failed to load recordings: ' + error.message;
+            });
+    }
+
+    function closeJfrModal() {
+        document.getElementById('jfrModal').style.display = 'none';
+    }
+
+    function downloadJfr(filename) {
+        addLog(`Downloading JFR: ${filename}`);
+        window.location.href = `${API_BASE}/jfr/download/${filename}`;
+    }
+
+    function startNewRecording() {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Starting...';
+        btn.disabled = true;
+
+        fetch(`${API_BASE}/jfr/recording/start?name=ui-recording&durationSeconds=60`, { method: 'POST' })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                btn.textContent = 'Recording...';
+                btn.disabled = false;
+                addLog(`Snapshot started: ${data.recordingId} - capture window: 60s`);
+
+                setTimeout(() => {
+                    showJfrModal();
+                }, 1000);
+            })
+            .catch(error => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+                addLog('Failed to start recording: ' + error.message);
+            });
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('jfrModal');
+        if (event.target === modal) {
+            closeJfrModal();
+        }
     }
 
     window.addEventListener('load', () => {
