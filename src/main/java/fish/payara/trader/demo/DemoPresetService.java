@@ -92,7 +92,6 @@ public class DemoPresetService {
             AllocationMode mode = AllocationMode.valueOf(step.mode());
             pressureService.setAllocationMode(mode);
             context.markStepCompleted(stepIndex);
-            // Put updated context back into distributed map
             activeExecutions.put(executionId, context);
             LOGGER.info("Executed step " + stepIndex + " of preset " + context.presetId() + ": " + step.mode());
             return true;

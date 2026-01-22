@@ -29,10 +29,7 @@ public class BusinessImpactCalculator {
         long messageRate = marketDataPublisher.getMessageRatePerSecond();
         long slaViolations10ms = stats.violationsOver10ms;
 
-        // Calculate SLA compliance
         double slaCompliancePercent = calculateSLACompliance(stats.totalPauseCount, slaViolations10ms);
-
-        // Calculate business impact
         long missedTrades = calculateMissedTrades(messageRate, slaViolations10ms);
         long revenueAtRisk = missedTrades * config.tradeValue();
         int savingsPercent = calculateSavingsPercent(config.instancesNeededC4(), config.instancesNeededG1());

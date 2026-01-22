@@ -9,6 +9,7 @@ import fish.payara.trader.monitoring.SLAMonitorService;
 import fish.payara.trader.pressure.AllocationMode;
 import fish.payara.trader.pressure.MemoryPressureService;
 import fish.payara.trader.util.InstanceUtils;
+import fish.payara.trader.util.InstanceUtils.JvmMetadata;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -17,12 +18,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /** REST endpoint for GC statistics monitoring */
 @Path("/gc")
@@ -78,19 +76,13 @@ public class GCStatsResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getComparison() {
         String instanceName = InstanceUtils.getInstanceName();
-
-        String jvmVendor = System.getProperty("java.vm.vendor");
-        String jvmName = System.getProperty("java.vm.name");
-        List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
-        String gcName = gcBeans.stream().map(GarbageCollectorMXBean::getName).collect(Collectors.joining(", "));
-
-        boolean isAzulC4 = gcName.toLowerCase().contains("c4") || jvmName.toLowerCase().contains("zing");
+        JvmMetadata jvm = InstanceUtils.getJvmMetadata();
 
         AllocationMode currentMode = memoryPressureService.getCurrentMode();
         List<GCStats> gcStats = gcStatsService.collectGCStats();
         GCPauseMonitor.GCPauseStats pauseStats = gcPauseMonitor.getStats();
 
-        GCComparisonResponse response = GCComparisonResponse.from(instanceName, jvmVendor, jvmName, gcName, isAzulC4,
+        GCComparisonResponse response = GCComparisonResponse.from(instanceName, jvm.vendor(), jvm.name(), jvm.gcCollectors(), jvm.isAzulC4(),
                         Runtime.getRuntime().maxMemory() / (1024 * 1024), currentMode.name(), currentMode.getAllocationRateMBPerSec(),
                         publisher.getMessagesPublished(), gcStats, pauseStats);
 

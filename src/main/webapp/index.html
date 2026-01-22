@@ -61,17 +61,149 @@
             transition: background 0.3s;
         }
 
-        .nav-link {
-            color: #3b82f6;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95em;
-            padding: 8px 16px;
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 32px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        header h1 {
+            font-size: 1.75em;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        header .subtitle {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .main-nav {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .settings-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .settings-group button {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 12px;
             border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
             transition: all 0.2s;
         }
 
-        .nav-link:hover {
+        .settings-group button:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+
+        .polling-select select {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            cursor: pointer;
+        }
+
+        /* Dropdown menu */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .dropdown-btn:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+
+        .dropdown-btn::after {
+            content: '▾';
+            font-size: 0.8em;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow);
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .dropdown.open .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 10px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.15s;
+        }
+
+        .dropdown-menu a:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .dropdown-menu a:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        .dropdown-menu a:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 4px 0;
+        }
+
+        .nav-link {
             background: #eff6ff;
             color: #1d4ed8;
         }
@@ -1103,6 +1235,57 @@
             font-size: 1em;
             font-weight: 700;
         }
+
+        /* Projector Mode */
+        body.projector-mode {
+            font-size: 18px;
+        }
+
+        body.projector-mode h1 {
+            font-size: 3em;
+        }
+
+        body.projector-mode .subtitle {
+            font-size: 1.1em;
+        }
+
+        body.projector-mode .stat-value {
+            font-size: 2.5em;
+        }
+
+        body.projector-mode .stat-label {
+            font-size: 0.9em;
+        }
+
+        body.projector-mode .pressure-btn {
+            font-size: 1em;
+            padding: 14px 20px;
+        }
+
+        body.projector-mode .nav-link {
+            font-size: 1em;
+            padding: 10px 18px;
+        }
+
+        /* High contrast for projectors */
+        body.projector-mode .stat-value.good {
+            color: #059669;
+            font-weight: 800;
+        }
+
+        body.projector-mode .stat-value.danger {
+            color: #dc2626;
+            font-weight: 800;
+        }
+
+        body.projector-mode .stat-value.warning {
+            color: #d97706;
+            font-weight: 800;
+        }
+
+        body.projector-mode #projector-btn {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
     </style>
 </head>
 
@@ -1111,31 +1294,33 @@
     <header>
         <div>
             <h1>TradeStreamEE</h1>
-            <p class="subtitle">High-Frequency Trading Dashboard • Aeron + SBE + Payara Micro + Azul Platform Prime</p>
-            </p>
+            <p class="subtitle">High-Frequency Trading Dashboard • Aeron + SBE + Payara Micro</p>
         </div>
-        <div style="display: flex; gap: 12px; align-items: center;">
-            <button onclick="toggleComparisonView()" class="nav-link comparison-toggle"
-                    style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); border: 1px solid #7c3aed; cursor: pointer; padding: 8px 16px;"
-                    id="comparisonBtn">🔄 Comparison</button>
-            <select id="pollingInterval" onchange="setPollingInterval(this.value)"
-                    style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid #64748b; cursor: pointer; padding: 8px 12px; border-radius: 6px; font-family: inherit;">
-                <option value="1000">Poll: 1s</option>
-                <option value="2000" selected>Poll: 2s</option>
-                <option value="5000">Poll: 5s</option>
-                <option value="10000">Poll: 10s</option>
-                <option value="30000">Poll: 30s</option>
-            </select>
-            <button onclick="toggleDarkMode()" class="nav-link"
-                    style="background: transparent; border: 1px solid #64748b; cursor: pointer; padding: 8px 16px;"
-                    id="darkModeBtn">🌙 Dark</button>
-            <button onclick="exportStats('json')" class="nav-link"
-                    style="background: transparent; border: 1px solid #3b82f6; cursor: pointer; padding: 8px 16px;">Export
-                JSON</button>
-            <button onclick="showJfrModal()" class="nav-link"
-                    style="background: transparent; border: 1px solid #7c3aed; cursor: pointer; padding: 8px 16px;">JFR</button>
-            <a href="blog.html" class="nav-link">Read Blog</a>
-        </div>
+        <nav class="main-nav">
+            <div class="dropdown" id="nav-dropdown">
+                <button class="dropdown-btn" onclick="toggleDropdown()">Menu</button>
+                <div class="dropdown-menu">
+                    <a href="health.html">Health Check</a>
+                    <a href="comparison.html">Comparison</a>
+                    <a href="blog.html">Blog</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="exportStats('json'); return false;">Export JSON</a>
+                </div>
+            </div>
+            <div class="settings-group">
+                <button onclick="toggleProjectorMode()" id="projector-btn" title="Projector mode">🎯</button>
+                <button onclick="toggleDarkMode()" id="darkModeBtn" title="Toggle dark mode">🌙</button>
+                <div class="polling-select">
+                    <select id="pollingInterval" onchange="setPollingInterval(this.value)">
+                        <option value="1000">1s</option>
+                        <option value="2000" selected>2s</option>
+                        <option value="5000">5s</option>
+                        <option value="10000">10s</option>
+                    </select>
+                </div>
+                <button onclick="showJfrModal()" title="JFR recordings">JFR</button>
+            </div>
+        </nav>
     </header>
 
     <div class="stats-panel">
@@ -2118,6 +2303,43 @@
         }
     }
 
+    function toggleProjectorMode() {
+        const body = document.body;
+        const btn = document.getElementById('projector-btn');
+        const isProjector = body.classList.toggle('projector-mode');
+
+        btn.textContent = isProjector ? '🖥️ Normal' : '🎯 Projector';
+        btn.style.background = isProjector
+            ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)'
+            : 'linear-gradient(135deg, #64748b 0%, #475569 100%)';
+
+        localStorage.setItem('projectorMode', isProjector);
+    }
+
+    function toggleDropdown() {
+        const dropdown = document.getElementById('nav-dropdown');
+        dropdown.classList.toggle('open');
+    }
+
+    function closeDropdownWhenClickingOutside(event) {
+        const dropdown = document.getElementById('nav-dropdown');
+        if (!dropdown.contains(event.target)) {
+            dropdown.classList.remove('open');
+        }
+    }
+
+    document.addEventListener('click', closeDropdownWhenClickingOutside);
+
+    function initProjectorMode() {
+        const savedProjectorMode = localStorage.getItem('projectorMode') === 'true';
+        if (savedProjectorMode) {
+            document.body.classList.add('projector-mode');
+            document.getElementById('projector-btn').textContent = '🖥️ Normal';
+            document.getElementById('projector-btn').style.background =
+                'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+        }
+    }
+
     function updateFavicon(status) {
         const canvas = document.createElement('canvas');
         canvas.width = 32;
@@ -2707,6 +2929,7 @@
 
     window.addEventListener('load', () => {
         initDarkMode();
+        initProjectorMode();
         initPollingInterval();
         initCharts();
         pollInstanceStatus();

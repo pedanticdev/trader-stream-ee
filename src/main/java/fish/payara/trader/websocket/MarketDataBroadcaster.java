@@ -41,7 +41,6 @@ public class MarketDataBroadcaster {
 
     private ITopic<String> clusterTopic;
 
-    // Statistics
     private long messagesSent = 0;
     private long lastStatsTime = System.currentTimeMillis();
 
@@ -111,7 +110,6 @@ public class MarketDataBroadcaster {
         long startTime = System.currentTimeMillis();
         int sessionCount = sessions.size();
 
-        // Extract message type from JSON for JFR event
         String messageType = extractMessageType(jsonMessage);
 
         sessions.removeIf(session -> {
@@ -129,7 +127,6 @@ public class MarketDataBroadcaster {
 
         long latency = System.currentTimeMillis() - startTime;
 
-        // JFR event for WebSocket broadcast
         MarketDataEvents.WebSocketBroadcast wsEvent = new MarketDataEvents.WebSocketBroadcast();
         if (wsEvent.isEnabled()) {
             wsEvent.clientCount = sessionCount;
@@ -202,7 +199,7 @@ public class MarketDataBroadcaster {
     /** Log statistics periodically */
     private void logStatistics() {
         long now = System.currentTimeMillis();
-        if (now - lastStatsTime > 10000) { // Log every 10 seconds
+        if (now - lastStatsTime > 10000) {
             LOGGER.info(String.format("WebSocket Stats - Active sessions: %d, Messages sent: %,d (%.1f msg/sec)", sessions.size(), messagesSent,
                             messagesSent / ((now - lastStatsTime) / 1000.0)));
             lastStatsTime = now;
