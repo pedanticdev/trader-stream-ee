@@ -41,6 +41,8 @@ services:
     build:
       context: .
       dockerfile: ${DOCKERFILE:-Dockerfile.scale}
+      args:
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.2}
     container_name: trader-stream-1
     hostname: trader-stream-1
     ports:
@@ -81,6 +83,8 @@ services:
     build:
       context: .
       dockerfile: ${DOCKERFILE:-Dockerfile.scale}
+      args:
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.2}
     container_name: trader-stream-2
     hostname: trader-stream-2
     ports:
@@ -121,6 +125,8 @@ services:
     build:
       context: .
       dockerfile: ${DOCKERFILE:-Dockerfile.scale}
+      args:
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.2}
     container_name: trader-stream-3
     hostname: trader-stream-3
     ports:
@@ -162,6 +168,8 @@ services:
     build:
       context: .
       dockerfile: ${DOCKERFILE:-Dockerfile.scale}
+      args:
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.2}
     # Note: No container_name or hostname - allows multiple instances
     expose:
       - "8080"
