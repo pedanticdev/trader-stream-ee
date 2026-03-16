@@ -34,6 +34,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.scale
+      args:
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.2}
     container_name: trader-stream-c4-1
     hostname: trader-stream-c4-1
     ports:
@@ -49,7 +51,10 @@ services:
       - ENABLE_PUBLISHER=true
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
-        -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
+        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+        --add-opens java.base/java.nio=ALL-UNNAMED
         -XX:+AlwaysPreTouch
         -XX:+UseTransparentHugePages
         -XX:+UseContainerSupport
@@ -60,6 +65,7 @@ services:
       - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
       - ./monitoring/logs/c4-1:/opt/payara/logs
+      - ./monitoring/gc-logs/c4-1:/opt/payara/gc-logs
     labels:
       - "traefik.enable=true"
       - "cluster=c4"
@@ -89,7 +95,10 @@ services:
       - ENABLE_PUBLISHER=true
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
-        -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
+        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+        --add-opens java.base/java.nio=ALL-UNNAMED
         -XX:+AlwaysPreTouch
         -XX:+UseTransparentHugePages
         -XX:+UseContainerSupport
@@ -99,6 +108,7 @@ services:
       - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
       - ./monitoring/logs/c4-2:/opt/payara/logs
+      - ./monitoring/gc-logs/c4-2:/opt/payara/gc-logs
     labels:
       - "traefik.enable=true"
       - "cluster=c4"
@@ -128,7 +138,10 @@ services:
       - ENABLE_PUBLISHER=true
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
-        -Xlog:gc*:file=/opt/payara/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
+        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+        --add-opens java.base/java.nio=ALL-UNNAMED
         -XX:+AlwaysPreTouch
         -XX:+UseTransparentHugePages
         -XX:+UseContainerSupport
@@ -138,6 +151,7 @@ services:
       - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar:/opt/payara/jmx_prometheus_javaagent.jar:ro
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
       - ./monitoring/logs/c4-3:/opt/payara/logs
+      - ./monitoring/gc-logs/c4-3:/opt/payara/gc-logs
     labels:
       - "traefik.enable=true"
       - "cluster=c4"

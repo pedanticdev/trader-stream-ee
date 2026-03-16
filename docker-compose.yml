@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.2}
     container_name: trader-stream-ee
     ports:
       - "8080:8080"
@@ -15,6 +17,8 @@ services:
     #   - JAVA_OPTS=-XX:+UseZGC -Xms4g -Xmx4g -Xlog:gc*:stdout:time,uptime
     environment:
       - TRADER_INGESTION_MODE=${MODE:-AERON}
+    volumes:
+      - ./monitoring/gc-logs/azul:/opt/payara/gc-logs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/trader-stream-ee/api/status"]
       interval: 30s
