@@ -32,6 +32,7 @@ docs/*
 *.jar
 monitoring/jmx-exporter/*.jar
 monitoring/logs/
+monitoring/gc-logs/
 monitoring/prometheus/data/
 monitoring/grafana/data/
 monitoring/loki/data/

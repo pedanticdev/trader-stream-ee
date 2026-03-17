@@ -2,10 +2,14 @@ package fish.payara.trader.monitoring;
 
 import com.sun.management.GarbageCollectionNotificationInfo;
 import com.sun.management.GcInfo;
+import fish.payara.trader.dto.SLAViolationEvent;
 import fish.payara.trader.jfr.MarketDataEvents;
+import fish.payara.trader.util.InstanceUtils;
+import fish.payara.trader.websocket.MarketDataBroadcaster;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
@@ -38,6 +42,9 @@ public class GCPauseMonitor implements NotificationListener {
     private final AtomicLong violationsOver100ms = new AtomicLong(0);
 
     private final List<NotificationEmitter> emitters = new ArrayList<>();
+
+    @Inject
+    private MarketDataBroadcaster broadcaster;
 
     @PostConstruct
     public void init() {
@@ -113,24 +120,35 @@ public class GCPauseMonitor implements NotificationListener {
             }
         }
 
+        String threshold = null;
         if (pauseMs > 100) {
             violationsOver100ms.incrementAndGet();
             violationsOver50ms.incrementAndGet();
             violationsOver10ms.incrementAndGet();
-            emitSlaViolation(pauseMs, ">100ms");
+            threshold = ">100ms";
+            emitSlaViolation(pauseMs, threshold);
         } else if (pauseMs > 50) {
             violationsOver50ms.incrementAndGet();
             violationsOver10ms.incrementAndGet();
-            emitSlaViolation(pauseMs, ">50ms");
+            threshold = ">50ms";
+            emitSlaViolation(pauseMs, threshold);
         } else if (pauseMs > 10) {
             violationsOver10ms.incrementAndGet();
-            emitSlaViolation(pauseMs, ">10ms");
+            threshold = ">10ms";
+            emitSlaViolation(pauseMs, threshold);
+        }
+
+        // Broadcast SLA violation to WebSocket clients for real-time flashing
+        if (threshold != null && broadcaster != null) {
+            String instanceName = InstanceUtils.getInstanceName();
+            SLAViolationEvent event = SLAViolationEvent.create(pauseMs, threshold, instanceName);
+            broadcaster.broadcast(event.toJson());
         }
 
         if (pauseMs > 100) {
-            LOGGER.warning(String.format("Large GC pause detected: %d ms [%s - %s]", pauseMs, gcName, gcAction));
+            LOGGER.warning("Large GC pause detected: " + pauseMs + " ms [" + gcName + " - " + gcAction + "]");
         } else if (pauseMs > 50) {
-            LOGGER.info(String.format("Notable GC pause: %d ms [%s - %s]", pauseMs, gcName, gcAction));
+            LOGGER.info("Notable GC pause: " + pauseMs + " ms [" + gcName + " - " + gcAction + "]");
         }
     }
 
@@ -153,10 +171,10 @@ public class GCPauseMonitor implements NotificationListener {
 
         Collections.sort(pauses);
 
-        long p50 = percentile(pauses, 0.50);
-        long p95 = percentile(pauses, 0.95);
-        long p99 = percentile(pauses, 0.99);
-        long p999 = percentile(pauses, 0.999);
+        long p50 = InstanceUtils.percentile(pauses, 0.50);
+        long p95 = InstanceUtils.percentile(pauses, 0.95);
+        long p99 = InstanceUtils.percentile(pauses, 0.99);
+        long p999 = InstanceUtils.percentile(pauses, 0.999);
         long max = pauses.get(pauses.size() - 1);
 
         long count = totalPauseCount.get();
@@ -166,12 +184,6 @@ public class GCPauseMonitor implements NotificationListener {
         return new GCPauseStats(count, totalTime, avgPause, p50, p95, p99, p999, maxPauseMs, // All-time max
                         violationsOver10ms.get(), violationsOver50ms.get(), violationsOver100ms.get(), pauses.size() // Sample size for percentiles
         );
-    }
-
-    private long percentile(List<Long> sortedValues, double percentile) {
-        int index = (int) Math.ceil(percentile * sortedValues.size()) - 1;
-        index = Math.max(0, Math.min(index, sortedValues.size() - 1));
-        return sortedValues.get(index);
     }
 
     public void reset() {

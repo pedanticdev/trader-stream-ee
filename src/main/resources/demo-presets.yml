@@ -1,0 +1,80 @@
+# Demo Preset Configuration for TradeStreamEE
+# Each preset defines a sequence of memory pressure scenarios to demonstrate GC differences
+
+presets:
+  - id: MARKET_OPEN_SPIKE
+    name: "Market Open Spike"
+    description: "Simulates NYSE open with 5x allocation surge. C4 handles burst smoothly; G1 stutters."
+    durationSeconds: 30
+    expectedImpact: "High"
+    steps:
+      - mode: STEADY_LOAD
+        durationSeconds: 5
+        description: "Baseline warmup"
+      - mode: GROWING_HEAP
+        durationSeconds: 15
+        description: "5x burst allocation - simulates market open surge"
+      - mode: STEADY_LOAD
+        durationSeconds: 10
+        description: "Return to baseline"
+
+  - id: EXECUTIVE_30_SEC
+    name: "Executive 30-Sec"
+    description: "Quick demo for executive meetings. Shows clear C4 vs G1 difference in 30 seconds."
+    durationSeconds: 30
+    expectedImpact: "High"
+    steps:
+      - mode: PROMOTION_STORM
+        durationSeconds: 30
+        description: "High promotion rate - shows old gen collection differences"
+
+  - id: TRADING_DAY_STRESS
+    name: "Trading Day Stress"
+    description: "Full trading day simulation with mixed scenarios. Tests old gen collection efficiency."
+    durationSeconds: 180
+    expectedImpact: "Very High"
+    steps:
+      - mode: STEADY_LOAD
+        durationSeconds: 60
+        description: "Morning steady trading"
+      - mode: PROMOTION_STORM
+        durationSeconds: 60
+        description: "Lunch volume spike - old gen stress"
+      - mode: FRAGMENTATION
+        durationSeconds: 60
+        description: "Afternoon fragmentation stress"
+
+  - id: FRAGMENTATION_HELL
+    name: "Fragmentation Hell"
+    description: "Worst-case scenario for G1 - pure fragmentation. C4's compaction shows no pauses."
+    durationSeconds: 120
+    expectedImpact: "High"
+    steps:
+      - mode: FRAGMENTATION
+        durationSeconds: 120
+        description: "Small objects with random lifetimes - tests compaction"
+
+  - id: FULL_DAY
+    name: "Full Day Simulation"
+    description: "Complete 6.5 hour trading session condensed to 5 minutes. Comprehensive picture."
+    durationSeconds: 300
+    expectedImpact: "Very High"
+    steps:
+      - mode: STEADY_LOAD
+        durationSeconds: 60
+        description: "Pre-market warmup"
+      - mode: GROWING_HEAP
+        durationSeconds: 60
+        description: "Market open - growing heap"
+      - mode: PROMOTION_STORM
+        durationSeconds: 60
+        description: "Mid-morning promotion storm"
+      - mode: STEADY_LOAD
+        durationSeconds: 30
+        description: "Mid-day lull"
+      - mode: CROSS_GEN_REFS
+        durationSeconds: 60
+        description: "Afternoon cross-gen stress"
+      - mode: FRAGMENTATION
+        durationSeconds: 30
+        description: "Close fragmentation"

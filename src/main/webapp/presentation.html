@@ -3,414 +3,1620 @@
 <head>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Pauseless Java for Financial Systems: Azul C4 + Payara Micro</title>
+    <title>High-Frequency Trading on Jakarta EE: GC Stress Testing with Azul C4 &amp; Payara Micro</title>
     <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reset.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/theme/black.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/highlight/monokai.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@200;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --payara-orange: #F0981B;
-            --payara-dark: #1a1a1a;
-            --payara-light: #ffffff;
+            --payara-orange-dim: rgba(240, 152, 27, 0.15);
+            --payara-orange-border: rgba(240, 152, 27, 0.35);
+            --payara-dark: #0f0f0f;
+            --payara-darker: #080808;
+            --payara-surface: #1a1a1e;
+            --payara-surface-raised: #222226;
+            --payara-light: #f0f0f0;
+            --payara-muted: #888890;
+            --success: #4ade80;
+            --danger: #f87171;
+            --warn: #fbbf24;
+            --code-bg: #1e1e22;
+            --font-display: 'Fraunces', serif;
+            --font-body: 'IBM Plex Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
 
         .reveal {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            font-size: 28px;
-            line-height: 1.35;
-            position: relative;
+            font-family: var(--font-body);
+            background: var(--payara-dark);
+            font-size: 26px;
+            line-height: 1.4;
+            color: var(--payara-light);
+            font-weight: 400;
         }
 
         .reveal::after {
             content: "";
             position: fixed;
-            top: 24px;
-            left: 32px;
-            width: 140px;
-            height: 52px;
+            top: 20px;
+            left: 28px;
+            width: 120px;
+            height: 44px;
             background: url("images/payara.png") no-repeat center / contain;
             z-index: 1000;
             pointer-events: none;
+            opacity: 0.9;
         }
 
-        .reveal h1, .reveal h2, .reveal h3 {
-            color: var(--payara-orange);
-            text-transform: none;
-        }
+        /* --- Typography --- */
 
         .reveal h1 {
-            font-size: 2.2em;
-            font-weight: 700;
+            font-family: var(--font-display);
+            color: var(--payara-orange);
+            text-transform: none;
+            font-size: 2.4em;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
         }
 
         .reveal h2 {
-            font-size: 1.8em;
+            font-family: var(--font-display);
+            color: var(--payara-orange);
+            text-transform: none;
+            font-size: 1.7em;
+            font-weight: 700;
+            letter-spacing: -0.01em;
         }
 
         .reveal h3 {
-            font-size: 1.35em;
-        }
-
-        .reveal .payara-logo {
-            width: 300px;
-            margin: 20px auto;
-        }
-
-        .reveal .highlight {
-            color: var(--payara-orange);
+            font-family: var(--font-body);
+            color: #c8c8cc;
+            text-transform: none;
+            font-size: 1.15em;
             font-weight: 600;
+            letter-spacing: 0;
         }
+
+        .reveal h4 {
+            font-family: var(--font-body);
+            font-size: 0.95em;
+            font-weight: 700;
+            color: var(--payara-orange);
+        }
+
+        .reveal p {
+            font-weight: 200;
+        }
+
+        .reveal strong, .reveal b {
+            font-weight: 700;
+        }
+
+        /* --- Section Dividers --- */
+
+        .reveal .section-number {
+            font-family: var(--font-display);
+            font-size: 6em;
+            font-weight: 900;
+            color: var(--payara-orange-dim);
+            line-height: 1;
+            margin-bottom: -10px;
+        }
+
+        /* --- Code --- */
 
         .reveal code {
-            background: #2d2d2d;
+            font-family: var(--font-mono);
+            background: var(--payara-surface);
             padding: 2px 8px;
             border-radius: 4px;
             color: var(--payara-orange);
+            font-size: 0.85em;
+        }
+
+        .reveal pre {
+            margin: 15px 0;
         }
 
         .reveal pre code {
-            padding: 12px;
-            font-size: 0.85em;
-            line-height: 1.4;
-            background: #1e1e1e;
-            border: 1px solid rgba(240, 152, 27, 0.3);
+            background: var(--code-bg);
+            padding: 16px 20px;
+            font-size: 0.75em;
+            line-height: 1.45;
+            border: 1px solid var(--payara-orange-border);
             border-radius: 8px;
+            color: #e0e0e0;
         }
 
         .reveal .two-column pre code {
-            font-size: 0.72em;
-            padding: 8px;
+            font-size: 0.65em;
+            padding: 10px 12px;
             line-height: 1.35;
         }
+
+        /* --- Layout --- */
 
         .reveal .two-column {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
+            gap: 24px;
+            margin: 10px 0;
         }
+
+        .reveal .three-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 18px;
+            margin: 10px 0;
+        }
+
+        /* --- Cards & Boxes --- */
 
         .reveal .box {
-            background: rgba(240, 152, 27, 0.1);
-            border: 2px solid var(--payara-orange);
-            border-radius: 10px;
-            padding: 20px;
+            background: var(--payara-surface);
+            border: 1px solid var(--payara-orange-border);
+            border-radius: 12px;
+            padding: 20px 24px;
         }
 
-        .reveal .box h3 {
+        .reveal .box h3, .reveal .box h4 {
             margin-top: 0;
-            font-size: 1.3em;
         }
+
+        .reveal .box-orange {
+            background: var(--payara-orange-dim);
+            border: 2px solid var(--payara-orange);
+            border-radius: 12px;
+            padding: 20px 24px;
+        }
+
+        .reveal .box-success {
+            background: rgba(74, 222, 128, 0.08);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            border-radius: 12px;
+            padding: 20px 24px;
+        }
+
+        .reveal .box-danger {
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            border-radius: 12px;
+            padding: 20px 24px;
+        }
+
+        /* --- Tables --- */
 
         .reveal table {
-            font-size: 0.8em;
+            font-size: 0.75em;
             width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
         }
 
         .reveal table th {
             background: var(--payara-orange);
             color: var(--payara-dark);
+            font-weight: 700;
+            padding: 10px 14px;
+            text-align: left;
+            border-radius: 4px;
         }
 
         .reveal table td {
-            background: rgba(255,255,255,0.05);
+            background: var(--payara-surface);
+            padding: 8px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
+
+        .reveal table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* --- Lists --- */
 
         .reveal ul, .reveal ol {
-            font-size: 0.85em;
+            font-size: 0.82em;
         }
 
-        .reveal .architecture-diagram {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            margin: 30px 0;
-            flex-wrap: wrap;
+        .reveal li {
+            margin-bottom: 6px;
         }
 
-        .reveal .arch-box {
-            background: rgba(240, 152, 27, 0.2);
-            border: 3px solid var(--payara-orange);
-            border-radius: 10px;
-            padding: 15px;
-            min-width: 100px;
-            text-align: center;
-        }
+        /* --- Inline Highlights --- */
 
-        .reveal .arrow {
-            font-size: 1.8em;
+        .reveal .hl {
             color: var(--payara-orange);
+            font-weight: 700;
         }
 
         .reveal .success {
-            color: #51cf66;
+            color: var(--success);
+            font-weight: 700;
         }
 
-        .reveal .failure {
-            color: #ff6b6b;
+        .reveal .danger {
+            color: var(--danger);
+            font-weight: 700;
         }
+
+        .reveal .warn {
+            color: var(--warn);
+            font-weight: 700;
+        }
+
+        .reveal .muted {
+            color: var(--payara-muted);
+            font-weight: 200;
+        }
+
+        /* --- Metrics --- */
 
         .reveal .metric-large {
-            font-size: 3em;
-            font-weight: 700;
+            font-family: var(--font-display);
+            font-size: 3.5em;
+            font-weight: 900;
             color: var(--payara-orange);
+            line-height: 1;
         }
 
         .reveal .metric-label {
-            font-size: 0.9em;
-            color: #888;
+            font-size: 0.8em;
+            color: var(--payara-muted);
+            font-weight: 200;
+            margin-top: 8px;
         }
 
         .reveal .comparison-row {
             display: flex;
             justify-content: space-around;
-            margin: 20px 0;
+            margin: 25px 0;
         }
 
         .reveal .comparison-item {
             text-align: center;
-            padding: 20px;
+            padding: 15px 25px;
         }
+
+        /* --- Architecture Diagram --- */
+
+        .reveal .architecture-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+
+        .reveal .arch-box {
+            background: var(--payara-surface);
+            border: 2px solid var(--payara-orange-border);
+            border-radius: 10px;
+            padding: 14px 18px;
+            min-width: 100px;
+            text-align: center;
+            font-size: 0.85em;
+        }
+
+        .reveal .arch-box strong {
+            color: var(--payara-orange);
+            display: block;
+            font-size: 0.9em;
+        }
+
+        .reveal .arrow {
+            font-size: 1.6em;
+            color: var(--payara-orange);
+            font-weight: 200;
+        }
+
+        /* --- GC Timeline --- */
 
         .reveal .gc-timeline {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             margin: 10px 0;
-            font-family: monospace;
+            font-family: var(--font-mono);
+            font-size: 0.65em;
         }
 
         .reveal .gc-block {
-            height: 30px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7em;
-            border-radius: 3px;
+            border-radius: 4px;
+            font-weight: 600;
         }
 
-        .reveal .gc-app { background: #51cf66; color: #000; }
-        .reveal .gc-pause { background: #ff6b6b; color: #fff; }
+        .reveal .gc-app { background: var(--success); color: #000; }
+        .reveal .gc-pause { background: var(--danger); color: #fff; }
         .reveal .gc-concurrent { background: var(--payara-orange); color: #fff; }
 
+        /* --- Speaker Badge --- */
+
+        .reveal .speaker-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.7em;
+            font-weight: 700;
+            font-family: var(--font-body);
+        }
+
+        .reveal .speaker-luqman {
+            background: rgba(240, 152, 27, 0.2);
+            color: var(--payara-orange);
+            border: 1px solid var(--payara-orange);
+        }
+
+        .reveal .speaker-simon {
+            background: rgba(99, 179, 237, 0.2);
+            color: #63b3ed;
+            border: 1px solid #63b3ed;
+        }
+
+        /* --- Layers (left-border quote blocks) --- */
+
         .reveal .layers {
-            background: rgba(240, 152, 27, 0.05);
-            border-left: 5px solid var(--payara-orange);
-            padding: 20px;
-            margin: 20px 0;
+            background: var(--payara-surface);
+            border-left: 4px solid var(--payara-orange);
+            padding: 18px 24px;
+            margin: 18px 0;
             text-align: left;
+            font-size: 0.85em;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* --- Speaker Card --- */
+
+        .reveal .speaker-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: var(--payara-surface);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 10px 0;
+        }
+
+        .reveal .speaker-card .speaker-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 1.6em;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        .reveal .speaker-card .speaker-info h4 {
+            margin: 0 0 4px 0;
+            color: var(--payara-orange);
+        }
+
+        .reveal .speaker-card .speaker-info p {
+            margin: 0;
+            font-size: 0.85em;
+            color: var(--payara-muted);
+            font-weight: 200;
+        }
+
+        /* --- Payara Logo --- */
+
+        .reveal .payara-logo {
+            width: 260px;
+            margin: 15px auto;
+        }
+
+        /* --- Agenda --- */
+
+        .reveal .agenda-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin: 12px 0;
+            font-size: 0.85em;
+        }
+
+        .reveal .agenda-num {
+            font-family: var(--font-display);
+            font-size: 1.4em;
+            font-weight: 900;
+            color: var(--payara-orange);
+            min-width: 40px;
+        }
+
+        /* --- Speaker Notes --- */
+
+        .reveal aside.notes {
+            font-size: 0.7em;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
 <div class="reveal">
     <div class="slides">
-        <!-- Slide 1: Title -->
+
+        <!-- ============================================================ -->
+        <!-- SLIDE 1: Title -->
+        <!-- ============================================================ -->
         <section>
             <img alt="Payara" class="payara-logo" src="images/payara-fish-logo.svg">
-            <h1>Pauseless Java for Financial Systems</h1>
-            <h3>Azul C4 + Payara Micro for Low-Latency Trading</h3>
-            <p style="margin-top: 60px; font-size: 1.1em;">
-                <strong>TradeStreamEE</strong><br>
-                A Reference Architecture for High-Frequency Trading
-            </p>
+            <h1>High-Frequency Trading<br>on Jakarta EE</h1>
+            <h3>GC Stress Testing with Azul C4 &amp; Payara Micro</h3>
+            <div style="margin-top: 50px; display: flex; gap: 40px; justify-content: center; font-size: 0.75em;">
+                <div style="text-align: center;">
+                    <span class="speaker-badge speaker-luqman">Luqman Saeed</span>
+                    <p class="muted" style="margin-top: 6px;">Jakarta EE Specialist</p>
+                </div>
+                <div style="text-align: center;">
+                    <span class="speaker-badge speaker-simon">Simon Ritter</span>
+                    <p class="muted" style="margin-top: 6px;">Deputy CTO &amp; Java Champion</p>
+                </div>
+            </div>
+            <p class="muted" style="margin-top: 30px; font-size: 0.65em;">March 25, 2026 &middot; 2:00 PM GMT</p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Welcome everyone. Today we're going to show you how to stress-test garbage collectors using a realistic high-frequency trading simulation built entirely on Jakarta EE.</p>
+                <p><strong>Simon:</strong> We'll demonstrate why GC pauses matter in financial systems, show you how to build adversarial tests that expose real collector behavior, and compare Azul's C4 collector against HotSpot's G1 under controlled conditions.</p>
+                <p><strong>Luqman:</strong> Everything we show today is open source and runs on Payara Micro 7 with Jakarta EE 11.</p>
+            </aside>
         </section>
 
-        <!-- Section: The Problem -->
+        <!-- ============================================================ -->
+        <!-- SLIDE 2: About the Speakers -->
+        <!-- ============================================================ -->
         <section>
-            <h1 style="color: var(--payara-orange);">Part 1</h1>
-            <h2>The Problem</h2>
-            <p>Why GC pauses matter in financial systems</p>
-        </section>
-
-        <!-- Slide 2: The Problem -->
-        <section>
-            <h2>The Problem: GC Pauses in Financial Systems</h2>
-            <h3>Why Traditional Java Struggles with HFT</h3>
+            <h2>About the Speakers</h2>
             <div class="two-column">
-                <div class="box">
-                    <h3>The Challenge</h3>
+                <div class="speaker-card">
+                    <div class="speaker-avatar" style="background: rgba(240,152,27,0.2); color: var(--payara-orange);">LS</div>
+                    <div class="speaker-info">
+                        <h4>Luqman Saeed</h4>
+                        <p>Jakarta EE Specialist</p>
+                        <p style="margin-top: 6px; font-size: 0.9em; color: var(--payara-light);">Enterprise Java architect specializing in low-latency financial systems. Focus on Jakarta EE performance tuning and deployment.</p>
+                    </div>
+                </div>
+                <div class="speaker-card">
+                    <div class="speaker-avatar" style="background: rgba(99,179,237,0.2); color: #63b3ed;">SR</div>
+                    <div class="speaker-info">
+                        <h4>Simon Ritter</h4>
+                        <p>Deputy CTO &amp; Java Champion</p>
+                        <p style="margin-top: 6px; font-size: 0.9em; color: var(--payara-light);">30+ years in the Java ecosystem. Deputy CTO at Azul Systems. Expert on JVM internals, garbage collection, and runtime performance.</p>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Brief self-intro. I've been working with Java since the beginning. At Azul, we focus on runtime performance, and GC is where we differentiate.</p>
+                <p><strong>Luqman:</strong> I work on the Payara platform side, specifically helping enterprises deploy Jakarta EE for performance-critical workloads. Today's demo is a collaboration between Payara and Azul.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE 3: Agenda -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Agenda</h2>
+            <div class="agenda-item">
+                <span class="agenda-num">1</span>
+                <div><strong>The Problem</strong> &mdash; Why GC pauses are unacceptable in financial trading</div>
+            </div>
+            <div class="agenda-item">
+                <span class="agenda-num">2</span>
+                <div><strong>Architecture</strong> &mdash; Zero-copy pipeline with Aeron, SBE, and Payara Micro</div>
+            </div>
+            <div class="agenda-item">
+                <span class="agenda-num">3</span>
+                <div><strong>Jakarta EE Stack</strong> &mdash; CDI, WebSocket, JAX-RS, Virtual Threads, Hazelcast</div>
+            </div>
+            <div class="agenda-item">
+                <span class="agenda-num">4</span>
+                <div><strong>GC Stress Testing</strong> &mdash; Five adversarial scenarios targeting G1 weaknesses</div>
+            </div>
+            <div class="agenda-item">
+                <span class="agenda-num">5</span>
+                <div><strong>Results</strong> &mdash; Measured C4 vs G1 behavior under load</div>
+            </div>
+            <div class="agenda-item">
+                <span class="agenda-num">6</span>
+                <div><strong>Deployment &amp; Demo</strong> &mdash; Docker, monitoring, live walkthrough</div>
+            </div>
+            <div class="agenda-item">
+                <span class="agenda-num">7</span>
+                <div><strong>Conclusion</strong> &mdash; Key takeaways and lessons learned</div>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Here's the road map. We start with why this matters, then dig into the architecture, the Jakarta EE technologies, the testing methodology, real results, and a live demo.</p>
+                <p><strong>Simon:</strong> The testing methodology is the key section. Most GC benchmarks are synthetic and don't reflect real application behavior. We built targeted adversarial scenarios instead.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- PART 1: THE PROBLEM -->
+        <!-- ============================================================ -->
+        <section>
+            <div class="section-number">01</div>
+            <h2>The Problem</h2>
+            <p class="muted">Why GC pauses matter in financial systems</p>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Let's start with the problem. Why are we even talking about garbage collection in trading systems?</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Financial Latency Budget -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>The Financial Latency Budget</h2>
+            <h3>Every Microsecond Counts</h3>
+            <div class="two-column">
+                <div class="box-danger">
+                    <h3 style="color: var(--danger);">HFT Reality</h3>
                     <ul>
-                        <li>HFT processes 50,000-100,000+ messages/second</li>
-                        <li>Latency budgets measured in microseconds</li>
-                        <li>Single 50ms pause = missed trades</li>
-                        <li>Unpredictable latency violates SLAs</li>
+                        <li>50,000-100,000+ messages/second</li>
+                        <li>Latency budgets measured in <span class="hl">microseconds</span></li>
+                        <li>Single 50ms pause = <span class="danger">missed trades</span></li>
+                        <li>Unpredictable latency = <span class="danger">SLA violations</span></li>
+                        <li>Price moves in milliseconds</li>
                     </ul>
                 </div>
                 <div class="box">
-                    <h3>The Cause</h3>
+                    <h3>The Cost</h3>
                     <ul>
-                        <li>G1 uses stop-the-world pauses</li>
-                        <li>All application threads halt during GC</li>
-                        <li>Pause time scales with heap size</li>
-                        <li>Mixed collections can exceed 100ms</li>
+                        <li>At 10K trades/sec, a 100ms pause delays 1,000 trades</li>
+                        <li>Delayed trades execute at worse prices</li>
+                        <li>Regulatory requirements for audit trails</li>
+                        <li>Market makers risk adverse selection</li>
+                        <li>Compounding losses over a trading day</li>
                     </ul>
                 </div>
             </div>
-            <p style="margin-top: 30px;">
-                A 100ms pause at 10,000 messages/second = <span class="failure">1,000 messages delayed</span>
-            </p>
+            <div class="box-orange" style="margin-top: 20px; text-align: center;">
+                <p style="font-size: 1.1em;"><strong>Question:</strong> Can Java, with its managed memory model, compete in this environment?</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> In HFT, latency is the product. If your competitor processes a message 1 microsecond faster, they get the trade. A 100ms GC pause is an eternity at this scale.</p>
+                <p><strong>Luqman:</strong> The conventional wisdom says Java can't do HFT because of GC pauses. But what if we could make the pauses disappear?</p>
+            </aside>
         </section>
 
-        <!-- Slide 3: GC Fundamentals -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Why Java for Trading? -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Why Java for Trading?</h2>
+            <h3>Despite the GC Challenge</h3>
+            <div class="three-column">
+                <div class="box">
+                    <h3>Ecosystem</h3>
+                    <ul style="font-size: 0.9em;">
+                        <li>Massive library ecosystem</li>
+                        <li>Proven in exchanges worldwide</li>
+                        <li>Strong type safety</li>
+                        <li>Excellent tooling</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>Talent</h3>
+                    <ul style="font-size: 0.9em;">
+                        <li>Largest developer pool</li>
+                        <li>Financial domain expertise</li>
+                        <li>Enterprise culture fit</li>
+                        <li>Regulatory compliance tools</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>Performance</h3>
+                    <ul style="font-size: 0.9em;">
+                        <li>JIT-compiled to native</li>
+                        <li>Escape analysis</li>
+                        <li>Off-heap / direct buffers</li>
+                        <li>With C4: sub-ms pauses</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="layers" style="margin-top: 20px;">
+                <p>The challenge isn't Java itself. It's the <strong>garbage collector</strong> you choose. With the right runtime, Java matches or beats C++ for trading latency.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Java is already used by major exchanges - CME, LSE, ASX. The talent pool is enormous. The real question is whether GC pauses can be eliminated.</p>
+                <p><strong>Simon:</strong> And the answer is yes - but not with every collector. G1GC is the default in HotSpot, but it has fundamental architectural limitations for latency-sensitive workloads.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: GC Fundamentals -->
+        <!-- ============================================================ -->
         <section>
             <h2>Garbage Collection Fundamentals</h2>
-            <h3>Key Terminology</h3>
             <table>
-                <tr>
-                    <th>Term</th>
-                    <th>Definition</th>
-                </tr>
-                <tr>
-                    <td><strong>Young Generation</strong></td>
-                    <td>Where new objects are allocated. Collected frequently.</td>
-                </tr>
-                <tr>
-                    <td><strong>Old Generation</strong></td>
-                    <td>Where long-lived objects reside after surviving young GCs.</td>
-                </tr>
-                <tr>
-                    <td><strong>Promotion</strong></td>
-                    <td>Moving objects from young to old generation.</td>
-                </tr>
-                <tr>
-                    <td><strong>Live Set</strong></td>
-                    <td>Total reachable objects. Larger = more GC work.</td>
-                </tr>
-                <tr>
-                    <td><strong>Stop-the-World</strong></td>
-                    <td>All application threads pause for GC to complete.</td>
-                </tr>
-                <tr>
-                    <td><strong>Concurrent Collection</strong></td>
-                    <td>GC runs alongside application threads. No pause.</td>
-                </tr>
+                <tr><th>Term</th><th>Definition</th></tr>
+                <tr><td><strong>Young Generation</strong></td><td>Where new objects are allocated. Collected frequently, typically via copying collector.</td></tr>
+                <tr><td><strong>Old Generation</strong></td><td>Where long-lived objects reside after surviving multiple young GC cycles.</td></tr>
+                <tr><td><strong>Promotion</strong></td><td>Moving objects from young to old generation when they survive enough GC cycles.</td></tr>
+                <tr><td><strong>Live Set</strong></td><td>Total reachable objects at any point. Larger live set = more GC work.</td></tr>
+                <tr><td><strong>Stop-the-World (STW)</strong></td><td>All application threads halt while the GC performs work. No progress is made.</td></tr>
+                <tr><td><strong>Concurrent Collection</strong></td><td>GC runs alongside application threads. Application never pauses for collection.</td></tr>
+                <tr><td><strong>Remembered Set</strong></td><td>Data structure tracking old-to-young generation references. Scanned during young GC.</td></tr>
+                <tr><td><strong>Write Barrier</strong></td><td>Code executed on every reference field write. Updates card tables / remembered sets.</td></tr>
             </table>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Quick refresher on GC terminology. The key concepts for today are stop-the-world, remembered sets, and write barriers. These are the mechanisms that create pause problems in G1.</p>
+                <p>Remembered sets exist because generational collectors need to know which old-generation objects point to young-generation objects during young GC. Every reference update triggers a write barrier to track this.</p>
+            </aside>
         </section>
 
-        <!-- Slide 4: G1 vs C4 Visual -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: G1GC Architecture -->
+        <!-- ============================================================ -->
         <section>
-            <h2>G1 vs C4: Execution Timeline</h2>
-            <h3>What Happens During Collection</h3>
-            <div class="box" style="margin: 20px 0;">
-                <h3 style="color: #ff6b6b;">G1GC (Stop-the-World)</h3>
-                <div class="gc-timeline">
-                    <div class="gc-block gc-app" style="width: 100px;">App</div>
-                    <div class="gc-block gc-pause" style="width: 40px;">STOP</div>
-                    <div class="gc-block gc-app" style="width: 80px;">App</div>
-                    <div class="gc-block gc-pause" style="width: 60px;">STOP</div>
-                    <div class="gc-block gc-app" style="width: 120px;">App</div>
-                    <div class="gc-block gc-pause" style="width: 100px;">MIXED</div>
-                    <div class="gc-block gc-app" style="width: 80px;">App</div>
-                </div>
-                <p style="font-size: 0.8em; margin-top: 10px;">Application threads halt during red blocks. Latency spikes occur.</p>
-            </div>
-            <div class="box" style="margin: 20px 0;">
-                <h3 style="color: #51cf66;">Azul C4 (Concurrent)</h3>
-                <div class="gc-timeline">
-                    <div class="gc-block gc-app" style="width: 100%;">Application runs continuously</div>
-                </div>
-                <div class="gc-timeline" style="margin-top: 5px;">
-                    <div class="gc-block gc-concurrent" style="width: 30%;">Mark</div>
-                    <div class="gc-block" style="width: 10%; background: transparent;"></div>
-                    <div class="gc-block gc-concurrent" style="width: 25%;">Relocate</div>
-                    <div class="gc-block" style="width: 10%; background: transparent;"></div>
-                    <div class="gc-block gc-concurrent" style="width: 25%;">Remap</div>
-                </div>
-                <p style="font-size: 0.8em; margin-top: 10px;">GC runs concurrently. Application never stops. Flat latency profile.</p>
-            </div>
-        </section>
-
-        <!-- Slide 5: G1 Architectural Weaknesses -->
-        <section>
-            <h2>G1's Architectural Limitations</h2>
-            <h3>Why Stop-the-World is Unavoidable</h3>
+            <h2>G1GC: The Default Collector</h2>
+            <h3>How It Works</h3>
             <div class="two-column">
-                <div>
-                    <h3 style="color: #ff6b6b;">Mixed Collections</h3>
+                <div class="box">
+                    <h3>Design Goals</h3>
                     <ul>
-                        <li>Must trace entire live set</li>
-                        <li>Pause scales with heap size</li>
-                        <li>2GB heap: 50-100ms pauses</li>
-                        <li>4GB heap: 100-200ms pauses</li>
+                        <li>Target pause time (default: 200ms)</li>
+                        <li>Heap divided into regions (~2048)</li>
+                        <li>Generational: young + old regions</li>
+                        <li>Concurrent marking phase</li>
+                        <li>Mixed collections for old gen</li>
                     </ul>
                 </div>
-                <div>
-                    <h3 style="color: #ff6b6b;">Remembered Sets</h3>
+                <div class="box-danger">
+                    <h3 style="color: var(--danger);">The Catch</h3>
                     <ul>
-                        <li>Track old-to-young references</li>
+                        <li><strong>Young GC:</strong> STW, copies live objects</li>
+                        <li><strong>Mixed GC:</strong> STW, evacuates old regions</li>
+                        <li><strong>Full GC:</strong> STW, compacts entire heap</li>
+                        <li><span class="danger">All collections pause the application</span></li>
+                        <li>Pause time scales with live set size</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="layers">
+                <p>G1 is an <strong>excellent general-purpose collector</strong>. It balances throughput and pause times for most applications. But for latency-sensitive financial workloads, the STW pauses are a fundamental architectural constraint.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> G1 is good for most workloads. It targets 200ms pauses by default, and you can tune it down to maybe 10-20ms for modest heaps. But the pauses never go to zero, and they scale with live set size.</p>
+                <p>The target pause time is a hint, not a guarantee. Under allocation pressure, G1 will exceed it.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: G1 Timeline -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>G1GC: Execution Timeline</h2>
+            <h3>Stop-the-World Pauses</h3>
+            <div class="box-danger" style="margin: 20px 0;">
+                <h4 style="color: var(--danger); margin-bottom: 12px;">Application Thread View</h4>
+                <div class="gc-timeline">
+                    <div class="gc-block gc-app" style="width: 120px;">App</div>
+                    <div class="gc-block gc-pause" style="width: 30px;">STW</div>
+                    <div class="gc-block gc-app" style="width: 80px;">App</div>
+                    <div class="gc-block gc-pause" style="width: 50px;">STW</div>
+                    <div class="gc-block gc-app" style="width: 60px;">App</div>
+                    <div class="gc-block gc-pause" style="width: 80px;">MIXED</div>
+                    <div class="gc-block gc-app" style="width: 100px;">App</div>
+                    <div class="gc-block gc-pause" style="width: 40px;">STW</div>
+                    <div class="gc-block gc-app" style="width: 80px;">App</div>
+                </div>
+                <p class="muted" style="font-size: 0.75em; margin-top: 10px;">Application threads halt during red blocks. Each pause is unpredictable in duration.</p>
+            </div>
+            <div class="box" style="margin: 20px 0;">
+                <h4 style="color: var(--payara-orange); margin-bottom: 12px;">GC Thread View (Concurrent Phases)</h4>
+                <div class="gc-timeline">
+                    <div class="gc-block gc-concurrent" style="width: 15%;">Initial Mark</div>
+                    <div class="gc-block" style="width: 5%; background: transparent; border: 1px dashed #666;">...</div>
+                    <div class="gc-block gc-concurrent" style="width: 25%;">Concurrent Mark</div>
+                    <div class="gc-block" style="width: 5%; background: transparent; border: 1px dashed #666;">...</div>
+                    <div class="gc-block gc-concurrent" style="width: 20%;">Remark (STW)</div>
+                    <div class="gc-block" style="width: 5%; background: transparent; border: 1px dashed #666;">...</div>
+                    <div class="gc-block gc-concurrent" style="width: 15%;">Cleanup (STW)</div>
+                </div>
+                <p class="muted" style="font-size: 0.75em; margin-top: 10px;">Concurrent phases reduce but do not eliminate STW pauses. Mark and Cleanup have STW components.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> This timeline shows the reality of G1 from the application's perspective. The red blocks are where your trading application stops. Every young GC, every mixed GC, every full GC - the application is frozen.</p>
+                <p>The concurrent marking phase helps G1 decide which regions to collect, but the actual collection is always STW. There's no way around this in G1's architecture.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: G1 Weaknesses -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>G1's Architectural Limitations</h2>
+            <h3>Why STW Is Unavoidable</h3>
+            <div class="three-column">
+                <div class="box-danger">
+                    <h3 style="color: var(--danger);">Mixed Collections</h3>
+                    <ul style="font-size: 0.85em;">
+                        <li>Must trace entire live set</li>
+                        <li>Pause scales with heap size</li>
+                        <li>2 GB heap: 50-100 ms</li>
+                        <li>4 GB heap: 100-200 ms</li>
+                    </ul>
+                </div>
+                <div class="box-danger">
+                    <h3 style="color: var(--danger);">Remembered Sets</h3>
+                    <ul style="font-size: 0.85em;">
+                        <li>Track old-to-young refs</li>
                         <li>Write barrier on every pointer update</li>
-                        <li>Scanned during young GC</li>
+                        <li>Scanned during every young GC</li>
                         <li>Overhead proportional to cross-refs</li>
                     </ul>
                 </div>
+                <div class="box-danger">
+                    <h3 style="color: var(--danger);">Compaction</h3>
+                    <ul style="font-size: 0.85em;">
+                        <li>Fragmentation triggers compaction</li>
+                        <li>Full compaction requires Full GC</li>
+                        <li>Small objects = more fragmentation</li>
+                        <li>No concurrent compaction in G1</li>
+                    </ul>
+                </div>
             </div>
-            <div class="box" style="margin-top: 30px;">
-                <h3>Compaction Pauses</h3>
-                <p>When heap fragments, G1 must stop all threads to compact memory. Small objects with random lifetimes trigger frequent compaction. No concurrent solution in G1.</p>
+            <div class="box-orange" style="margin-top: 20px;">
+                <p><strong>Key Point:</strong> These are <strong>architectural constraints</strong>, not tuning problems. No amount of JVM flag adjustment eliminates them.</p>
             </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> You can't tune your way out of these. MaxGCPauseMillis is a hint - G1 will exceed it. Remembered sets grow with cross-generational references, and there's no concurrent compaction.</p>
+                <p>We're going to demonstrate each of these weaknesses with targeted test scenarios later in the presentation.</p>
+            </aside>
         </section>
 
-        <!-- Slide 6: C4 Architecture -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Azul C4 Architecture -->
+        <!-- ============================================================ -->
         <section>
-            <h2>Azul C4/GPGC: Concurrent by Design</h2>
-            <h3>How Pauseless Collection Works</h3>
+            <h2>Azul C4 (Continuously Concurrent Compacting)</h2>
+            <h3>Concurrent by Design</h3>
+            <div class="two-column">
+                <div class="box-success">
+                    <h3 style="color: var(--success);">Loaded Value Barrier (LVB)</h3>
+                    <ul>
+                        <li>Intercepts every reference load</li>
+                        <li>Self-healing: fixes references in-place</li>
+                        <li>Enables concurrent compaction</li>
+                        <li>Performs NMT check + page protection check</li>
+                        <li>Dramatically reduced trigger frequency</li>
+                    </ul>
+                </div>
+                <div class="box-success">
+                    <h3 style="color: var(--success);">Simultaneous-Generational Concurrency</h3>
+                    <ul>
+                        <li>Has <strong>young</strong> and <strong>old</strong> generations</li>
+                        <li>Both collected <strong>concurrently and simultaneously</strong></li>
+                        <li>No STW for generational collection</li>
+                        <li>Filtered write barrier (SVB) for card marks</li>
+                        <li>Interlocks for cross-generational synchronization</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="box-success" style="margin-top: 20px; text-align: center;">
+                <p style="font-size: 1.1em;"><span class="success">Result:</span> Sub-millisecond GC pauses regardless of heap size, live set size, or allocation rate.</p>
+                <p class="muted" style="font-size: 0.8em; margin-top: 8px;">C4 = algorithm name &middot; GPGC = collector name in JMX &middot; Includes sub-ms safepoints at phase changes</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> This is where Azul differs fundamentally. C4 uses a read barrier - the Loaded Value Barrier. Every time your code reads a field, C4 checks if the object has been relocated. If so, it fixes up the reference in-place. The barrier is self-healing: once a reference is corrected, it stores the fix back so it won't trigger again.</p>
+                <p>C4 IS generational - it has young and old generations. But unlike G1, both are collected concurrently and simultaneously. The young collector can run multiple cycles while the old collector is in the middle of a full heap collection. This is called simultaneous-generational concurrency.</p>
+                <p>C4 still uses card marks for old-to-young references via a filtered write barrier (SVB). But there's no remembered set scanning during STW pauses, because there are no STW pauses. The card marks are scanned concurrently.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: C4 Timeline -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>C4: Execution Timeline</h2>
+            <h3>Effectively Continuous Application Execution</h3>
+            <div class="box-success" style="margin: 20px 0;">
+                <h4 style="color: var(--success); margin-bottom: 12px;">Application Thread View</h4>
+                <div class="gc-timeline">
+                    <div class="gc-block gc-app" style="width: 100%;">Application runs continuously - sub-ms safepoints at phase changes</div>
+                </div>
+                <p class="muted" style="font-size: 0.75em; margin-top: 10px;">Near-flat latency profile. Global safepoints at phase changes are independent of heap size and measure in sub-milliseconds.</p>
+            </div>
+            <div class="box" style="margin: 20px 0;">
+                <h4 style="color: var(--payara-orange); margin-bottom: 12px;">GC Thread View (Fully Concurrent)</h4>
+                <div class="gc-timeline">
+                    <div class="gc-block gc-concurrent" style="width: 20%;">Mark</div>
+                    <div class="gc-block" style="width: 5%; background: transparent; border: 1px dashed #666;">...</div>
+                    <div class="gc-block gc-concurrent" style="width: 25%;">Relocate</div>
+                    <div class="gc-block" style="width: 5%; background: transparent; border: 1px dashed #666;">...</div>
+                    <div class="gc-block gc-concurrent" style="width: 25%;">Remap</div>
+                </div>
+                <p class="muted" style="font-size: 0.75em; margin-top: 10px;">All phases run concurrently with application threads. The LVB handles object forwarding transparently. Sub-ms safepoints occur at phase change boundaries.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Compare this to the G1 timeline. With C4, the application effectively never stops. Mark, relocate, remap - all happen concurrently. The algorithm itself is fully concurrent - no global safepoints are required by the algorithm.</p>
+                <p>The current implementation does include some very short global safepoints at phase change locations for practical engineering reasons. But the work done in these safepoints is independent of heap size, and they measure in the sub-millisecond range on modern hardware. In practice, scheduling and thread contention dominate any remaining jitter.</p>
+                <p>The LVB makes concurrent compaction possible through self-healing. When the GC relocates an object, the LVB follows the forwarding pointer on first access and writes the fix back to the source location, so it won't trigger again.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: G1 vs C4 Direct Comparison -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>G1 vs C4: Head to Head</h2>
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th style="color: var(--danger);">G1GC (HotSpot)</th>
+                    <th style="color: var(--success);">C4/GPGC (Azul Prime)</th>
+                </tr>
+                <tr>
+                    <td>Collection Type</td>
+                    <td>Mostly STW (young, mixed, full)</td>
+                    <td>Fully concurrent (simultaneous gen)</td>
+                </tr>
+                <tr>
+                    <td>Pause Mechanism</td>
+                    <td>All application threads halt</td>
+                    <td>Sub-ms safepoints at phase changes</td>
+                </tr>
+                <tr>
+                    <td>Compaction</td>
+                    <td>STW only (Full GC for full compaction)</td>
+                    <td>Concurrent (always compacted)</td>
+                </tr>
+                <tr>
+                    <td>Remembered Sets</td>
+                    <td>Yes (write barrier + card table, STW scan)</td>
+                    <td>Yes (filtered SVB, concurrent scan)</td>
+                </tr>
+                <tr>
+                    <td>Pause vs Heap Size</td>
+                    <td>Grows with live set</td>
+                    <td>Constant (sub-ms)</td>
+                </tr>
+                <tr>
+                    <td>Pause vs Allocation Rate</td>
+                    <td>More allocation = more frequent pauses</td>
+                    <td>No impact</td>
+                </tr>
+                <tr>
+                    <td>Tuning Required</td>
+                    <td>Yes (region sizes, pause targets, IHOP)</td>
+                    <td>No (self-tuning)</td>
+                </tr>
+                <tr>
+                    <td>Typical Max Pause</td>
+                    <td>50-200ms under stress</td>
+                    <td>&lt; 1ms (phase change safepoints)</td>
+                </tr>
+            </table>
+            <aside class="notes">
+                <p><strong>Simon:</strong> This table summarizes the architectural differences. G1's STW pauses are inherent to its design - you can't tune them away. C4's pauses, by contrast, are limited to sub-millisecond safepoints at phase change boundaries, and the work done there is independent of heap size.</p>
+                <p>Note that C4 also uses remembered sets - it uses a classic card marking mechanism with a filtered write barrier (SVB). The key difference is that C4 scans card marks concurrently, while G1 must scan them during STW pauses.</p>
+                <p><strong>Luqman:</strong> For the rest of this talk, we'll prove this with data from our stress testing framework.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- PART 2: ARCHITECTURE -->
+        <!-- ============================================================ -->
+        <section>
+            <div class="section-number">02</div>
+            <h2>Architecture</h2>
+            <p class="muted">Zero-copy pipeline design with Jakarta EE</p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Now let's look at the system we built to test this. TradeStreamEE is a synthetic HFT market data pipeline designed to maximize allocation pressure.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: What is TradeStreamEE? -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>What is TradeStreamEE?</h2>
+            <h3>A GC Benchmarking Platform Disguised as an HFT Dashboard</h3>
             <div class="two-column">
                 <div class="box">
-                    <h3>Read Barriers (LVB)</h3>
+                    <h3>What It Does</h3>
                     <ul>
-                        <li>Loaded Value Barrier on every read</li>
-                        <li>Relocate objects on-the-fly</li>
-                        <li>Enables concurrent compaction</li>
-                        <li>Small overhead, huge benefit</li>
+                        <li>Generates synthetic market data at HFT rates</li>
+                        <li>Pushes data through a realistic Aeron/SBE pipeline</li>
+                        <li>Distributes to browsers via WebSocket</li>
+                        <li>Monitors GC pauses in real time</li>
+                        <li>Compares C4 vs G1 side-by-side</li>
                     </ul>
                 </div>
                 <div class="box">
-                    <h3>Concurrent Generations</h3>
+                    <h3>What It Measures</h3>
                     <ul>
-                        <li>Has young (New) and old generations</li>
-                        <li>Both collected concurrently</li>
-                        <li>No STW for generational collection</li>
-                        <li>No remembered set scanning pauses</li>
+                        <li>GC pause times (p50/p95/p99/p999/max)</li>
+                        <li>SLA violations by threshold</li>
+                        <li>Allocation rates and live set sizes</li>
+                        <li>WebSocket broadcast latency</li>
+                        <li>Business impact (missed trades, revenue at risk)</li>
                     </ul>
                 </div>
             </div>
-            <div style="margin-top: 30px; text-align: center;">
-                <p><span class="highlight">Result:</span> Sub-millisecond pauses regardless of heap size or live set.</p>
-                <p style="font-size: 0.75em; color: #888;">C4 = algorithm name; GPGC (Generational Pauseless GC) = collector implementation in JMX</p>
+            <div class="layers" style="margin-top: 15px;">
+                <p>Not a real trading system. No order matching, no persistence, no real market data. The "trading" domain is a realistic <strong>allocation pattern generator</strong> for GC stress testing.</p>
             </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Let's be clear about what this is. TradeStreamEE is not a trading platform. It generates synthetic market data to create realistic allocation patterns, then measures how the GC handles the pressure.</p>
+                <p>The trading domain gives us realistic message sizes, object lifetimes, and allocation rates that mirror a real HFT system.</p>
+            </aside>
         </section>
 
-        <!-- Slide 7: Scenario-Based Testing -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Architecture Overview -->
+        <!-- ============================================================ -->
         <section>
-            <h2>Testing GC Behavior: Scenario Approach</h2>
-            <h3>Targeting Specific Collector Weaknesses</h3>
+            <h2>System Architecture</h2>
+            <h3>Zero-Copy Pipeline for Market Data</h3>
+            <div class="architecture-diagram">
+                <div class="arch-box"><strong>Publisher</strong>Market Data</div>
+                <div class="arrow">&rarr;</div>
+                <div class="arch-box"><strong>SBE Encode</strong>UnsafeBuffer</div>
+                <div class="arrow">&rarr;</div>
+                <div class="arch-box"><strong>Aeron IPC</strong>Shared Mem</div>
+                <div class="arrow">&rarr;</div>
+                <div class="arch-box"><strong>Handler</strong>SBE Decode</div>
+                <div class="arrow">&rarr;</div>
+                <div class="arch-box"><strong>Hazelcast</strong>Cluster Topic</div>
+                <div class="arrow">&rarr;</div>
+                <div class="arch-box"><strong>WebSocket</strong>Browser</div>
+            </div>
+            <div class="two-column" style="margin-top: 25px;">
+                <div class="box">
+                    <h3>Ingestion Layer</h3>
+                    <ul>
+                        <li><strong>Aeron IPC:</strong> Kernel bypass, shared memory</li>
+                        <li><strong>SBE:</strong> Flyweight pattern, zero allocation</li>
+                        <li><strong>DirectByteBuffer:</strong> Off-heap memory</li>
+                        <li>Sub-microsecond transport latency</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>Distribution Layer</h3>
+                    <ul>
+                        <li><strong>Hazelcast ITopic:</strong> Cluster-wide pub/sub</li>
+                        <li><strong>WebSocket:</strong> Async push to browsers</li>
+                        <li><strong>JFR Events:</strong> Custom domain profiling</li>
+                        <li><strong>JMX:</strong> GC pause notifications</li>
+                    </ul>
+                </div>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> The data flows through five stages. The publisher generates synthetic trades, encodes them with SBE into a direct byte buffer, publishes via Aeron IPC, the fragment handler decodes and broadcasts via Hazelcast, and WebSocket pushes to the browser.</p>
+                <p>The ingestion layer is designed to minimize allocation. The stress comes from the JSON conversion for WebSocket and the intentional garbage generation scenarios.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Aeron IPC -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Aeron IPC: Zero-Copy Transport</h2>
+            <h3>Bypassing the Kernel</h3>
+            <div class="two-column">
+                <div class="box-danger">
+                    <h3 style="color: var(--danger);">Traditional Messaging</h3>
+                    <ul>
+                        <li>TCP/IP socket calls</li>
+                        <li>Kernel context switches</li>
+                        <li>Buffer copies at each layer</li>
+                        <li>Serialization/deserialization</li>
+                        <li>Latency: 10-100+ microseconds</li>
+                    </ul>
+                </div>
+                <div class="box-success">
+                    <h3 style="color: var(--success);">Aeron IPC</h3>
+                    <ul>
+                        <li>Memory-mapped shared files</li>
+                        <li>Direct memory access</li>
+                        <li>Zero-copy with SBE</li>
+                        <li>No kernel involvement</li>
+                        <li>Transport latency: sub-microsecond</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="box" style="margin-top: 20px;">
+                <h4>Aeron Configuration</h4>
+                <table>
+                    <tr><td><code>Channel</code></td><td><code>aeron:ipc</code></td><td>Inter-process communication</td></tr>
+                    <tr><td><code>Stream ID</code></td><td><code>1001</code></td><td>Logical stream identifier</td></tr>
+                    <tr><td><code>Threading</code></td><td><code>SHARED</code></td><td>Single media driver thread</td></tr>
+                    <tr><td><code>Idle Strategy</code></td><td><code>BackoffIdleStrategy</code></td><td>100 spins, 10 yields, 1-100us park</td></tr>
+                    <tr><td><code>Fragment Limit</code></td><td><code>10</code></td><td>Messages polled per iteration</td></tr>
+                </table>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Aeron uses memory-mapped files for IPC on the same machine. The publisher writes to a ring buffer in shared memory, the subscriber reads from it. No serialization, no kernel calls, no buffer copies.</p>
+                <p>The BackoffIdleStrategy is important: it spins 100 times, yields 10 times, then parks with increasing durations. This minimizes latency when messages are arriving fast but backs off to save CPU when idle.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: SBE Protocol -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Simple Binary Encoding (SBE)</h2>
+            <h3>Zero-Copy Binary Serialization</h3>
+            <div class="two-column">
+                <div class="box">
+                    <h3>SBE Schema Design</h3>
+                    <table style="font-size: 0.8em;">
+                        <tr><th>Message</th><th>ID</th></tr>
+                        <tr><td><code>Trade</code></td><td>1</td></tr>
+                        <tr><td><code>Quote</code></td><td>2</td></tr>
+                        <tr><td><code>MarketDepth</code></td><td>3</td></tr>
+                        <tr><td><code>OrderAck</code></td><td>4</td></tr>
+                        <tr><td><code>Heartbeat</code></td><td>5</td></tr>
+                    </table>
+                    <p class="muted" style="font-size: 0.75em; margin-top: 8px;">Defined in <code>market-data.xml</code>, compiled to Java flyweight codecs at build time via <code>SbeTool</code>.</p>
+                </div>
+                <div class="box">
+                    <h3>Key Properties</h3>
+                    <ul style="font-size: 0.85em;">
+                        <li>Flyweight pattern (no allocation)</li>
+                        <li>Fixed-offset field access</li>
+                        <li>Little-endian byte order</li>
+                        <li>Prices as fixed-point <code>int64</code> (x10,000)</li>
+                        <li>Repeating groups for depth levels</li>
+                        <li>Generated code, not reflection</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="layers">
+                <p>SBE codecs wrap existing byte buffers. They read and write directly from/to memory without creating intermediate Java objects. The buffer is reused across messages.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> SBE is the encoding protocol used by FIX Trading and major exchanges. The key insight: encoder and decoder objects are flyweights that wrap a shared UnsafeBuffer. No new objects are created during encoding or decoding.</p>
+                <p>Prices are stored as fixed-point integers (price * 10000). This avoids floating-point representation entirely in the binary format. Conversion to double happens only when building JSON for WebSocket clients.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: SBE Zero-Copy Code -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>SBE: Zero-Copy Message Processing</h2>
+            <h3>The Flyweight Pattern in Practice</h3>
+            <pre><code class="java" data-trim>
+// Reusable decoder instances - allocated once, never GC'd
+private final TradeDecoder tradeDecoder = new TradeDecoder();
+private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+private final byte[] symbolBuffer = new byte[128];  // reused
+private final StringBuilder sb = new StringBuilder(1024); // reused
+
+@Override
+public void onFragment(DirectBuffer buffer, int offset,
+                       int length, Header header) {
+    // Wrap existing buffer - NO copy, NO allocation
+    headerDecoder.wrap(buffer, offset);
+
+    // Move decoder window over buffer - NO allocation
+    tradeDecoder.wrap(buffer,
+        offset + headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
+
+    // Read directly from buffer memory
+    final long timestamp = tradeDecoder.timestamp();
+    final long price = tradeDecoder.price();
+    final int quantity = tradeDecoder.quantity();
+}
+            </code></pre>
+            <p style="margin-top: 10px; font-size: 0.85em;">
+                Decoders are views over byte buffers. No Java objects created during message processing. The <code>symbolBuffer</code> and <code>jsonBuilder</code> are reused across calls.
+            </p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> This code is from MarketDataFragmentHandler. The decoders wrap the DirectBuffer - they don't copy data. Every field access reads directly from the underlying byte array.</p>
+                <p>The symbolBuffer and jsonBuilder are instance fields, reused across millions of messages. This is the opposite of how most Java code works - normally every message processing step creates temporary objects. Here, we've eliminated allocation from the hot path entirely.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Publisher Burst Pattern -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>The Publisher: Burst Pattern</h2>
+            <h3>Simulating Realistic Market Conditions</h3>
+            <pre><code class="java" data-trim>
+// Burst: 500 iterations x (Trade + Quote + MarketDepth) = 1,500 messages
+// Then 5-microsecond park, repeat
+while (running) {
+    int burstMultiplier = getBurstMultiplier(); // time-based
+    int adjustedBurstSize = BASE_BURST_SIZE * burstMultiplier; // 500, 2500, or 1500
+
+    for (int i = 0; i &lt; adjustedBurstSize; i++) {
+        publishTrade();       // SBE encode -> Aeron offer
+        publishQuote();       // SBE encode -> Aeron offer
+        publishMarketDepth(); // SBE encode -> Aeron offer
+        if (i % 100 == 0) publishHeartbeat();
+    }
+    LockSupport.parkNanos(5_000); // 5us backoff between bursts
+}
+
+// Burst multiplier based on time-of-minute simulation
+private int getBurstMultiplier() {
+    long second = (System.currentTimeMillis() / 1000) % 60;
+    if (second >= 20 &amp;&amp; second &lt; 25) return 5;  // News event
+    if (second >= 45 &amp;&amp; second &lt; 50) return 3;  // Market close
+    return 1; // Normal trading
+}
+            </code></pre>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> The publisher runs on a virtual thread and generates 1,500 messages per burst cycle. The time-based multiplier creates realistic market conditions: normal trading, then a 5x news event spike, then a 3x market close rush.</p>
+                <p>This pattern creates predictable allocation spikes that expose how different GCs handle variable load.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Dual-Mode Ingestion -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Dual-Mode Ingestion</h2>
+            <h3>AERON vs DIRECT: Controlled Comparison</h3>
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th style="color: var(--success);">AERON Mode</th>
+                    <th style="color: var(--danger);">DIRECT Mode</th>
+                </tr>
+                <tr><td>Encoding</td><td>SBE binary (zero-copy)</td><td>JSON strings (String.format)</td></tr>
+                <tr><td>Transport</td><td>Shared memory IPC</td><td>In-process method call</td></tr>
+                <tr><td>Allocation/Message</td><td>~0 bytes</td><td>~1KB+ (1KB padding added)</td></tr>
+                <tr><td>GC Pressure</td><td>Minimal</td><td>High (intentional)</td></tr>
+                <tr><td>Purpose</td><td>Production pipeline</td><td>GC stress baseline</td></tr>
+            </table>
+            <pre style="margin-top: 15px;"><code class="java" data-trim>
+// DIRECT mode: Intentional garbage generation
+String json = String.format("{\"type\":\"trade\",\"timestamp\":%d," +
+    "\"tradeId\":%d,\"symbol\":\"%s\",\"price\":%.4f,\"quantity\":%d}",
+    System.currentTimeMillis(), tradeId, symbol, price, quantity);
+
+// Add 1KB of padding per message to maximize GC stress
+broadcaster.broadcastWithArtificialLoad(json);
+            </code></pre>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> The DIRECT mode exists specifically to generate garbage. It uses String.format (which creates temporary StringBuilder, char arrays, and intermediate strings) and wraps every message in 1KB of padding.</p>
+                <p>This isolates GC as the variable. Both modes run the same workload, but DIRECT mode forces the GC to work much harder. The difference in pause behavior between C4 and G1 under DIRECT mode is dramatic.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- PART 3: JAKARTA EE STACK -->
+        <!-- ============================================================ -->
+        <section>
+            <div class="section-number">03</div>
+            <h2>The Jakarta EE Stack</h2>
+            <p class="muted">Enterprise Java for low-latency systems</p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Now let's look at how Jakarta EE powers this system. Payara Micro 7 provides a lightweight container with all the Jakarta EE APIs we need.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Payara Micro + Jakarta EE -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Payara Micro 7 + Jakarta EE 11</h2>
+            <h3>The Runtime Platform</h3>
+            <div class="two-column">
+                <div class="box">
+                    <h3>Jakarta EE APIs Used</h3>
+                    <ul>
+                        <li><strong>CDI:</strong> Lifecycle, injection, events</li>
+                        <li><strong>WebSocket:</strong> Real-time data push</li>
+                        <li><strong>JAX-RS:</strong> REST API (7 resource classes)</li>
+                        <li><strong>Concurrency 3.1:</strong> Virtual thread executor</li>
+                        <li><strong>MicroProfile Config:</strong> External config</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>Payara-Specific Features</h3>
+                    <ul>
+                        <li><strong>Hazelcast 5.5:</strong> Built-in clustering</li>
+                        <li>~100MB footprint</li>
+                        <li>Fast startup (seconds)</li>
+                        <li>No external app server install</li>
+                        <li>Docker-native deployment</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="box" style="margin-top: 20px;">
+                <h4>Build Configuration</h4>
+                <pre style="margin: 5px 0;"><code class="xml" data-trim>
+&lt;dependencyManagement&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;fish.payara.api&lt;/groupId&gt;
+            &lt;artifactId&gt;payara-bom&lt;/artifactId&gt;
+            &lt;version&gt;${payara.version}&lt;/version&gt;
+            &lt;type&gt;pom&lt;/type&gt;
+            &lt;scope&gt;import&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/dependencyManagement&gt;
+&lt;properties&gt;
+    &lt;maven.compiler.release&gt;21&lt;/maven.compiler.release&gt;
+    &lt;jakartaee-api.version&gt;11.0.0&lt;/jakartaee-api.version&gt;
+&lt;/properties&gt;
+                </code></pre>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Payara Micro runs as a single JAR with an embedded container. No install, no configuration. Drop in your WAR and go. It includes Hazelcast for clustering out of the box.</p>
+                <p>The entire application compiles to a single WAR file. Java 21, Jakarta EE 11. No Spring, no Quarkus - pure Jakarta EE with CDI.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: CDI Lifecycle -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>CDI: Lifecycle Management</h2>
+            <h3>How Components Initialize</h3>
+            <pre><code class="java" data-trim>
+@ApplicationScoped
+public class MarketDataPublisher {
+
+    @Inject private AeronSubscriberBean subscriberBean;
+    @Inject private MarketDataBroadcaster broadcaster;
+    @Inject private HazelcastInstance hazelcastInstance;
+
+    @Inject @ConfigProperty(name = "TRADER_INGESTION_MODE",
+                            defaultValue = "AERON")
+    private String ingestionMode;
+
+    @Inject @ConfigProperty(name = "ENABLE_PUBLISHER",
+                            defaultValue = "true")
+    String enablePublisherEnv;
+
+    @Inject @VirtualThreadExecutor
+    private ManagedExecutorService managedExecutorService;
+
+    // CDI observer: fires when ApplicationScoped context initializes
+    void contextInitialized(@Observes @Initialized(ApplicationScoped.class) Object event) {
+        init(); // starts Aeron connection, publisher loop, stats reporter
+    }
+
+    @PreDestroy
+    public void shutdown() { /* clean shutdown of Aeron, Hazelcast */ }
+}
+            </code></pre>
+            <p class="muted" style="font-size: 0.8em; margin-top: 10px;">
+                CDI manages all lifecycle. <code>@Observes @Initialized</code> replaces <code>ServletContextListener</code>. Configuration via MicroProfile Config annotations.
+            </p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> CDI replaces the old Servlet API lifecycle listeners. The @Observes @Initialized pattern is cleaner and integrates with the CDI bean lifecycle.</p>
+                <p>MicroProfile Config injects environment variables and properties directly. No parsing, no casting, no null checks. If the env var isn't set, you get the default value.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Virtual Threads -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Virtual Threads via Jakarta Concurrency 3.1</h2>
+            <h3>Massive Concurrency Without Platform Thread Pools</h3>
+            <pre><code class="java" data-trim>
+// Single annotation defines a virtual thread executor
+@ApplicationScoped
+@ManagedExecutorDefinition(
+    name = "java:module/concurrent/VirtualThreadExecutor",
+    virtual = true,
+    qualifiers = {VirtualThreadExecutor.class}
+)
+public class ConcurrencyConfig {}
+
+// Custom qualifier for injection
+@Qualifier
+@Retention(RUNTIME)
+@Target({METHOD, FIELD, PARAMETER, TYPE})
+public @interface VirtualThreadExecutor {}
+
+// Usage: inject and submit tasks
+@Inject @VirtualThreadExecutor
+private ManagedExecutorService managedExecutorService;
+
+// Publisher runs on virtual thread - no platform thread consumed
+publisherFuture = managedExecutorService.submit(() -> {
+    while (running) {
+        publishTrade(); publishQuote(); publishMarketDepth();
+        LockSupport.parkNanos(5_000);
+    }
+});
+            </code></pre>
+            <div class="layers" style="margin-top: 10px;">
+                <p>All background tasks (publisher, subscriber polling, memory pressure generator, stats reporting) run on virtual threads. A single <code>@ManagedExecutorDefinition</code> replaces all thread pool configuration.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Java 21 virtual threads through Jakarta Concurrency 3.1. This is huge for our use case - we need multiple background tasks that mostly block or park. Platform threads would be wasted.</p>
+                <p>The memory pressure generator spawns 4 parallel virtual threads per iteration. With platform threads, you'd need a thread pool. With virtual threads, each one is just a few hundred bytes on the heap.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: WebSocket -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>WebSocket: Real-Time Data Push</h2>
+            <h3>Two Endpoints for Market Data and SLA Alerts</h3>
+            <pre><code class="java" data-trim>
+@ServerEndpoint("/market-data")
+public class MarketDataWebSocket {
+
+    @Inject private MarketDataBroadcaster broadcaster;
+
+    @Inject @ConfigProperty(name = "TRADER_INGESTION_MODE",
+                            defaultValue = "AERON")
+    private String ingestionMode;
+
+    @OnOpen
+    public void onOpen(Session session) {
+        broadcaster.addSession(session);
+        String welcome = String.format(
+            "{\"type\":\"info\",\"message\":\"Connected to " +
+            "TradeStreamEE market data feed\",\"mode\":\"%s\"}",
+            ingestionMode);
+        session.getBasicRemote().sendText(welcome);
+    }
+
+    @OnClose
+    public void onClose(Session session) {
+        broadcaster.removeSession(session);
+    }
+}
+
+// SLA endpoint: pushes GC pause violation alerts in real time
+@ServerEndpoint("/sla")
+public class SLAWebSocket {
+    @OnOpen
+    public void onOpen(Session session) {
+        String welcome = String.format(
+            "{\"type\":\"info\",\"message\":\"Connected to SLA " +
+            "monitoring\",\"instance\":\"%s\"}",
+            InstanceUtils.getInstanceName());
+        session.getBasicRemote().sendText(welcome);
+    }
+}
+            </code></pre>
+            <p class="muted" style="font-size: 0.8em; margin-top: 8px;">
+                Market data at <code>/market-data</code>. GC pause alerts at <code>/sla</code>. CDI injection works in WebSocket endpoints via Payara.
+            </p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Two WebSocket endpoints. The market-data endpoint streams trade, quote, and depth data. The SLA endpoint pushes real-time alerts when GC pauses exceed thresholds.</p>
+                <p>The browser dashboard connects to both. When a GC pause hits 10ms+, the SLA WebSocket flashes a warning. At 50ms+ it's a critical alert. This makes GC behavior visible in real time.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: REST API -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>JAX-RS REST API</h2>
+            <h3>Full Control Surface for Testing</h3>
+            <div class="two-column">
+                <div class="box">
+                    <h3>System &amp; Health</h3>
+                    <pre style="font-size: 0.7em;"><code class="bash" data-trim>
+GET  /api/status
+GET  /api/status/cluster
+GET  /api/health/check
+GET  /api/health/ready
+GET  /api/health/live</code></pre>
+                </div>
+                <div class="box">
+                    <h3>GC &amp; Pressure Control</h3>
+                    <pre style="font-size: 0.7em;"><code class="bash" data-trim>
+GET  /api/gc/stats
+GET  /api/gc/pauses
+GET  /api/gc/sla
+GET  /api/gc/comparison
+POST /api/pressure/mode/{mode}
+GET  /api/pressure/status</code></pre>
+                </div>
+            </div>
+            <div class="two-column" style="margin-top: 15px;">
+                <div class="box">
+                    <h3>Business Impact</h3>
+                    <pre style="font-size: 0.7em;"><code class="bash" data-trim>
+GET  /api/business/impact
+GET  /api/business/config
+POST /api/business/reset</code></pre>
+                </div>
+                <div class="box">
+                    <h3>Demo &amp; JFR</h3>
+                    <pre style="font-size: 0.7em;"><code class="bash" data-trim>
+GET  /api/demo/presets
+POST /api/demo/preset/{id}/start
+POST /api/demo/execution/{id}/step/{n}
+GET  /api/jfr/status
+POST /api/jfr/recording/start
+GET  /api/jfr/download/{file}</code></pre>
+                </div>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> The REST API gives us full programmatic control. We can apply stress scenarios, read GC stats, trigger demo sequences, and manage JFR recordings - all from curl or a script.</p>
+                <p>The demo presets are YAML-driven choreographies that step through different stress scenarios automatically. The UI drives them via these REST calls.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Hazelcast Clustering -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Hazelcast Clustering</h2>
+            <h3>Distributed Data with No External Infrastructure</h3>
+            <div class="two-column">
+                <div class="box">
+                    <h3>What Hazelcast Provides</h3>
+                    <ul>
+                        <li><strong>ITopic:</strong> Cluster-wide pub/sub for market data</li>
+                        <li><strong>IAtomicLong:</strong> CP subsystem for distributed counters</li>
+                        <li><strong>IMap:</strong> Distributed state for demo coordination</li>
+                        <li><strong>TCP/IP Discovery:</strong> Docker networking</li>
+                        <li>Built into Payara Micro</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>How Broadcasting Works</h3>
+                    <pre style="font-size: 0.65em;"><code class="java" data-trim>
+public void broadcast(String json) {
+    if (clusterTopic != null) {
+        // Publish to cluster topic
+        clusterTopic.publish(json);
+    } else {
+        // Fallback: local only
+        broadcastLocal(json);
+    }
+}
+
+// Each cluster member receives
+// via topic listener and pushes
+// to its local WebSocket sessions</code></pre>
+                </div>
+            </div>
+            <div class="layers">
+                <p>One node generates data (<code>ENABLE_PUBLISHER=true</code>), all nodes distribute to their WebSocket clients. Horizontal scaling with no message broker.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Hazelcast is embedded in Payara. No Kafka, no RabbitMQ, no external message broker. The publisher sends to a Hazelcast reliable topic, and every cluster member receives it via a topic listener.</p>
+                <p>You can disable the publisher on specific instances. They become pure WebSocket relays. This enables horizontal scaling: one node generates, multiple nodes distribute.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- PART 4: GC STRESS TESTING -->
+        <!-- ============================================================ -->
+        <section>
+            <div class="section-number">04</div>
+            <h2>GC Stress Testing</h2>
+            <p class="muted">Five adversarial scenarios targeting G1 weaknesses</p>
+            <aside class="notes">
+                <p><strong>Simon:</strong> This is the most important section. We didn't just throw garbage at the JVM and hope for the best. We designed five specific scenarios, each targeting a different G1 architectural weakness.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Stress Testing Philosophy -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Why Scenario-Based Testing?</h2>
+            <h3>Generic Benchmarks Miss Real Behavior</h3>
+            <div class="two-column">
+                <div class="box-danger">
+                    <h3 style="color: var(--danger);">Generic Benchmarks</h3>
+                    <ul>
+                        <li>Uniform allocation patterns</li>
+                        <li>Don't model cross-generational refs</li>
+                        <li>Miss promotion storms</li>
+                        <li>Don't test fragmentation</li>
+                        <li>Results don't match production</li>
+                    </ul>
+                </div>
+                <div class="box-success">
+                    <h3 style="color: var(--success);">Targeted Scenarios</h3>
+                    <ul>
+                        <li>Each scenario targets one G1 weakness</li>
+                        <li>Model realistic object lifetime patterns</li>
+                        <li>Control allocation rate and live set</li>
+                        <li>Reproduce deterministically</li>
+                        <li>Expose real production behavior</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="box-orange" style="margin-top: 20px;">
+                <p><strong>Approach:</strong> Build the <strong>weakest case for G1</strong>, then measure how C4 handles the same load. If C4 survives scenarios designed to break G1, the conclusion is clear.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Most GC benchmarks just allocate byte arrays in a loop. That tests allocation throughput but misses the nuances. Real applications have cross-generational references, promotion storms, fragmentation patterns.</p>
+                <p>We designed each scenario to exploit a specific G1 weakness. CROSS_GEN_REFS targets remembered sets. FRAGMENTATION targets compaction pauses. PROMOTION_STORM targets mixed collection overhead. This is adversarial testing.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: MemoryPressureService Architecture -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>MemoryPressureService Architecture</h2>
+            <h3>The GC Stress Engine</h3>
+            <pre><code class="java" data-trim>
+@ApplicationScoped
+public class MemoryPressureService {
+
+    @Inject @VirtualThreadExecutor
+    private ManagedExecutorService executorService;
+
+    private final Deque&lt;byte[]&gt; liveSet = new LinkedList&lt;&gt;();
+    private final ConcurrentLinkedDeque&lt;byte[]&gt; promotableObjects;
+    private final Deque&lt;RefHolder&gt; crossRefHolders = new LinkedList&lt;&gt;();
+
+    public void setAllocationMode(AllocationMode mode) {
+        currentMode = mode;
+        liveSet.clear();
+        promotableObjects.clear();
+        crossRefHolders.clear();
+        startPressure(); // launches virtual thread
+    }
+
+    // Main loop: ~10 iterations/second (100ms per iteration)
+    while (running) {
+        generateGarbage(currentMode);
+        Thread.sleep(100 - executionTime);
+        logStats();
+    }
+}
+            </code></pre>
+            <p class="muted" style="font-size: 0.8em; margin-top: 8px;">
+                Runs on a <strong>virtual thread</strong>. Each scenario uses <strong>4 parallel threads</strong> for allocation. Live set and promotable objects are managed across iterations.
+            </p>
+            <aside class="notes">
+                <p><strong>Simon:</strong> The MemoryPressureService is the core testing engine. It runs on a virtual thread and executes the current allocation scenario in a loop. Each iteration targets ~100ms of execution time.</p>
+                <p>The four deques track different object categories: live set (surviving objects), promotable objects (will survive to old gen), and cross-ref holders (old-gen objects with young-gen references). Each scenario uses these differently.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Five Scenarios Overview -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>The Five Stress Scenarios</h2>
             <table>
                 <tr>
                     <th>Scenario</th>
-                    <th>Rate</th>
+                    <th>Allocation Rate</th>
                     <th>Live Set</th>
-                    <th>G1 Weakness Tested</th>
+                    <th>G1 Weakness Targeted</th>
                 </tr>
                 <tr>
                     <td><code>STEADY_LOAD</code></td>
                     <td>200 MB/s</td>
-                    <td>512 MB</td>
+                    <td>512 MB stable</td>
                     <td>Young GC pause frequency</td>
                 </tr>
                 <tr>
                     <td><code>GROWING_HEAP</code></td>
                     <td>150 MB/s</td>
-                    <td>100MB → 2GB</td>
+                    <td>100 MB &rarr; 2 GB (60s)</td>
                     <td>Mixed collection pause scaling</td>
                 </tr>
                 <tr>
                     <td><code>PROMOTION_STORM</code></td>
                     <td>300 MB/s</td>
                     <td>1 GB (50% survival)</td>
-                    <td>Old generation pressure</td>
+                    <td>Old generation collection</td>
                 </tr>
                 <tr>
                     <td><code>FRAGMENTATION</code></td>
@@ -425,464 +1631,203 @@
                     <td>Remembered set overhead</td>
                 </tr>
             </table>
-            <p style="margin-top: 20px; font-size: 0.85em;">
-                Each scenario uses <span class="highlight">4 parallel threads</span> to mirror production workloads.
+            <p class="muted" style="font-size: 0.8em; margin-top: 15px;">
+                Each scenario uses <span class="hl">4 parallel virtual threads</span> to mirror production multi-handler workloads. All defined in <code>AllocationMode.java</code>.
             </p>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Five scenarios, five different weaknesses. STEADY_LOAD is the baseline. GROWING_HEAP tests how pause time scales with live set. PROMOTION_STORM floods old generation. FRAGMENTATION creates small objects with random lifetimes. And CROSS_GEN_REFS is the killer scenario for remembered sets.</p>
+                <p>We'll look at CROSS_GEN_REFS in detail next - it's the most technically interesting.</p>
+            </aside>
         </section>
 
-        <!-- Slide 8: Cross-Gen Refs Deep Dive -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: CROSS_GEN_REFS Deep Dive -->
+        <!-- ============================================================ -->
         <section>
             <h2>CROSS_GEN_REFS: Remembered Set Stress</h2>
-            <h3>Testing G1's Write Barrier Overhead</h3>
+            <h3>The Killer Scenario for G1</h3>
             <pre><code class="java" data-trim>
+// Old-generation holder object (~1MB each, will be promoted by GC)
 private static class RefHolder {
     volatile Object youngRef;  // Updated frequently
-    final byte[] padding;      // 1MB to ensure old gen residence
+    final byte[] padding;      // ~1MB ensures old gen residence
+    RefHolder(int size) {
+        this.padding = new byte[size];
+        ThreadLocalRandom.current().nextBytes(padding);
+    }
 }
 
-private void createCrossGenerationalRefs(int bytes, int threads) {
+// Create young objects and update old-to-young references
+// Every write triggers G1's post-write barrier:
+//   1. Marks card table entry as dirty
+//   2. Adds to remembered set for later scanning
+private void createCrossGenRefsMultiThreaded(int bytes, int threads) {
     RefHolder[] holders = crossRefHolders.toArray(new RefHolder[0]);
-
-    for (int t = 0; t < threads; t++) {
-        futures[t] = CompletableFuture.runAsync(() -> {
+    for (int t = 0; t &lt; threads; t++) {
+        CompletableFuture.runAsync(() -> {
             while (remaining > 0) {
-                byte[] youngObj = new byte[size];
-                // This write triggers G1's post-write barrier
-                holders[idx].youngRef = youngObj;
+                byte[] youngObj = new byte[randomSize];
+                holders[randomIdx].youngRef = youngObj; // write barrier!
                 remaining -= size;
             }
-        }, executorService);
+        }, executorService); // virtual thread
     }
 }
             </code></pre>
-            <p style="margin-top: 15px;">
-                <span class="failure">G1:</span> Every pointer update marks card table, adds to remembered set.<br>
-                <span class="success">C4:</span> No generations = no remembered sets = no overhead.
-            </p>
-        </section>
-
-        <!-- Section: Architecture -->
-        <section>
-            <h1 style="color: var(--payara-orange);">Part 2</h1>
-            <h2>Architecture</h2>
-            <p>Zero-copy pipeline design with Jakarta EE</p>
-        </section>
-
-        <!-- Slide 9: Architecture Overview -->
-        <section>
-            <h2>TradeStreamEE Architecture</h2>
-            <h3>Zero-Copy Pipeline for Market Data</h3>
-            <div class="architecture-diagram">
-                <div class="arch-box"><strong>Publisher</strong><br>Market Data</div>
-                <div class="arrow">→</div>
-                <div class="arch-box"><strong>SBE</strong><br>Binary Encode</div>
-                <div class="arrow">→</div>
-                <div class="arch-box"><strong>Aeron IPC</strong><br>Shared Memory</div>
-                <div class="arrow">→</div>
-                <div class="arch-box"><strong>Payara</strong><br>WebSocket</div>
-                <div class="arrow">→</div>
-                <div class="arch-box"><strong>Browser</strong><br>Dashboard</div>
+            <div style="margin-top: 10px;">
+                <p><span class="danger">G1:</span> Every <code>youngRef</code> write triggers write barrier + remembered set update. Overhead grows with cross-refs. Remembered set scanned during <strong>STW</strong> pauses.</p>
+                <p><span class="success">C4:</span> Uses a filtered write barrier (SVB) for card marks, but scans them <strong>concurrently</strong>. No STW pause for remembered set scanning.</p>
             </div>
-            <div class="two-column" style="margin-top: 30px;">
-                <div class="box">
-                    <h3>Ingestion Layer</h3>
-                    <ul>
-                        <li><strong>Aeron IPC:</strong> Kernel bypass, shared memory</li>
-                        <li><strong>SBE:</strong> Flyweight pattern, zero allocation</li>
-                        <li>Sub-microsecond message latency</li>
-                    </ul>
-                </div>
-                <div class="box">
-                    <h3>Application Layer</h3>
-                    <ul>
-                        <li><strong>Payara Micro 7:</strong> Jakarta EE 11</li>
-                        <li><strong>CDI:</strong> Lifecycle management</li>
-                        <li><strong>WebSocket:</strong> Real-time push</li>
-                    </ul>
-                </div>
-            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> This is the most interesting scenario. We create ~800MB of RefHolder objects that live in old generation. Each has a volatile reference field. Then 4 virtual threads continuously allocate new young objects and update random holders to point to them.</p>
+                <p>Every single write to youngRef triggers G1's post-write barrier. The barrier marks a card table entry dirty and potentially updates the remembered set. When young GC fires, G1 must scan all these remembered set entries to find live young objects during a stop-the-world pause. With thousands of old-to-young references, this becomes expensive.</p>
+                <p>C4 also uses card marks and a write barrier for old-to-young references. The difference is that C4 scans card marks concurrently - the young generation collector uses an interlock mechanism that briefly halts the old generation collector for page-granular synchronization, but the application threads never stop.</p>
+            </aside>
         </section>
 
-        <!-- Slide 9b: Dual-Mode Architecture -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Other Scenarios Code -->
+        <!-- ============================================================ -->
         <section>
-            <h2>Dual-Mode Ingestion</h2>
-            <h3>AERON vs DIRECT: Controlled Comparison</h3>
-            <table>
-                <tr>
-                    <th>Aspect</th>
-                    <th style="color: #51cf66;">AERON Mode</th>
-                    <th style="color: #ff6b6b;">DIRECT Mode</th>
-                </tr>
-                <tr>
-                    <td>Encoding</td>
-                    <td>SBE binary</td>
-                    <td>JSON strings</td>
-                </tr>
-                <tr>
-                    <td>Transport</td>
-                    <td>Shared memory IPC</td>
-                    <td>In-process calls</td>
-                </tr>
-                <tr>
-                    <td>Allocation</td>
-                    <td>~0 bytes/message</td>
-                    <td>~1KB+ per message</td>
-                </tr>
-                <tr>
-                    <td>GC Pressure</td>
-                    <td>Minimal</td>
-                    <td>High (intentional)</td>
-                </tr>
-                <tr>
-                    <td>Purpose</td>
-                    <td>Production pattern</td>
-                    <td>GC stress baseline</td>
-                </tr>
-            </table>
-            <div class="box" style="margin-top: 20px;">
-                <p>DIRECT mode adds 1KB+ padding per message to stress the garbage collector. This isolates GC as the variable when comparing C4 vs G1.</p>
-            </div>
-        </section>
-
-        <!-- Slide 9c: SBE Message Types -->
-        <section>
-            <h2>SBE Schema: 5 Message Types</h2>
-            <h3>Defined in market-data.xml</h3>
-            <table>
-                <tr>
-                    <th>Message</th>
-                    <th>ID</th>
-                    <th>Key Fields</th>
-                </tr>
-                <tr>
-                    <td><code>Trade</code></td>
-                    <td>1</td>
-                    <td>timestamp, tradeId, price, quantity, side, symbol</td>
-                </tr>
-                <tr>
-                    <td><code>Quote</code></td>
-                    <td>2</td>
-                    <td>timestamp, bidPrice, bidSize, askPrice, askSize, symbol</td>
-                </tr>
-                <tr>
-                    <td><code>MarketDepth</code></td>
-                    <td>3</td>
-                    <td>bids[], asks[] (5 levels), sequenceNumber</td>
-                </tr>
-                <tr>
-                    <td><code>OrderAck</code></td>
-                    <td>4</td>
-                    <td>orderId, execType, leavesQty, cumQty, side</td>
-                </tr>
-                <tr>
-                    <td><code>Heartbeat</code></td>
-                    <td>5</td>
-                    <td>timestamp, sequenceNumber</td>
-                </tr>
-            </table>
-            <p style="margin-top: 15px; font-size: 0.85em;">
-                Price encoding: <code>int64 × 10,000</code> for 4 decimal places. Little-endian byte order.
-            </p>
-        </section>
-
-        <!-- Slide 10: SBE Zero-Copy -->
-        <section>
-            <h2>SBE: Zero-Copy Message Processing</h2>
-            <h3>The Flyweight Pattern</h3>
-            <pre><code class="java" data-trim>
-// Reusable decoders - no allocation in hot path
-private final TradeDecoder tradeDecoder = new TradeDecoder();
-private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-
-@Override
-public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
-    // Wrap existing buffer - no copy
-    headerDecoder.wrap(buffer, offset);
-
-    // Move decoder "window" over buffer - no allocation
-    tradeDecoder.wrap(buffer,
-                     offset + headerDecoder.encodedLength(),
-                     headerDecoder.blockLength(),
-                     headerDecoder.version());
-
-    // Read directly from buffer
-    final long timestamp = tradeDecoder.timestamp();
-    final long price = tradeDecoder.price();
-    final long quantity = tradeDecoder.quantity();
-}
-            </code></pre>
-            <p style="margin-top: 15px;">
-                Decoders are views over byte buffers. No Java objects created during message processing.
-            </p>
-        </section>
-
-        <!-- Slide 11: Aeron IPC -->
-        <section>
-            <h2>Aeron: Ultra-Low Latency Transport</h2>
-            <h3>Bypassing the Kernel</h3>
-            <div class="two-column">
-                <div>
-                    <h3 style="color: #ff6b6b;">Traditional Messaging</h3>
-                    <ul>
-                        <li>TCP/IP socket calls</li>
-                        <li>Kernel context switches</li>
-                        <li>Buffer copies at each layer</li>
-                        <li>Serialization/deserialization</li>
-                        <li>Latency: 10-100+ microseconds</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 style="color: #51cf66;">Aeron IPC</h3>
-                    <ul>
-                        <li>Memory-mapped files</li>
-                        <li>Direct memory access</li>
-                        <li>Zero-copy with SBE</li>
-                        <li>No kernel involvement</li>
-                        <li>Transport latency: sub-microsecond</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="box" style="margin-top: 30px;">
-                <p>Aeron's ring buffer in shared memory allows components on the same machine to communicate without network overhead. Combined with SBE, the entire path from publisher to subscriber involves no object allocation.</p>
-                <p style="font-size: 0.75em; color: #888; margin-top: 10px;">Note: End-to-end latency includes WebSocket broadcast and JSON conversion. Transport layer is sub-microsecond.</p>
-            </div>
-        </section>
-
-        <!-- Slide 11b: Aeron Configuration -->
-        <section>
-            <h2>Aeron Configuration Details</h2>
-            <h3>Production-Ready Settings</h3>
-            <table>
-                <tr>
-                    <th>Parameter</th>
-                    <th>Value</th>
-                    <th>Purpose</th>
-                </tr>
-                <tr>
-                    <td><code>Channel</code></td>
-                    <td><code>aeron:ipc</code></td>
-                    <td>Inter-process communication mode</td>
-                </tr>
-                <tr>
-                    <td><code>Stream ID</code></td>
-                    <td>1001</td>
-                    <td>Logical message stream identifier</td>
-                </tr>
-                <tr>
-                    <td><code>Fragment Limit</code></td>
-                    <td>10</td>
-                    <td>Messages polled per iteration</td>
-                </tr>
-                <tr>
-                    <td><code>Idle Strategy</code></td>
-                    <td>BackoffIdleStrategy</td>
-                    <td>100ns → 100μs adaptive backoff</td>
-                </tr>
-                <tr>
-                    <td><code>Shared Memory</code></td>
-                    <td>512 MB</td>
-                    <td>IPC buffer size (Docker tmpfs)</td>
-                </tr>
-            </table>
-            <div class="box" style="margin-top: 20px;">
-                <h3>Circuit Breaker</h3>
-                <p>Publisher stops after 50 consecutive offer failures to prevent resource exhaustion.</p>
-            </div>
-        </section>
-
-        <!-- Slide 12: Payara Micro -->
-        <section>
-            <h2>Payara Micro 7.2025.2</h2>
-            <h3>Jakarta EE 11 for Financial Applications</h3>
+            <h2>Scenario Implementation Details</h2>
+            <h3>How Each Scenario Generates Pressure</h3>
             <div class="two-column">
                 <div class="box">
-                    <h3>Features</h3>
-                    <ul>
-                        <li>~100MB footprint</li>
-                        <li>Fast startup (seconds)</li>
-                        <li>Jakarta CDI for DI</li>
-                        <li>Jakarta WebSocket</li>
-                        <li>Jakarta REST (JAX-RS)</li>
-                        <li>Jakarta Concurrency 3.1</li>
-                    </ul>
+                    <h3>FRAGMENTATION</h3>
+                    <pre style="font-size: 0.65em;"><code class="java" data-trim>
+// Random small objects create holes
+private void allocateFragmentationGarbage(
+    int totalBytes, int threads) {
+    while (remaining > 0) {
+        int size = random(100, 1000);
+        byte[] garbage = new byte[size];
+        random.nextBytes(garbage);
+        remaining -= size;
+        // Small objects die fast but
+        // fragment the free space
+    }
+}</code></pre>
+                    <p class="muted" style="font-size: 0.7em;">100-1000 byte objects create a Swiss cheese heap that triggers G1 compaction.</p>
                 </div>
                 <div class="box">
-                    <h3>Clustering</h3>
-                    <ul>
-                        <li>Hazelcast 5.5 built-in</li>
-                        <li>TCP/IP discovery (Docker)</li>
-                        <li>CP Subsystem for counters</li>
-                        <li>Reliable Topics (back-pressure)</li>
-                        <li>No external infrastructure</li>
-                    </ul>
+                    <h3>PROMOTION_STORM</h3>
+                    <pre style="font-size: 0.65em;"><code class="java" data-trim>
+// 50% survive to old generation
+private void executePromotionStorm(
+    AllocationMode mode) {
+    int transient = bytes / 2;
+    int promotable = bytes / 2;
+
+    allocateTransientGarbage(transient, 4);
+    allocatePromotableGarbage(promotable, 4);
+
+    // Move promoted objects to live set
+    while ((obj = promotableObjects.poll()) != null)
+        liveSet.add(obj);
+}</code></pre>
+                    <p class="muted" style="font-size: 0.7em;">50% survival rate floods old gen, forcing G1 into expensive mixed collections.</p>
                 </div>
             </div>
-            <pre style="margin-top: 20px;"><code class="java" data-trim>
-// Cluster-wide metrics without complex setup
-@Inject private HazelcastInstance hazelcastInstance;
-
-public void init() {
-    clusterMessageCounter =
-        hazelcastInstance.getCPSubsystem().getAtomicLong("cluster-message-count");
-}
-            </code></pre>
+            <aside class="notes">
+                <p><strong>Simon:</strong> FRAGMENTATION allocates random small objects that create holes in the heap. When G1 can't find a large enough free region, it must compact. Compaction requires a stop-the-world pause.</p>
+                <p>PROMOTION_STORM allocates objects that survive long enough to be promoted to old generation. This forces G1 to run mixed collections, which have the longest pauses because they must evacuate old regions.</p>
+            </aside>
         </section>
 
-        <!-- Slide 13: Virtual Threads -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Demo Preset Orchestration -->
+        <!-- ============================================================ -->
         <section>
-            <h2>Jakarta Concurrency 3.1</h2>
-            <h3>Virtual Threads for Memory Pressure Testing</h3>
+            <h2>Demo Preset Orchestration</h2>
+            <h3>YAML-Driven Test Sequences</h3>
+            <pre style="font-size: 0.65em;"><code class="yaml" data-trim>
+# demo-presets.yml - Each preset is a choreographed GC stress test
+MARKET_OPEN_SPIKE:
+  name: "Market Open Spike"
+  description: "Simulates market opening with sudden allocation burst"
+  steps:
+    - mode: STEADY_LOAD
+      durationSeconds: 10
+      description: "Baseline - calm before the open"
+    - mode: PROMOTION_STORM
+      durationSeconds: 20
+      description: "Market open - sudden influx of orders"
+    - mode: STEADY_LOAD
+      durationSeconds: 10
+      description: "Post-open stabilization"
+
+FRAGMENTATION_HELL:
+  name: "Fragmentation Hell"
+  description: "Maximum fragmentation to trigger compaction pauses"
+  steps:
+    - mode: FRAGMENTATION
+      durationSeconds: 30
+      description: "Build up fragmented heap"
+    - mode: GROWING_HEAP
+      durationSeconds: 30
+      description: "Grow heap to force full compaction"
+    - mode: CROSS_GEN_REFS
+      durationSeconds: 30
+      description: "Add remembered set pressure on top"
+            </code></pre>
+            <p class="muted" style="font-size: 0.8em; margin-top: 8px;">
+                5 presets: Market Open Spike, Executive 30-Sec, Trading Day Stress, Fragmentation Hell, Full Day Simulation. Execution state stored in Hazelcast distributed map.
+            </p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> The demo presets are YAML sequences that step through different scenarios. Fragmentation Hell is the most aggressive - it layers fragmentation, growing heap, and cross-gen refs on top of each other.</p>
+                <p>Execution is hybrid: the server manages state via DemoPresetService, but step execution is client-driven via REST calls. The dashboard UI has buttons to step through each preset at your own pace during a demo.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: GC Pause Monitoring -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>GC Pause Monitoring via JMX</h2>
+            <h3>Real-Time Observation Without Agents</h3>
             <pre><code class="java" data-trim>
-@Inject
-@VirtualThreadExecutor  // Jakarta Concurrency 3.1 - virtual threads
-private ManagedExecutorService managedExecutorService;
+@ApplicationScoped
+public class GCPauseMonitor implements NotificationListener {
 
-private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThreads) {
-    int bytesPerThread = totalBytes / numThreads;
-    CompletableFuture&lt;?&gt;[] futures = new CompletableFuture[numThreads];
+    private final ConcurrentLinkedDeque&lt;Long&gt; pauseHistory;
+    private final AtomicLong violationsOver10ms = new AtomicLong(0);
+    private final AtomicLong violationsOver50ms = new AtomicLong(0);
+    private final AtomicLong violationsOver100ms = new AtomicLong(0);
 
-    for (int t = 0; t < numThreads; t++) {
-        futures[t] = CompletableFuture.runAsync(() -> {
-            byte[] garbage = new byte[bytesPerThread];
-            ThreadLocalRandom.current().nextBytes(garbage);
-            totalBytesAllocated.addAndGet(bytesPerThread);
-        }, managedExecutorService);
+    @PostConstruct
+    public void init() {
+        for (GarbageCollectorMXBean gcBean :
+                ManagementFactory.getGarbageCollectorMXBeans()) {
+            if (gcBean instanceof NotificationEmitter emitter) {
+                emitter.addNotificationListener(this, null, null);
+            }
+        }
     }
 
-    CompletableFuture.allOf(futures).join();
+    @Override
+    public void handleNotification(Notification n, Object handback) {
+        // Filter out C4's "GPGC" bean (reports concurrent cycle, not pause)
+        if ("GPGC".equals(gcName)) return;
+
+        long pauseMs = gcInfo.getDuration();
+        recordPause(pauseMs, gcName, gcAction);
+
+        // Broadcast SLA violation to WebSocket clients in real time
+        if (pauseMs > 10 && broadcaster != null) {
+            broadcaster.broadcast(SLAViolationEvent.create(pauseMs, threshold));
+        }
+    }
 }
             </code></pre>
-            <p style="margin-top: 15px;">
-                4 parallel threads simulate production workloads where multiple request handlers allocate concurrently.
-            </p>
+            <aside class="notes">
+                <p><strong>Simon:</strong> GCPauseMonitor uses JMX GarbageCollectorMXBean notifications. Every GC event fires a notification with the pause duration. We track p50/p95/p99/p999 and broadcast violations to the browser in real time.</p>
+                <p>Important: we filter out C4's GPGC bean. It reports concurrent cycle times, not pause times. Including it would give misleading results.</p>
+            </aside>
         </section>
 
-        <!-- Section: Results -->
-        <section>
-            <h1 style="color: var(--payara-orange);">Part 3</h1>
-            <h2>Test Results</h2>
-            <p>Measured GC behavior under stress scenarios</p>
-        </section>
-
-        <!-- Slide 14: Test Results -->
-        <section>
-            <h2>Test Results: G1 vs C4</h2>
-            <h3>Under PROMOTION_STORM (300 MB/sec, 50% survival)</h3>
-            <div class="comparison-row">
-                <div class="comparison-item">
-                    <div class="metric-large" style="color: #ff6b6b;">25ms</div>
-                    <div class="metric-label">G1 Maximum Pause (measured)</div>
-                </div>
-                <div class="comparison-item">
-                    <div class="metric-large" style="color: #51cf66;">2ms</div>
-                    <div class="metric-label">C4 Maximum Pause (measured)</div>
-                </div>
-            </div>
-            <div class="two-column" style="margin-top: 20px; font-size: 0.75em;">
-                <div class="box">
-                    <h3 style="color: #ff6b6b;">G1GC (Zulu 21)</h3>
-                    <pre><code class="json" data-trim>
-{
-  "pauseP50Ms": 3, "pauseP95Ms": 16,
-  "pauseP99Ms": 24, "pauseMaxMs": 25,
-  "avgPauseMs": 4.87,
-  "slaViolations10ms": 20
-}
-                    </code></pre>
-                </div>
-                <div class="box">
-                    <h3 style="color: #51cf66;">C4/GPGC (Prime 21)</h3>
-                    <pre><code class="json" data-trim>
-{
-  "pauseP50Ms": 0, "pauseP95Ms": 1,
-  "pauseP99Ms": 1, "pauseMaxMs": 2,
-  "avgPauseMs": 0.078,
-  "slaViolations10ms": 0
-}
-                    </code></pre>
-                </div>
-            </div>
-            <p style="margin-top: 15px; font-size: 0.85em;">
-                Same workload, same allocation rate. G1: <span class="failure">20 SLA violations</span> | C4: <span class="success">Zero violations</span>
-            </p>
-        </section>
-
-        <!-- Slide 15: GROWING_HEAP Results -->
-        <section>
-            <h2>GROWING_HEAP: Live Set Scaling</h2>
-            <h3>100 MB → 2 GB over 60 seconds</h3>
-            <div class="two-column">
-                <div class="box">
-                    <h3 style="color: #ff6b6b;">G1 Behavior</h3>
-                    <ul>
-                        <li>Young GC: 10-30ms initially</li>
-                        <li>Mixed GC starts at ~500MB</li>
-                        <li>Pause time grows with live set</li>
-                        <li>At 2GB: 100-200ms pauses</li>
-                        <li>Throughput degrades</li>
-                    </ul>
-                </div>
-                <div class="box">
-                    <h3 style="color: #51cf66;">C4 Behavior</h3>
-                    <ul>
-                        <li>Pause time: 0-1ms throughout</li>
-                        <li>No mixed collection concept</li>
-                        <li>Live set size irrelevant</li>
-                        <li>At 2GB: still < 1ms</li>
-                        <li>Consistent throughput</li>
-                    </ul>
-                </div>
-            </div>
-            <p style="margin-top: 30px;">
-                G1's pause time scales with heap occupancy. C4's pause time remains constant.
-            </p>
-        </section>
-
-        <!-- Slide 15b: Burst Pattern Simulation -->
-        <section>
-            <h2>Burst Pattern Simulation</h2>
-            <h3>Realistic Market Conditions</h3>
-            <div class="box">
-                <p>The publisher simulates a 60-second market cycle:</p>
-            </div>
-            <table style="margin-top: 20px;">
-                <tr>
-                    <th>Time</th>
-                    <th>Event</th>
-                    <th>Rate Multiplier</th>
-                </tr>
-                <tr>
-                    <td>0-20s</td>
-                    <td>Normal trading</td>
-                    <td>1x</td>
-                </tr>
-                <tr>
-                    <td style="color: #ff6b6b;">20-25s</td>
-                    <td style="color: #ff6b6b;">News event spike</td>
-                    <td style="color: #ff6b6b;">5x burst</td>
-                </tr>
-                <tr>
-                    <td>25-45s</td>
-                    <td>Normal trading</td>
-                    <td>1x</td>
-                </tr>
-                <tr>
-                    <td style="color: var(--payara-orange);">45-50s</td>
-                    <td style="color: var(--payara-orange);">Market close rush</td>
-                    <td style="color: var(--payara-orange);">3x spike</td>
-                </tr>
-                <tr>
-                    <td>50-60s</td>
-                    <td>Normal trading</td>
-                    <td>1x</td>
-                </tr>
-            </table>
-            <p style="margin-top: 20px; font-size: 0.85em;">
-                Tests GC response to variable load. G1 may trigger mixed collections during bursts; C4 adapts smoothly.
-            </p>
-        </section>
-
-        <!-- Slide 15c: SLA Monitoring -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: SLA Violation Detection -->
+        <!-- ============================================================ -->
         <section>
             <h2>SLA Violation Tracking</h2>
             <h3>Real-Time Compliance Monitoring</h3>
@@ -890,10 +1835,10 @@ private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThread
                 <div class="box">
                     <h3>Tracked Thresholds</h3>
                     <ul>
-                        <li><span class="success">< 10ms</span> - Within SLA</li>
-                        <li><span style="color: var(--payara-orange);">> 10ms</span> - Minor violation</li>
-                        <li><span class="failure">> 50ms</span> - Major violation</li>
-                        <li><span class="failure">> 100ms</span> - Critical violation</li>
+                        <li><span class="success">&lt; 10ms</span> - Within SLA</li>
+                        <li><span class="warn">&gt; 10ms</span> - Minor violation</li>
+                        <li><span class="danger">&gt; 50ms</span> - Major violation</li>
+                        <li><span class="danger">&gt; 100ms</span> - Critical violation</li>
                     </ul>
                 </div>
                 <div class="box">
@@ -903,105 +1848,383 @@ private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThread
                         <li>All-time maximum pause</li>
                         <li>Total pause count and time</li>
                         <li>Violation counts by threshold</li>
+                        <li>5-minute rolling violation window</li>
                     </ul>
                 </div>
             </div>
-            <div class="two-column" style="margin-top: 20px; font-size: 0.7em;">
-                <div class="box">
-                    <h3 style="color: #ff6b6b;">G1GC SLA Stats</h3>
-                    <pre><code class="json" data-trim>
+            <div class="two-column" style="margin-top: 15px;">
+                <div class="box-danger">
+                    <h4 style="color: var(--danger);">G1GC Under PROMOTION_STORM</h4>
+                    <pre style="font-size: 0.7em;"><code class="json" data-trim>
 {
   "totalPauseCount": 164,
   "totalPauseTimeMs": 799,
   "violationsOver10ms": 20,
   "violationsOver50ms": 0,
   "violationsOver100ms": 0
-}
-                    </code></pre>
+}</code></pre>
                 </div>
-                <div class="box">
-                    <h3 style="color: #51cf66;">C4 SLA Stats</h3>
-                    <pre><code class="json" data-trim>
+                <div class="box-success">
+                    <h4 style="color: var(--success);">C4 Under PROMOTION_STORM</h4>
+                    <pre style="font-size: 0.7em;"><code class="json" data-trim>
 {
   "totalPauseCount": 665,
   "totalPauseTimeMs": 52,
   "violationsOver10ms": 0,
   "violationsOver50ms": 0,
   "violationsOver100ms": 0
-}
-                    </code></pre>
+}</code></pre>
                 </div>
             </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Same scenario, same allocation rate, same hardware. G1: 20 SLA violations. C4: zero. C4 had more GC events (665 vs 164) but they're so short they never exceed the 10ms threshold.</p>
+                <p>Also notice total pause time: G1 spent 799ms paused, C4 spent 52ms. That's a 15x difference in total pause time.</p>
+            </aside>
         </section>
 
-        <!-- Slide 16: Business Impact -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Business Impact -->
+        <!-- ============================================================ -->
         <section>
-            <h2>Business Impact</h2>
-            <h3>Why Pauseless Matters for Trading</h3>
+            <h2>Business Impact Calculator</h2>
+            <h3>Converting GC Pauses into Dollars</h3>
+            <pre><code class="java" data-trim>
+@ApplicationScoped
+public class BusinessImpactCalculator {
+
+    @Inject private BusinessImpactConfig config;  // $25K/trade default
+    @Inject private GCPauseMonitor gcPauseMonitor;
+    @Inject private MarketDataPublisher marketDataPublisher;
+
+    public BusinessImpactResponse calculateImpact() {
+        GCPauseStats stats = gcPauseMonitor.getStats();
+        long messageRate = marketDataPublisher.getMessageRatePerSecond();
+        long violations = stats.violationsOver10ms;
+
+        double slaCompliance = (stats.totalPauseCount - violations)
+            / (double) stats.totalPauseCount * 100.0;
+        long missedTrades = (long)(violations * messageRate / 1000.0);
+        long revenueAtRisk = missedTrades * config.tradeValue(); // $25,000/trade
+        int savingsPercent = (config.instancesNeededG1()
+            - config.instancesNeededC4()) * 100 / config.instancesNeededG1();
+
+        return BusinessImpactResponse.of(tradeValue, currency,
+            messageRate, violations, missedTrades,
+            revenueAtRisk, slaCompliance,
+            config.instancesNeededC4(), config.instancesNeededG1(),
+            savingsPercent, config.windowSeconds());
+    }
+}
+            </code></pre>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> The business impact calculator translates technical metrics into business language. Each SLA violation represents potential missed trades. At $25K per trade, the financial impact adds up fast.</p>
+                <p>It also calculates infrastructure savings: C4 needs fewer instances to meet SLA because it doesn't have pauses. The default config shows 3 C4 instances vs 5 G1 instances - a 40% infrastructure reduction.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: JFR Custom Events -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>JFR Custom Events</h2>
+            <h3>Domain-Specific Profiling Without Overhead</h3>
             <div class="two-column">
+                <div class="box">
+                    <h3>10 Custom Event Types</h3>
+                    <ul style="font-size: 0.85em;">
+                        <li><code>TradePublished</code> / <code>QuotePublished</code> / <code>MarketDepthPublished</code></li>
+                        <li><code>BatchProcessed</code></li>
+                        <li><code>SbeEncode</code> / <code>SbeDecode</code></li>
+                        <li><code>WebSocketBroadcast</code></li>
+                        <li><code>SlaViolation</code></li>
+                        <li><code>BackpressureEvent</code></li>
+                        <li><code>BurstModeActivated</code></li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>Zero-Cost When Disabled</h3>
+                    <pre style="font-size: 0.65em;"><code class="java" data-trim>
+TradePublished event = new TradePublished();
+if (event.isEnabled()) { // JIT-compiled check
+    event.symbol = symbol;
+    event.price = price;
+    event.quantity = quantity;
+    event.side = side;
+    event.commit();
+}
+// When not recording, the
+// isEnabled() check is the
+// only overhead</code></pre>
+                    <p class="muted" style="font-size: 0.7em;">All events use <code>@StackTrace(false)</code> on hot paths.</p>
+                </div>
+            </div>
+            <div class="layers">
+                <p>Full JFR lifecycle management via REST API: start/stop recordings, download <code>.jfr</code> files, correlate application events with JDK GC events.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> We defined 10 custom JFR events that let us correlate application behavior with GC events. When you open a JFR recording in JDK Mission Control, you can see trades, SBE encode/decode timing, WebSocket broadcasts, and GC pauses on the same timeline.</p>
+                <p>The isEnabled() check ensures zero overhead when JFR is not recording. The JIT will even elide the check entirely once it determines the event class is never enabled.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- PART 5: RESULTS -->
+        <!-- ============================================================ -->
+        <section>
+            <div class="section-number">05</div>
+            <h2>Measured Results</h2>
+            <p class="muted">C4 vs G1 under controlled stress</p>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Now for the data. Everything we've described leads to this. Let's look at the actual measured behavior.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Comparison Stack -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Comparison Stack Architecture</h2>
+            <h3>Side-by-Side C4 vs G1 Testing</h3>
+            <pre style="font-size: 0.65em; text-align: left;"><code data-trim>
++---------------------------+    +---------------------------+
+|   C4 Cluster (Prime 21)   |    |   G1 Cluster (Temurin 21)  |
+|   +- Traefik :8080        |    |   +- Traefik :9080        |
+|      +- instance-1        |    |      +- instance-1        |
+|      +- instance-2        |    |      +- instance-2        |
+|      +- instance-3        |    |      +- instance-3        |
+|   JMX: 9010-9012          |    |   JMX: 9020-9022          |
++-------------+-------------+    +-------------+-------------+
+              |                              |
+              +---------------+--------------+
+                              |
+                    +-------------------+
+                    |   Prometheus :9090  |--> Grafana :3000
+                    +-------------------+
+            </code></pre>
+            <div class="two-column" style="margin-top: 15px;">
+                <div class="box">
+                    <h3>C4 Cluster</h3>
+                    <ul style="font-size: 0.8em;">
+                        <li>Azul Platform Prime 21</li>
+                        <li>C4/GPGC defaults (no tuning)</li>
+                        <li>4 GB heap per instance</li>
+                        <li>3 nodes + Traefik LB</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>G1 Cluster</h3>
+                    <ul style="font-size: 0.8em;">
+                        <li>Eclipse Temurin 21</li>
+                        <li>G1GC with standard tuning</li>
+                        <li>4 GB heap per instance</li>
+                        <li>3 nodes + Traefik LB</li>
+                    </ul>
+                </div>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Both clusters run identical workloads. C4 on ports 8080-8083, G1 on ports 9080-9083. The comparison page fetches from both simultaneously and renders side-by-side charts.</p>
+                <p>JMX Exporter on each instance feeds GC metrics to Prometheus. Grafana dashboards show real-time pause histograms for both clusters.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: PROMOTION_STORM Results -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>PROMOTION_STORM: G1 vs C4</h2>
+            <h3>300 MB/sec, 50% Survival Rate</h3>
+            <div class="comparison-row">
+                <div class="comparison-item">
+                    <div class="metric-large" style="color: var(--danger);">25ms</div>
+                    <div class="metric-label">G1 Maximum Pause</div>
+                </div>
+                <div class="comparison-item">
+                    <div class="metric-large" style="color: var(--success);">2ms</div>
+                    <div class="metric-label">C4 Maximum Pause</div>
+                </div>
+            </div>
+            <div class="two-column" style="margin-top: 15px;">
+                <div class="box-danger">
+                    <h4 style="color: var(--danger);">G1GC</h4>
+                    <pre style="font-size: 0.65em;"><code class="json" data-trim>
+{
+  "pauseP50Ms": 3,   "pauseP95Ms": 16,
+  "pauseP99Ms": 24,  "pauseMaxMs": 25,
+  "avgPauseMs": 4.87,
+  "slaViolations10ms": 20,
+  "totalPauseTimeMs": 799
+}</code></pre>
+                </div>
+                <div class="box-success">
+                    <h4 style="color: var(--success);">C4/GPGC</h4>
+                    <pre style="font-size: 0.65em;"><code class="json" data-trim>
+{
+  "pauseP50Ms": 0,   "pauseP95Ms": 1,
+  "pauseP99Ms": 1,   "pauseMaxMs": 2,
+  "avgPauseMs": 0.078,
+  "slaViolations10ms": 0,
+  "totalPauseTimeMs": 52
+}</code></pre>
+                </div>
+            </div>
+            <p style="margin-top: 12px; font-size: 0.8em;">
+                Same workload. G1: <span class="danger">20 SLA violations</span> | C4: <span class="success">Zero violations</span> | Total pause time: <span class="hl">15x difference</span>
+            </p>
+            <aside class="notes">
+                <p><strong>Simon:</strong> 300 MB per second with 50% survival rate. Objects are being promoted to old generation faster than G1 can handle. The result: 25ms max pause, 20 SLA violations.</p>
+                <p>C4 under the exact same load: 2ms max pause, zero violations. C4 had 4x more GC events but each was sub-millisecond. Total pause time: 52ms vs 799ms for G1.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: GROWING_HEAP Results -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>GROWING_HEAP: Live Set Scaling</h2>
+            <h3>100 MB &rarr; 2 GB over 60 Seconds</h3>
+            <div class="two-column">
+                <div class="box-danger">
+                    <h3 style="color: var(--danger);">G1 Behavior</h3>
+                    <ul>
+                        <li>Young GC: 10-30 ms initially</li>
+                        <li>Mixed GC starts at ~500 MB live set</li>
+                        <li>Pause time grows with live set</li>
+                        <li>At 2 GB: 100-200 ms pauses</li>
+                        <li>Throughput degrades progressively</li>
+                    </ul>
+                </div>
+                <div class="box-success">
+                    <h3 style="color: var(--success);">C4 Behavior</h3>
+                    <ul>
+                        <li>Pause time: 0-1 ms throughout</li>
+                        <li>Both generations collected concurrently</li>
+                        <li>Pause time independent of live set</li>
+                        <li>At 2 GB: still &lt; 1 ms</li>
+                        <li>Consistent throughput throughout</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="box-orange" style="margin-top: 20px;">
+                <p><strong>G1's pause time scales with live set.</strong> C4's pause time is <strong>independent of live set</strong> because all collection phases run concurrently. This is the fundamental architectural difference.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> This scenario demonstrates the scaling problem. As the live set grows from 100 MB to 2 GB, G1's pauses get progressively longer. At 2 GB, you're seeing 100-200ms pauses from mixed collections.</p>
+                <p>C4's pause time stays sub-millisecond regardless. The pause duration is independent of heap size, live set, or allocation rate because C4 collects concurrently. Both young and old generation collections run simultaneously and concurrently with the application.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Business Impact Analysis -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Business Impact Analysis</h2>
+            <h3>GC Pauses in Financial Terms</h3>
+            <div class="three-column">
+                <div class="box">
+                    <div class="metric-large">1,000</div>
+                    <div class="metric-label">Trades delayed per 100ms pause<br>(at 10K trades/sec)</div>
+                </div>
+                <div class="box">
+                    <div class="metric-large">$25K</div>
+                    <div class="metric-label">Revenue at risk per missed trade<br>(configurable default)</div>
+                </div>
+                <div class="box">
+                    <div class="metric-large">40%</div>
+                    <div class="metric-label">Infrastructure savings<br>(3 C4 vs 5 G1 instances)</div>
+                </div>
+            </div>
+            <div class="two-column" style="margin-top: 20px;">
                 <div class="box">
                     <h3>Predictable Latency</h3>
                     <ul>
-                        <li>SLA compliance guaranteed</li>
+                        <li>SLA compliance with C4 (sub-ms pauses)</li>
                         <li>No jitter during market events</li>
-                        <li>Consistent execution speed</li>
                         <li>Regulatory requirements met</li>
                     </ul>
                 </div>
                 <div class="box">
                     <h3>Operational Simplicity</h3>
                     <ul>
-                        <li>No GC tuning required</li>
-                        <li>C4 adapts automatically</li>
-                        <li>Fewer performance engineers</li>
-                        <li>Reduced time-to-production</li>
+                        <li>No GC tuning required with C4</li>
+                        <li>Fewer performance engineers needed</li>
+                        <li>Faster time to production</li>
                     </ul>
                 </div>
             </div>
-            <div class="box" style="margin-top: 30px;">
-                <h3>Cost of a 100ms Pause</h3>
-                <p>At 10,000 trades/second, a 100ms pause delays 1,000 trades. In markets where price moves in milliseconds, delayed trades execute at worse prices. Multiply by trading volume for financial impact.</p>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Let's make this concrete. Every 100ms pause at 10K trades/sec delays 1,000 trades. At $25K per trade, that's $25M of revenue at risk per pause event. With C4's sub-millisecond pauses, SLA compliance is effectively guaranteed.</p>
+                <p>With C4, you also need fewer instances because you don't need headroom for GC pauses. The default config shows 3 C4 instances vs 5 G1 instances - a 40% reduction in compute costs.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Results Summary -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Results Summary</h2>
+            <h3>All Scenarios: C4 Wins Every Time</h3>
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th style="color: var(--danger);">G1GC</th>
+                    <th style="color: var(--success);">C4/GPGC</th>
+                </tr>
+                <tr><td>Max Pause (PROMOTION_STORM)</td><td>25 ms</td><td>2 ms</td></tr>
+                <tr><td>Avg Pause (PROMOTION_STORM)</td><td>4.87 ms</td><td>0.078 ms</td></tr>
+                <tr><td>SLA Violations (>10ms)</td><td>20</td><td>0</td></tr>
+                <tr><td>Total Pause Time</td><td>799 ms</td><td>52 ms</td></tr>
+                <tr><td>Pause Scaling with Heap</td><td>Grows linearly</td><td>Constant</td></tr>
+                <tr><td>GC Tuning Required</td><td>Yes</td><td>No</td></tr>
+                <tr><td>Infrastructure Savings</td><td>Baseline (5 instances)</td><td>40% fewer (3 instances)</td></tr>
+            </table>
+            <div class="box-orange" style="margin-top: 20px; text-align: center;">
+                <p style="font-size: 1em;"><strong>15x less total pause time. Zero SLA violations. No tuning needed.</strong></p>
             </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> The data speaks for itself. Across every scenario, C4 delivers lower pauses, fewer violations, and less total pause time. And it does this with zero tuning - just run it.</p>
+                <p><strong>Luqman:</strong> And all of this runs on standard Jakarta EE with Payara Micro. No special APIs, no native compilation, no low-level memory tricks in the application code.</p>
+            </aside>
         </section>
 
-        <!-- Section: Demo & Deployment -->
+        <!-- ============================================================ -->
+        <!-- PART 6: DEPLOYMENT & DEMO -->
+        <!-- ============================================================ -->
         <section>
-            <h1 style="color: var(--payara-orange);">Part 4</h1>
-            <h2>Demo & Deployment</h2>
-            <p>Running and monitoring the application</p>
+            <div class="section-number">06</div>
+            <h2>Deployment &amp; Demo</h2>
+            <p class="muted">Running and monitoring the application</p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Let's look at how to run this yourself. Everything is containerized with Docker and controlled by shell scripts.</p>
+            </aside>
         </section>
 
-        <!-- Slide 17: Dashboard Demo -->
-        <section>
-            <h2>Live Dashboard</h2>
-            <h3>Real-Time GC Visualization</h3>
-            <img src="images/dashboard.png" alt="TradeStreamEE Dashboard" style="max-width: 90%; border: 2px solid var(--payara-orange); border-radius: 10px;">
-            <p style="margin-top: 15px; font-size: 0.85em;">
-                WebSocket-connected dashboard showing live message rates, GC pause percentiles, and SLA violations.
-            </p>
-        </section>
-
-        <!-- Slide 17b: Deployment Options -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Deployment Options -->
+        <!-- ============================================================ -->
         <section>
             <h2>Deployment Options</h2>
             <h3>Running TradeStreamEE</h3>
             <pre><code class="bash" data-trim>
-# Single instance - Azul C4 with Aeron
+# Single instance - Azul C4 with Aeron pipeline
 ./start.sh azul-aeron
 
-# Single instance - Standard JDK with G1 (baseline)
+# Single instance - Standard JDK with DIRECT mode (GC stress)
 ./start.sh standard-direct
 
 # Side-by-side comparison (C4 vs G1 clusters)
 ./start-comparison.sh all
+
+# With Prometheus + Grafana monitoring
+./start-comparison.sh all --monitoring
             </code></pre>
-            <div class="two-column" style="margin-top: 30px;">
+            <div class="two-column" style="margin-top: 20px;">
                 <div class="box">
                     <h3>Single Instance</h3>
                     <ul>
-                        <li>8GB heap</li>
+                        <li>8 GB heap</li>
                         <li>Full throughput testing</li>
                         <li>AERON or DIRECT mode</li>
+                        <li>Best for initial testing</li>
                     </ul>
                 </div>
                 <div class="box">
@@ -1010,199 +2233,322 @@ private void allocateTransientGarbageMultiThreaded(int totalBytes, int numThread
                         <li>C4 cluster: ports 8080-8083</li>
                         <li>G1 cluster: ports 9080-9083</li>
                         <li>Grafana dashboards included</li>
+                        <li>Best for demos and evaluation</li>
                     </ul>
                 </div>
             </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> The start scripts handle everything - building Docker images, starting compose stacks, waiting for health checks. For a quick demo, just run ./start.sh azul-aeron and open localhost:8080.</p>
+                <p>For the full comparison, start-comparison.sh launches both clusters side by side with monitoring.</p>
+            </aside>
         </section>
 
-        <!-- Slide 17c: Comparison Architecture -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Docker Architecture -->
+        <!-- ============================================================ -->
         <section>
-            <h2>Comparison Stack Architecture</h2>
-            <h3>Side-by-Side C4 vs G1 Testing</h3>
-            <pre style="font-size: 0.7em; text-align: left;"><code data-trim>
-┌─────────────────────────┐    ┌─────────────────────────┐
-│   C4 Cluster (Prime)    │    │   G1 Cluster (Temurin)  │
-│   └─ Traefik :8080      │    │   └─ Traefik :9080      │
-│      ├─ instance-1      │    │      ├─ instance-1      │
-│      ├─ instance-2      │    │      ├─ instance-2      │
-│      └─ instance-3      │    │      └─ instance-3      │
-│   JMX: 9010-9012        │    │   JMX: 9020-9022        │
-└───────────┬─────────────┘    └───────────┬─────────────┘
-            │                              │
-            └──────────┬───────────────────┘
-                       ▼
-              ┌────────────────┐
-              │   Prometheus   │──▶ Grafana :3000
-              │    :9090       │
-              └────────────────┘
+            <h2>Docker Configuration</h2>
+            <h3>Multi-Stage Builds with JVM-Specific Tuning</h3>
+            <div class="two-column">
+                <div class="box-success">
+                    <h3 style="color: var(--success);">C4 (azul/prime:21)</h3>
+                    <pre style="font-size: 0.65em;"><code class="bash" data-trim>
+FROM azul/prime:21
+# C4: no GC tuning flags needed
+# Just set heap size
+JAVA_OPTS="
+  -Xmx8g
+  -XX:MaxRAMPercentage=75.0
+  -XX:AlwaysPreTouch
+  -XX:+UseTransparentHugePages
+  -XX:+UseStringDeduplication
+"</code></pre>
+                </div>
+                <div class="box-danger">
+                    <h3 style="color: var(--danger);">G1 (eclipse-temurin:21)</h3>
+                    <pre style="font-size: 0.65em;"><code class="bash" data-trim>
+FROM eclipse-temurin:21
+# G1 needs explicit tuning
+JAVA_OPTS="
+  -Xmx8g -XX:+UseG1GC
+  -XX:MaxGCPauseMillis=50
+  -XX:G1HeapRegionSize=8m
+  -XX:InitiatingHeapOccupancyPercent=45
+  -XX:G1ReservePercent=15
+  -XX:+UseStringDeduplication
+"</code></pre>
+                </div>
+            </div>
+            <div class="layers" style="margin-top: 15px;">
+                <p><strong>Note the difference:</strong> C4 requires <strong>no GC tuning flags</strong> beyond basic heap configuration. G1 requires region sizing, pause targets, IHOP, and reserve percentages, and still can't match C4's pause profile.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> This is telling. The C4 Dockerfile has almost no GC tuning. The G1 Dockerfile has six JVM flags specifically for GC tuning. And despite all that tuning, G1 still pauses.</p>
+                <p>This is the operational simplicity argument. With C4, you don't need a performance engineer to tune the GC. You don't need to re-tune when your workload changes. It just works.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Monitoring Stack -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Monitoring Stack</h2>
+            <h3>Prometheus, Grafana, and JFR</h3>
+            <div class="two-column">
+                <div class="box">
+                    <h3>Prometheus + Grafana</h3>
+                    <ul>
+                        <li>JMX Exporter on each instance</li>
+                        <li>GC pause metrics, heap usage</li>
+                        <li>Pre-configured Grafana dashboards</li>
+                        <li>Side-by-side C4 vs G1 comparison</li>
+                        <li>Historical data for analysis</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>JFR Recordings</h3>
+                    <ul>
+                        <li>Start/stop via REST API</li>
+                        <li>10 custom event types</li>
+                        <li>Correlate app events with GC</li>
+                        <li>Download .jfr for JDK Mission Control</li>
+                        <li>Zero overhead when disabled</li>
+                    </ul>
+                </div>
+            </div>
+            <pre style="margin-top: 15px;"><code class="bash" data-trim>
+# Start a JFR recording
+curl -X POST http://localhost:8080/api/jfr/recording/start
+
+# Download the recording for analysis
+curl -O http://localhost:8080/api/jfr/download/recording-2026-03-25.jfr
+# Open in JDK Mission Control for timeline analysis
             </code></pre>
-            <p style="margin-top: 15px; font-size: 0.85em;">
-                Both clusters run identical workloads. JMX Exporter exposes GC metrics to Prometheus.
-            </p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> We provide two monitoring paths. Prometheus + Grafana for real-time dashboard monitoring. JFR for deep-dive analysis when you need to correlate application behavior with GC events.</p>
+                <p>The Grafana dashboards show pause histograms for both clusters side by side. You can watch C4 stay flat while G1 spikes during stress scenarios.</p>
+            </aside>
         </section>
 
-        <!-- Slide 18: API Endpoints -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Dashboard -->
+        <!-- ============================================================ -->
         <section>
-            <h2>Stress Testing API</h2>
-            <h3>Applying Scenarios via REST</h3>
+            <h2>Live Dashboard</h2>
+            <h3>Real-Time GC Visualization</h3>
+            <img src="images/dashboard.png" alt="TradeStreamEE Dashboard" style="max-width: 85%; border: 2px solid var(--payara-orange-border); border-radius: 12px;">
+            <p style="margin-top: 12px; font-size: 0.8em;">
+                WebSocket-connected dashboard: live message rates, GC pause percentiles, SLA violations, memory pressure controls, and demo preset launcher.
+            </p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> This is what you see when you open the dashboard. Real-time market data flowing, GC pause chart updating live, SLA violations flashing red when they occur.</p>
+                <p>The memory pressure controls on the right let you switch between scenarios in real time. The demo presets at the bottom step through orchestrated test sequences. Everything is controlled from this single page.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Stress Testing API Demo -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Stress Testing via API</h2>
+            <h3>Apply Scenarios and Measure Results</h3>
             <pre><code class="bash" data-trim>
-# Apply scenarios
-curl -X POST http://localhost:8080/api/pressure/mode/STEADY_LOAD
-curl -X POST http://localhost:8080/api/pressure/mode/GROWING_HEAP
-curl -X POST http://localhost:8080/api/pressure/mode/PROMOTION_STORM
-curl -X POST http://localhost:8080/api/pressure/mode/FRAGMENTATION
+# 1. Check system health before starting
+curl -s http://localhost:8080/api/health/check | jq
+
+# 2. Reset GC statistics for clean measurement
+curl -X POST http://localhost:8080/api/gc/reset
+
+# 3. Apply the CROSS_GEN_REFS scenario
 curl -X POST http://localhost:8080/api/pressure/mode/CROSS_GEN_REFS
+
+# 4. Wait 30 seconds, then check GC statistics
+sleep 30
+curl -s http://localhost:8080/api/gc/stats | jq
+
+# 5. Check business impact
+curl -s http://localhost:8080/api/business/impact | jq
+
+# 6. Stop the pressure generator
 curl -X POST http://localhost:8080/api/pressure/mode/OFF
-
-# Get GC statistics
-curl http://localhost:8080/api/gc/stats
-
-# Get current pressure status
-curl http://localhost:8080/api/pressure/status
             </code></pre>
-            <p style="margin-top: 15px;">
-                The UI provides real-time visualization of GC pause times, percentiles, and allocation rates.
-            </p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> The entire testing workflow is scriptable. Reset stats, apply a scenario, wait, measure the results. You can automate this into a CI pipeline or run it manually during a demo.</p>
+                <p>The comparison page does this automatically for both clusters simultaneously, fetching data from ports 8080 and 9080 every 2 seconds.</p>
+            </aside>
         </section>
 
-        <!-- Slide 19: Tech Stack Summary -->
+        <!-- ============================================================ -->
+        <!-- PART 7: CONCLUSION -->
+        <!-- ============================================================ -->
+        <section>
+            <div class="section-number">07</div>
+            <h2>Conclusion</h2>
+            <p class="muted">Key takeaways and lessons learned</p>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Let's wrap up with the key takeaways and practical lessons from building this system.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Key Takeaways -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Key Takeaways</h2>
+            <ol style="font-size: 0.82em;">
+                <li><strong>G1's stop-the-world pauses are architectural</strong> - no tuning eliminates them</li>
+                <li><strong>C4 collects concurrently</strong> - sub-millisecond safepoints at phase changes</li>
+                <li><strong>G1 pause time scales with live set</strong> - larger heaps = longer pauses</li>
+                <li><strong>C4 pause time is constant</strong> - independent of heap size or allocation rate</li>
+                <li><strong>Remembered sets add hidden overhead</strong> - cross-gen refs trigger write barriers on every pointer update</li>
+                <li><strong>Scenario-based testing exposes real behavior</strong> - generic benchmarks miss critical patterns</li>
+                <li><strong>Jakarta EE is a valid platform for low-latency trading</strong> - with the right runtime</li>
+                <li><strong>The application code stays simple</strong> - GC choice handles complexity without code changes</li>
+            </ol>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Eight takeaways. The first five are about GC. The last three are about methodology and platform choice. You don't need to rewrite your application to get near-pauseless behavior. You just need the right runtime.</p>
+                <p><strong>Luqman:</strong> And Jakarta EE with Payara Micro gives you all the enterprise features you need - clustering, WebSocket, REST, configuration management - without sacrificing the performance that C4 provides.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Lessons Learned -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Lessons Learned</h2>
+            <div class="two-column">
+                <div class="box-success">
+                    <h3 style="color: var(--success);">What Worked</h3>
+                    <ul>
+                        <li>SBE flyweight pattern eliminates allocation on the hot path</li>
+                        <li>Aeron IPC provides true zero-copy transport</li>
+                        <li>C4 requires zero tuning for consistent pauses</li>
+                        <li>Scenario-based testing reveals behavior that generic benchmarks miss</li>
+                        <li>Virtual threads simplify concurrency for background tasks</li>
+                        <li>Hazelcast clustering embedded in Payara removes infrastructure complexity</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3 style="color: var(--warn);">Watch Out For</h3>
+                    <ul>
+                        <li>C4's JMX bean reports as "GPGC", not "C4" - must filter this correctly</li>
+                        <li>WebSocket JSON conversion adds measurable latency to the pipeline</li>
+                        <li>1-in-50 message sampling needed for UI stability under load</li>
+                        <li>Docker shared memory sizing (tmpfs) for Aeron IPC requires attention</li>
+                        <li>DIRECT mode's String.format is intentionally wasteful - don't use it as a performance reference</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="layers">
+                <p><strong>The biggest insight:</strong> The application code is identical between C4 and G1 deployments. The only difference is the JVM. The GC choice is a runtime decision, not an architectural one.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> On the practical side: we learned to filter GPGC from JMX notifications early on. The first version of GCPauseMonitor was reporting concurrent cycle times as pauses, which made C4 look worse than it is.</p>
+                <p>The 1-in-50 sampling rate was also a practical discovery. Without it, the WebSocket flood from 50K+ messages/sec crashes the browser.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: Technology Stack -->
+        <!-- ============================================================ -->
         <section>
             <h2>Technology Stack</h2>
             <table>
-                <tr>
-                    <th>Component</th>
-                    <th>Technology</th>
-                    <th>Role</th>
-                </tr>
-                <tr>
-                    <td>Runtime</td>
-                    <td>Azul Platform Prime 21</td>
-                    <td>C4/GPGC pauseless garbage collection</td>
-                </tr>
-                <tr>
-                    <td>App Server</td>
-                    <td>Payara Micro 7.2025.2</td>
-                    <td>Jakarta EE 11 container</td>
-                </tr>
-                <tr>
-                    <td>Transport</td>
-                    <td>Aeron 1.46.7</td>
-                    <td>Shared memory IPC messaging</td>
-                </tr>
-                <tr>
-                    <td>Encoding</td>
-                    <td>SBE 1.34.0</td>
-                    <td>Zero-copy binary serialization</td>
-                </tr>
-                <tr>
-                    <td>Clustering</td>
-                    <td>Hazelcast 5.5.0</td>
-                    <td>Distributed topics and CP subsystem</td>
-                </tr>
-                <tr>
-                    <td>Monitoring</td>
-                    <td>Prometheus + Grafana</td>
-                    <td>JMX metrics and visualization</td>
-                </tr>
+                <tr><th>Component</th><th>Technology</th><th>Version</th><th>Role</th></tr>
+                <tr><td>Runtime</td><td>Azul Platform Prime</td><td>21</td><td>C4/GPGC pauseless GC</td></tr>
+                <tr><td>Comparison</td><td>Eclipse Temurin</td><td>21</td><td>G1GC baseline</td></tr>
+                <tr><td>App Server</td><td>Payara Micro</td><td>7.2025.2</td><td>Jakarta EE 11 container</td></tr>
+                <tr><td>Jakarta EE</td><td>Jakarta EE</td><td>11.0.0</td><td>CDI, WebSocket, JAX-RS, Concurrency</td></tr>
+                <tr><td>Transport</td><td>Aeron</td><td>1.50.0</td><td>Shared memory IPC messaging</td></tr>
+                <tr><td>Encoding</td><td>SBE</td><td>1.34.0</td><td>Zero-copy binary serialization</td></tr>
+                <tr><td>Clustering</td><td>Hazelcast</td><td>5.5.0</td><td>Distributed topics + CP subsystem</td></tr>
+                <tr><td>Monitoring</td><td>Prometheus + Grafana</td><td>Latest</td><td>JMX metrics and dashboards</td></tr>
+                <tr><td>Java</td><td>OpenJDK</td><td>21</td><td>Records, Pattern Matching, Virtual Threads</td></tr>
             </table>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> The full stack. Everything is standard, open-source, or free. The only commercial component is Azul Platform Prime for the C4 collector. But the application runs identically on both runtimes.</p>
+            </aside>
         </section>
 
-        <!-- Slide 20: Key Takeaways -->
-        <section>
-            <h2>Key Takeaways</h2>
-            <ol style="font-size: 0.85em;">
-                <li><strong>G1's stop-the-world pauses are architectural</strong> - no tuning eliminates them</li>
-                <li><strong>C4/GPGC collects concurrently</strong> - application never stops</li>
-                <li><strong>Pause time in G1 scales with live set</strong> - larger heaps = longer pauses</li>
-                <li><strong>C4 pause time is constant</strong> - regardless of heap or live set size</li>
-                <li><strong>Remembered sets add overhead in G1</strong> - cross-gen refs trigger write barriers</li>
-                <li><strong>C4 collects generations concurrently</strong> - no STW for generational collection</li>
-                <li><strong>Scenario-based testing exposes weaknesses</strong> - targeted stress reveals true behavior</li>
-                <li><strong>Enterprise Java can achieve HFT latency</strong> - with the right runtime</li>
-            </ol>
-        </section>
-
-        <!-- Slide 21: Resources -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Resources -->
+        <!-- ============================================================ -->
         <section>
             <h2>Resources</h2>
-            <div class="box" style="margin-bottom: 30px;">
-                <h3>TradeStreamEE Features</h3>
-                <ul style="font-size: 0.85em; text-align: left;">
-                    <li>Scenario-based GC stress testing (6 allocation modes)</li>
-                    <li>Real-time pause time visualization</li>
-                    <li>Side-by-side C4 vs G1 comparison clusters</li>
-                    <li>Zero-copy message pipeline (Aeron 1.46.7 + SBE 1.34.0)</li>
-                    <li>Hazelcast 5.5 clustering with reliable topics</li>
-                    <li>Prometheus/Grafana monitoring stack</li>
-                </ul>
-            </div>
-            <h3>Learn More</h3>
-            <ul style="font-size: 0.9em;">
-                <li>Azul Platform Prime: <code>azul.com/products/prime</code></li>
-                <li>Payara Platform: <code>payara.fish</code></li>
-                <li>Aeron: <code>aeron.io</code></li>
-                <li>SBE: <code>real-logic.github.io/simple-binary-encoding</code></li>
-            </ul>
-        </section>
-
-        <!-- Slide 21b: Lessons Learned -->
-        <section>
-            <h2>Lessons Learned</h2>
-            <h3>Practical Insights from Implementation</h3>
             <div class="two-column">
                 <div class="box">
-                    <h3 style="color: #51cf66;">What Worked</h3>
-                    <ul style="font-size: 0.85em;">
-                        <li>SBE flyweight pattern eliminates allocation</li>
-                        <li>Aeron IPC provides true zero-copy</li>
-                        <li>C4 requires no tuning for consistent pauses</li>
-                        <li>Scenario-based testing reveals real behavior</li>
+                    <h3>TradeStreamEE</h3>
+                    <ul>
+                        <li><strong>GitHub:</strong> <code>github.com/pedanticdev/trader-stream-ee</code></li>
+                        <li>Full source code, Dockerfiles, compose files</li>
+                        <li>5 GC stress scenarios with REST API control</li>
+                        <li>Side-by-side C4 vs G1 comparison stack</li>
+                        <li>Prometheus/Grafana monitoring dashboards</li>
                     </ul>
                 </div>
                 <div class="box">
-                    <h3 style="color: var(--payara-orange);">Watch Out For</h3>
-                    <ul style="font-size: 0.85em;">
-                        <li>GPGC reports as collector name, not "C4"</li>
-                        <li>WebSocket JSON conversion adds latency</li>
-                        <li>1-in-50 sampling needed for UI stability</li>
-                        <li>Docker shared memory sizing for Aeron</li>
+                    <h3>Learn More</h3>
+                    <ul>
+                        <li><strong>Azul Prime:</strong> azul.com/products/prime</li>
+                        <li><strong>Payara Platform:</strong> payara.fish</li>
+                        <li><strong>Aeron:</strong> aeron.io</li>
+                        <li><strong>SBE:</strong> real-logic.github.io/simple-binary-encoding</li>
+                        <li><strong>Jakarta EE:</strong> jakarta.ee</li>
                     </ul>
                 </div>
             </div>
-            <div class="box" style="margin-top: 20px;">
-                <p style="font-size: 0.9em;"><strong>Key Insight:</strong> The application code stays simple. The GC choice handles the complexity of memory management without code changes.</p>
-            </div>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Everything is on GitHub. Clone it, build it, run it. The comparison stack takes about 2 minutes to start on a machine with 16 GB RAM.</p>
+                <p><strong>Simon:</strong> For more on C4's architecture, check out the Azul whitepapers on our website. The read barrier design has been published and peer-reviewed.</p>
+            </aside>
         </section>
 
-        <!-- Slide 22: Thank You -->
+        <!-- ============================================================ -->
+        <!-- SLIDE: Thank You -->
+        <!-- ============================================================ -->
         <section>
             <img alt="Payara" class="payara-logo" src="images/payara-fish-logo.svg">
             <h1>Thank You</h1>
             <h3>Questions?</h3>
-            <div style="margin-top: 60px; font-size: 1.1em;">
-                <p><strong>GitHub:</strong> github.com/pedanticdev/trader-stream-ee</p>
+            <div style="margin-top: 50px; display: flex; gap: 40px; justify-content: center; font-size: 0.75em;">
+                <div style="text-align: center;">
+                    <span class="speaker-badge speaker-luqman">Luqman Saeed</span>
+                    <p class="muted" style="margin-top: 6px;">@luqman_saeed</p>
+                </div>
+                <div style="text-align: center;">
+                    <span class="speaker-badge speaker-simon">Simon Ritter</span>
+                    <p class="muted" style="margin-top: 6px;">@speakerritter</p>
+                </div>
             </div>
+            <p class="muted" style="margin-top: 30px; font-size: 0.65em;">
+                <strong>GitHub:</strong> github.com/pedanticdev/trader-stream-ee
+            </p>
+            <aside class="notes">
+                <p><strong>Luqman:</strong> Thank you everyone for attending. We'll take questions now. If you want to run the demo yourself, everything is on GitHub.</p>
+                <p><strong>Simon:</strong> Happy to discuss C4 internals, GC tuning, or the Jakarta EE architecture in more detail.</p>
+            </aside>
         </section>
+
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/notes/notes.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/markdown/markdown.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/highlight/highlight.js"></script>
 <script>
     Reveal.initialize({
         hash: true,
         slideNumber: true,
-        loop: true,
+        loop: false,
         transition: 'slide',
         backgroundTransition: 'fade',
-        plugins: [RevealMarkdown, RevealHighlight, RevealNotes],
+        plugins: [RevealHighlight, RevealNotes],
         width: 1280,
         height: 720,
         margin: 0.1,
         minScale: 0.2,
-        maxScale: 2.0
+        maxScale: 2.0,
+        showNotes: false
     });
 </script>
 </body>

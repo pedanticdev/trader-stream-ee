@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeStreamEE - Pre-Demo Health Check</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 32px;
+        }
+
+        .main-nav {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-btn {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .dropdown-btn:hover {
+            background: white;
+            border-color: #94a3b8;
+            color: #0f172a;
+        }
+
+        .dropdown-btn::after {
+            content: '▾';
+            font-size: 0.8em;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .dropdown.open .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 10px 16px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.15s;
+        }
+
+        .dropdown-menu a:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .dropdown-menu a:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        .dropdown-menu a:hover {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+        h1 {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #64748b;
+        }
+
+        .health-card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .status-banner {
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+
+        .status-banner.healthy {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-banner.unhealthy {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-banner.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-banner.loading {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .check-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .check-item:last-child {
+            border-bottom: none;
+        }
+
+        .check-name {
+            font-weight: 500;
+        }
+
+        .check-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.875em;
+            font-weight: 600;
+        }
+
+        .status-badge.healthy {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.unhealthy {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.healthy {
+            background: #10b981;
+        }
+
+        .status-dot.unhealthy {
+            background: #ef4444;
+        }
+
+        .status-dot.warning {
+            background: #f59e0b;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .info-item {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .info-label {
+            font-size: 0.75em;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 1.125em;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+
+        .loading-spinner {
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .cluster-checks {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .cluster-card {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 6px;
+        }
+
+        .cluster-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cluster-c4 { border-left: 3px solid #10b981; }
+        .cluster-g1 { border-left: 3px solid #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Pre-Demo Health Check</h1>
+                <p class="subtitle">Verify all systems are operational before starting your demo</p>
+            </div>
+            <nav class="main-nav">
+                <div class="dropdown" id="nav-dropdown">
+                    <button class="dropdown-btn" onclick="toggleDropdown()">Menu</button>
+                    <div class="dropdown-menu">
+                        <a href="index.html">Dashboard</a>
+                        <a href="comparison.html">Comparison</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <div id="status-banner" class="status-banner loading">
+            <div class="loading-spinner"></div>
+            <span>Checking system health...</span>
+        </div>
+
+        <div class="health-card">
+            <h3 style="margin-bottom: 16px;">Local Instance Health</h3>
+            <div id="health-checks">
+                <div class="check-item">
+                    <span class="check-name">Message Publisher</span>
+                    <div class="check-status">
+                        <span class="status-dot"></span>
+                        <span class="status-badge">Checking...</span>
+                    </div>
+                </div>
+                <div class="check-item">
+                    <span class="check-name">GC Monitor</span>
+                    <div class="check-status">
+                        <span class="status-dot"></span>
+                        <span class="status-badge">Checking...</span>
+                    </div>
+                </div>
+                <div class="check-item">
+                    <span class="check-name">Memory Usage</span>
+                    <div class="check-status">
+                        <span class="status-dot"></span>
+                        <span class="status-badge">Checking...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-grid" style="margin-top: 16px;">
+                <div class="info-item">
+                    <div class="info-label">JVM Vendor</div>
+                    <div class="info-value" id="jvm-vendor">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">JVM</div>
+                    <div class="info-value" id="jvm-name">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">GC Collectors</div>
+                    <div class="info-value" id="gc-collectors">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Java Version</div>
+                    <div class="info-value" id="java-version">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Available Processors</div>
+                    <div class="info-value" id="processors">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Memory Used</div>
+                    <div class="info-value" id="memory-used">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="health-card">
+            <h3 style="margin-bottom: 16px;">Cluster Connectivity</h3>
+            <div class="cluster-checks">
+                <div class="cluster-card cluster-c4">
+                    <div class="cluster-title">
+                        <span style="width: 12px; height: 12px; background: #10b981; border-radius: 50%;"></span>
+                        C4 Cluster
+                    </div>
+                    <div id="c4-status" style="font-size: 0.9em; color: #64748b;">Checking...</div>
+                </div>
+                <div class="cluster-card cluster-g1">
+                    <div class="cluster-title">
+                        <span style="width: 12px; height: 12px; background: #f59e0b; border-radius: 50%;"></span>
+                        G1 Cluster
+                    </div>
+                    <div id="g1-status" style="font-size: 0.9em; color: #64748b;">Checking...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="proceed-btn" class="btn btn-primary" disabled onclick="proceed()">Proceed to Dashboard</button>
+            <button id="retry-btn" class="btn btn-secondary" onclick="checkHealth()">Retry Check</button>
+        </div>
+    </div>
+
+    <script>
+        let healthData = null;
+
+        async function checkHealth() {
+            const banner = document.getElementById('status-banner');
+            const proceedBtn = document.getElementById('proceed-btn');
+
+            banner.className = 'status-banner loading';
+            banner.innerHTML = '<div class="loading-spinner"></div><span>Checking system health...</span>';
+            proceedBtn.disabled = true;
+
+            try {
+                const response = await fetch('/trader-stream-ee/api/health/check');
+                healthData = await response.json();
+
+                updateHealthUI(healthData);
+                checkClusterConnectivity();
+            } catch (e) {
+                banner.className = 'status-banner unhealthy';
+                banner.innerHTML = '<span>Failed to connect to application</span>';
+            }
+        }
+
+        function updateHealthUI(data) {
+            const banner = document.getElementById('status-banner');
+            const proceedBtn = document.getElementById('proceed-btn');
+
+            const checks = document.querySelectorAll('#health-checks .check-item');
+            const checkData = [
+                { name: 'publisher', label: 'Message Publisher' },
+                { name: 'gcMonitor', label: 'GC Monitor' },
+                { name: 'memory', label: 'Memory Usage' }
+            ];
+
+            let allHealthy = true;
+
+            checks.forEach((check, i) => {
+                const status = check.querySelector('.check-status');
+                const key = checkData[i].name;
+                const value = data[key];
+                const isHealthy = value === 'healthy' || (key === 'memory' && value !== 'warning');
+                const isWarning = value === 'warning';
+
+                status.innerHTML = `
+                    <span class="status-dot ${isHealthy ? 'healthy' : isWarning ? 'warning' : 'unhealthy'}"></span>
+                    <span class="status-badge ${isHealthy ? 'healthy' : isWarning ? 'warning' : 'unhealthy'}">${value}</span>
+                `;
+
+                if (!isHealthy && !isWarning) {
+                    allHealthy = false;
+                }
+            });
+
+            document.getElementById('jvm-vendor').textContent = data.jvmVendor || '-';
+            document.getElementById('jvm-name').textContent = data.jvmName || '-';
+            document.getElementById('gc-collectors').textContent = data.gcCollectors || '-';
+            document.getElementById('java-version').textContent = data.javaVersion || '-';
+            document.getElementById('processors').textContent = data.availableProcessors || '-';
+            document.getElementById('memory-used').textContent = (data.memoryUsedPercent || '-') + '% used';
+
+            if (allHealthy) {
+                banner.className = 'status-banner healthy';
+                banner.innerHTML = '<span>All systems operational - Ready for demo!</span>';
+                proceedBtn.disabled = false;
+            } else {
+                banner.className = 'status-banner unhealthy';
+                banner.innerHTML = '<span>Some systems are not ready - Review checks below</span>';
+            }
+        }
+
+        async function checkClusterConnectivity() {
+            const c4Status = document.getElementById('c4-status');
+            const g1Status = document.getElementById('g1-status');
+
+            try {
+                const c4Resp = await fetch('http://localhost:8080/trader-stream-ee/api/health/ready', { signal: AbortSignal.timeout(3000) });
+                if (c4Resp.ok) {
+                    c4Status.innerHTML = '<span style="color: #10b981;">Connected (port 8080)</span>';
+                } else {
+                    c4Status.innerHTML = '<span style="color: #ef4444;">Not responding</span>';
+                }
+            } catch {
+                c4Status.innerHTML = '<span style="color: #ef4444;">Not available (start with ./start-comparison.sh)</span>';
+            }
+
+            try {
+                const g1Resp = await fetch('http://localhost:9080/trader-stream-ee/api/health/ready', { signal: AbortSignal.timeout(3000) });
+                if (g1Resp.ok) {
+                    g1Status.innerHTML = '<span style="color: #10b981;">Connected (port 9080)</span>';
+                } else {
+                    g1Status.innerHTML = '<span style="color: #ef4444;">Not responding</span>';
+                }
+            } catch {
+                g1Status.innerHTML = '<span style="color: #ef4444;">Not available (start with ./start-comparison.sh)</span>';
+            }
+        }
+
+        function proceed() {
+            if (healthData && healthData.readyForDemo) {
+                window.location.href = '/trader-stream-ee/index.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkHealth();
+            setInterval(checkHealth, 30000);
+        });
+
+        function toggleDropdown() {
+            const dropdown = document.getElementById('nav-dropdown');
+            dropdown.classList.toggle('open');
+        }
+
+        document.addEventListener('click', (event) => {
+            const dropdown = document.getElementById('nav-dropdown');
+            if (!dropdown.contains(event.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>

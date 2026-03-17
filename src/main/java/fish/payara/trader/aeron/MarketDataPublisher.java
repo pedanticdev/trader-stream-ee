@@ -716,4 +716,29 @@ public class MarketDataPublisher {
         }
         return 0;
     }
+
+    private volatile long lastMessagesPublishedAtRateCheck = 0;
+    private volatile long lastRateCheckTime = 0;
+
+    public long getMessageRatePerSecond() {
+        long now = System.currentTimeMillis();
+        long currentCount = messagesPublished.get();
+        long elapsedMs = now - lastRateCheckTime;
+
+        if (elapsedMs < 1000) {
+            return lastMessagesPublishedAtRateCheck;
+        }
+
+        long rate = (currentCount - lastMessagesPublishedAtRateCheck) * 1000 / elapsedMs;
+        lastMessagesPublishedAtRateCheck = currentCount;
+        lastRateCheckTime = now;
+        return Math.max(rate, 0);
+    }
+
+    /**
+     * Check if the publisher is actively running and publishing messages. Used by health check endpoints to verify system readiness.
+     */
+    public boolean isRunning() {
+        return running;
+    }
 }

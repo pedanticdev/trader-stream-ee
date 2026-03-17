@@ -92,14 +92,19 @@ public class GCStatsService implements NotificationListener {
             GcInfo gcInfo = info.getGcInfo();
             long duration = gcInfo.getDuration();
 
+            // FILTERING LOGIC:
+            // Azul C4 exposes "GPGC" (Concurrent Cycle) and "GPGC Pauses" (STW Pauses).
+            // We MUST ignore "GPGC" because it reports cycle time (hundreds of ms) which is NOT a pause.
             if ("GPGC".equals(gcName)) {
                 return;
             }
 
+            // Also ignore other known concurrent cycle beans if they appear
             if (gcName.contains("Cycles") && !gcName.contains("Pauses")) {
                 return;
             }
 
+            // Pause duration history (existing logic)
             ConcurrentLinkedDeque<Long> history = pauseHistory.computeIfAbsent(gcName, k -> new ConcurrentLinkedDeque<>());
             history.addLast(duration);
             while (history.size() > MAX_PAUSE_HISTORY) {
