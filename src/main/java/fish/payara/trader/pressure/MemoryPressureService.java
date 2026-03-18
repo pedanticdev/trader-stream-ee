@@ -1,6 +1,7 @@
 package fish.payara.trader.pressure;
 
 import fish.payara.trader.concurrency.VirtualThreadExecutor;
+import fish.payara.trader.pressure.workload.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.concurrent.ManagedExecutorService;
@@ -61,6 +62,30 @@ public class MemoryPressureService {
     @Inject
     @VirtualThreadExecutor
     private ManagedExecutorService executorService;
+
+    // CPU workloads
+    @Inject
+    private CompressionWorkload compressionWorkload;
+
+    @Inject
+    private SerializationWorkload serializationWorkload;
+
+    @Inject
+    private CryptoWorkload cryptoWorkload;
+
+    @Inject
+    private CollectionWorkload collectionWorkload;
+
+    @Inject
+    private StringWorkload stringWorkload;
+
+    @Inject
+    private TradingMatchingWorkload tradingMatchingWorkload;
+
+    @Inject
+    private TechnicalAnalysisWorkload technicalAnalysisWorkload;
+
+    private WorkloadConfig workloadConfig = new WorkloadConfig();
 
     @PostConstruct
     public void init() {
@@ -148,6 +173,13 @@ public class MemoryPressureService {
     }
 
     private void generateGarbage(AllocationMode mode) {
+        // First check if this is a CPU workload mode
+        if (mode.getWorkloadType() != WorkloadType.NONE) {
+            executeWorkload(mode);
+            return;
+        }
+
+        // Otherwise handle scenario-based modes
         switch (mode.getScenarioType()) {
         case STEADY :
             executeSteadyLoadScenario(mode);
@@ -166,6 +198,25 @@ public class MemoryPressureService {
             break;
         default :
             break;
+        }
+    }
+
+    private void executeWorkload(AllocationMode mode) {
+        AbstractCpuWorkload workload = switch (mode.getWorkloadType()) {
+        case COMPRESSION -> compressionWorkload;
+        case SERIALIZATION -> serializationWorkload;
+        case CRYPTO -> cryptoWorkload;
+        case COLLECTION -> collectionWorkload;
+        case STRING -> stringWorkload;
+        case TRADING_MATCHING -> tradingMatchingWorkload;
+        case TECHNICAL_ANALYSIS -> technicalAnalysisWorkload;
+        default -> null;
+        };
+
+        if (workload != null) {
+            workload.setConfig(workloadConfig);
+            workload.execute(workloadConfig.iterationsPerCycle());
+            totalBytesAllocated.addAndGet(workload.bytesAllocated());
         }
     }
 

@@ -523,11 +523,11 @@
             </div>
             <div class="agenda-item">
                 <span class="agenda-num">4</span>
-                <div><strong>GC Stress Testing</strong> &mdash; Five adversarial scenarios targeting G1 weaknesses</div>
+                <div><strong>GC Stress Testing</strong> &mdash; 12 adversarial workloads targeting G1 weaknesses</div>
             </div>
             <div class="agenda-item">
                 <span class="agenda-num">5</span>
-                <div><strong>Results</strong> &mdash; Measured C4 vs G1 behavior under load</div>
+                <div><strong>Results</strong> &mdash; Measured C4 vs G1 behavior under 12 workload types</div>
             </div>
             <div class="agenda-item">
                 <span class="agenda-num">6</span>
@@ -932,6 +932,10 @@
                     <ul>
                         <li>Generates synthetic market data at HFT rates</li>
                         <li>Pushes data through a realistic Aeron/SBE pipeline</li>
+                        <li>Price-time priority order matching engine</li>
+                        <li>Risk engine (VaR, stress scenarios, position limits)</li>
+                        <li>Portfolio management with performance metrics</li>
+                        <li>Technical analysis via ta4j (SMA, EMA, RSI, MACD, Bollinger, ATR)</li>
                         <li>Distributes to browsers via WebSocket</li>
                         <li>Monitors GC pauses in real time</li>
                         <li>Compares C4 vs G1 side-by-side</li>
@@ -945,15 +949,17 @@
                         <li>Allocation rates and live set sizes</li>
                         <li>WebSocket broadcast latency</li>
                         <li>Business impact (missed trades, revenue at risk)</li>
+                        <li>Value-at-Risk (parametric, historical, Monte Carlo)</li>
+                        <li>Sharpe ratio, max drawdown, portfolio returns</li>
                     </ul>
                 </div>
             </div>
             <div class="layers" style="margin-top: 15px;">
-                <p>Not a real trading system. No order matching, no persistence, no real market data. The "trading" domain is a realistic <strong>allocation pattern generator</strong> for GC stress testing.</p>
+                <p>The "trading" domain provides realistic <strong>allocation patterns</strong> for GC stress testing. Includes an order matching engine, risk engine, portfolio manager, and technical analysis layer to exercise the JVM with production-like object lifetimes and allocation rates.</p>
             </div>
             <aside class="notes">
-                <p><strong>Luqman:</strong> Let's be clear about what this is. TradeStreamEE is not a trading platform. It generates synthetic market data to create realistic allocation patterns, then measures how the GC handles the pressure.</p>
-                <p>The trading domain gives us realistic message sizes, object lifetimes, and allocation rates that mirror a real HFT system.</p>
+                <p><strong>Luqman:</strong> TradeStreamEE started as a GC benchmarking tool but has grown into something more substantial. It now includes a real price-time priority order matching engine, a risk engine with VaR and stress testing, a portfolio manager with performance metrics, and technical analysis via ta4j.</p>
+                <p>These aren't stubs. The matching engine creates and tears down Order, Execution, and OrderBookEntry objects at HFT rates. The risk engine computes Value-at-Risk with Monte Carlo simulation. This gives us realistic allocation patterns from real business logic.</p>
             </aside>
         </section>
 
@@ -1056,12 +1062,15 @@
                 <div class="box">
                     <h3>SBE Schema Design</h3>
                     <table style="font-size: 0.8em;">
-                        <tr><th>Message</th><th>ID</th></tr>
-                        <tr><td><code>Trade</code></td><td>1</td></tr>
-                        <tr><td><code>Quote</code></td><td>2</td></tr>
-                        <tr><td><code>MarketDepth</code></td><td>3</td></tr>
-                        <tr><td><code>OrderAck</code></td><td>4</td></tr>
-                        <tr><td><code>Heartbeat</code></td><td>5</td></tr>
+                        <tr><th>Category</th><th>Count</th><th>Examples</th></tr>
+                        <tr><td>Market Data</td><td>5</td><td>Trade, Quote, MarketDepth, OrderAck, Heartbeat</td></tr>
+                        <tr><td>Order Book</td><td>6</td><td>OrderBookSnapshot, PriceLevel, OrderEntry</td></tr>
+                        <tr><td>Orders</td><td>5</td><td>NewOrder, CancelOrder, OrderReject</td></tr>
+                        <tr><td>Execution</td><td>4</td><td>ExecutionReport, TradeConfirm</td></tr>
+                        <tr><td>Risk &amp; Portfolio</td><td>8</td><td>VaRReport, PositionUpdate, ExposureSummary</td></tr>
+                        <tr><td>Technical Analysis</td><td>6</td><td>IndicatorUpdate, BarSnapshot</td></tr>
+                        <tr><td>System</td><td>14</td><td>HealthCheck, GCPauseEvent, SLAAlert</td></tr>
+                        <tr style="font-weight: bold;"><td>Total</td><td>48</td><td></td></tr>
                     </table>
                     <p class="muted" style="font-size: 0.75em; margin-top: 8px;">Defined in <code>market-data.xml</code>, compiled to Java flyweight codecs at build time via <code>SbeTool</code>.</p>
                 </div>
@@ -1219,7 +1228,7 @@ broadcaster.broadcastWithArtificialLoad(json);
                     <ul>
                         <li><strong>CDI:</strong> Lifecycle, injection, events</li>
                         <li><strong>WebSocket:</strong> Real-time data push</li>
-                        <li><strong>JAX-RS:</strong> REST API (7 resource classes)</li>
+                        <li><strong>JAX-RS:</strong> REST API (16 resource classes)</li>
                         <li><strong>Concurrency 3.1:</strong> Virtual thread executor</li>
                         <li><strong>MicroProfile Config:</strong> External config</li>
                     </ul>
@@ -1352,25 +1361,38 @@ publisherFuture = managedExecutorService.submit(() -> {
         <!-- ============================================================ -->
         <section>
             <h2>WebSocket: Real-Time Data Push</h2>
-            <h3>Two Endpoints for Market Data and SLA Alerts</h3>
+            <h3>Four Endpoints for Market Data, Alerts, Executions, and Indicators</h3>
+            <div class="two-column">
+                <div class="box">
+                    <h3>Endpoints</h3>
+                    <ul style="font-size: 0.85em;">
+                        <li><code>/market-data</code> &mdash; Trade, quote, depth</li>
+                        <li><code>/sla</code> &mdash; GC pause violation alerts</li>
+                        <li><code>/executions</code> &mdash; Order match events</li>
+                        <li><code>/indicators</code> &mdash; Technical analysis updates</li>
+                    </ul>
+                </div>
+                <div class="box">
+                    <h3>Key Properties</h3>
+                    <ul style="font-size: 0.85em;">
+                        <li>CDI injection works in WebSocket endpoints</li>
+                        <li>1-in-50 sampling for market data at 50K+ msg/s</li>
+                        <li>Execution events pushed via Hazelcast ITopic</li>
+                        <li>SLA thresholds: 10ms warning, 50ms critical</li>
+                    </ul>
+                </div>
+            </div>
             <pre><code class="java" data-trim>
 @ServerEndpoint("/market-data")
 public class MarketDataWebSocket {
 
     @Inject private MarketDataBroadcaster broadcaster;
 
-    @Inject @ConfigProperty(name = "TRADER_INGESTION_MODE",
-                            defaultValue = "AERON")
-    private String ingestionMode;
-
     @OnOpen
     public void onOpen(Session session) {
         broadcaster.addSession(session);
-        String welcome = String.format(
-            "{\"type\":\"info\",\"message\":\"Connected to " +
-            "TradeStreamEE market data feed\",\"mode\":\"%s\"}",
-            ingestionMode);
-        session.getBasicRemote().sendText(welcome);
+        session.getBasicRemote().sendText(
+            "{\"type\":\"info\",\"message\":\"Connected\"}");
     }
 
     @OnClose
@@ -1379,25 +1401,23 @@ public class MarketDataWebSocket {
     }
 }
 
-// SLA endpoint: pushes GC pause violation alerts in real time
-@ServerEndpoint("/sla")
-public class SLAWebSocket {
+// Execution events broadcast to cluster via Hazelcast ITopic
+@ServerEndpoint("/executions")
+public class ExecutionWebSocket {
+    @Inject private ExecutionBroadcaster broadcaster;
+
     @OnOpen
     public void onOpen(Session session) {
-        String welcome = String.format(
-            "{\"type\":\"info\",\"message\":\"Connected to SLA " +
-            "monitoring\",\"instance\":\"%s\"}",
-            InstanceUtils.getInstanceName());
-        session.getBasicRemote().sendText(welcome);
+        broadcaster.addSession(session);
     }
 }
             </code></pre>
             <p class="muted" style="font-size: 0.8em; margin-top: 8px;">
-                Market data at <code>/market-data</code>. GC pause alerts at <code>/sla</code>. CDI injection works in WebSocket endpoints via Payara.
+                Market data at <code>/market-data</code>. GC pause alerts at <code>/sla</code>. Match events at <code>/executions</code>. Indicator snapshots at <code>/indicators</code>.
             </p>
             <aside class="notes">
-                <p><strong>Luqman:</strong> Two WebSocket endpoints. The market-data endpoint streams trade, quote, and depth data. The SLA endpoint pushes real-time alerts when GC pauses exceed thresholds.</p>
-                <p>The browser dashboard connects to both. When a GC pause hits 10ms+, the SLA WebSocket flashes a warning. At 50ms+ it's a critical alert. This makes GC behavior visible in real time.</p>
+                <p><strong>Luqman:</strong> Four WebSocket endpoints now. Market data and SLA are the originals. The execution endpoint broadcasts order match events from the matching engine via Hazelcast ITopic across the cluster. The indicator endpoint pushes technical analysis updates.</p>
+                <p>The browser trading desk connects to all four. When a GC pause hits 10ms+, the SLA WebSocket flashes a warning. At 50ms+ it's a critical alert. This makes GC behavior visible in real time.</p>
             </aside>
         </section>
 
@@ -1445,6 +1465,27 @@ POST /api/demo/execution/{id}/step/{n}
 GET  /api/jfr/status
 POST /api/jfr/recording/start
 GET  /api/jfr/download/{file}</code></pre>
+                </div>
+            </div>
+            <div class="two-column" style="margin-top: 15px;">
+                <div class="box">
+                    <h3>Matching &amp; Orders</h3>
+                    <pre style="font-size: 0.7em;"><code class="bash" data-trim>
+GET  /api/matching/book/{symbol}
+GET  /api/matching/positions
+GET  /api/orders/{symbol}
+POST /api/orders/submit
+POST /api/orders/cancel/{id}</code></pre>
+                </div>
+                <div class="box">
+                    <h3>Analysis &amp; Risk</h3>
+                    <pre style="font-size: 0.7em;"><code class="bash" data-trim>
+GET  /api/indicators/{symbol}
+GET  /api/portfolio/snapshot
+POST /api/portfolio/rebalance
+GET  /api/risk/snapshot/{symbol}
+GET  /api/risk/var/{symbol}
+POST /api/risk/stress</code></pre>
                 </div>
             </div>
             <aside class="notes">
@@ -1503,9 +1544,9 @@ public void broadcast(String json) {
         <section>
             <div class="section-number">04</div>
             <h2>GC Stress Testing</h2>
-            <p class="muted">Five adversarial scenarios targeting G1 weaknesses</p>
+            <p class="muted">12 adversarial workloads targeting G1 weaknesses</p>
             <aside class="notes">
-                <p><strong>Simon:</strong> This is the most important section. We didn't just throw garbage at the JVM and hope for the best. We designed five specific scenarios, each targeting a different G1 architectural weakness.</p>
+                <p><strong>Simon:</strong> This is the most important section. We designed 12 specific workloads across two categories: 5 memory scenarios that target G1 architectural weaknesses, and 7 CPU-intensive workloads that stress the GC under realistic compute pressure.</p>
             </aside>
         </section>
 
@@ -1559,6 +1600,8 @@ public class MemoryPressureService {
     @Inject @VirtualThreadExecutor
     private ManagedExecutorService executorService;
 
+    @Inject private Instance&lt;Workload&gt; workloads;
+
     private final Deque&lt;byte[]&gt; liveSet = new LinkedList&lt;&gt;();
     private final ConcurrentLinkedDeque&lt;byte[]&gt; promotableObjects;
     private final Deque&lt;RefHolder&gt; crossRefHolders = new LinkedList&lt;&gt;();
@@ -1571,28 +1614,32 @@ public class MemoryPressureService {
         startPressure(); // launches virtual thread
     }
 
-    // Main loop: ~10 iterations/second (100ms per iteration)
-    while (running) {
-        generateGarbage(currentMode);
-        Thread.sleep(100 - executionTime);
-        logStats();
+    // Dispatches to Workload implementations via CDI Instance
+    private void generateGarbage(AllocationMode mode) {
+        if (mode.getWorkloadType() != WorkloadType.NONE) {
+            Workload workload = resolveWorkload(mode.getWorkloadType());
+            workload.execute(iterations);
+        } else {
+            generateMemoryScenario(mode.getScenarioType());
+        }
     }
 }
             </code></pre>
             <p class="muted" style="font-size: 0.8em; margin-top: 8px;">
-                Runs on a <strong>virtual thread</strong>. Each scenario uses <strong>4 parallel threads</strong> for allocation. Live set and promotable objects are managed across iterations.
+                Runs on a <strong>virtual thread</strong>. Memory scenarios use <strong>4 parallel threads</strong> for allocation. CPU workloads dispatch to CDI-managed <code>Workload</code> implementations.
             </p>
             <aside class="notes">
-                <p><strong>Simon:</strong> The MemoryPressureService is the core testing engine. It runs on a virtual thread and executes the current allocation scenario in a loop. Each iteration targets ~100ms of execution time.</p>
-                <p>The four deques track different object categories: live set (surviving objects), promotable objects (will survive to old gen), and cross-ref holders (old-gen objects with young-gen references). Each scenario uses these differently.</p>
+                <p><strong>Simon:</strong> The MemoryPressureService is the core testing engine. It runs on a virtual thread and dispatches to one of 12 workloads. Memory scenarios directly manipulate byte arrays. CPU workloads are CDI beans that implement the Workload interface.</p>
+                <p>The dispatch uses CDI Instance to resolve the right Workload bean by type. This means adding a new workload is just a matter of implementing the interface and adding an enum value.</p>
             </aside>
         </section>
 
         <!-- ============================================================ -->
-        <!-- SLIDE: Five Scenarios Overview -->
+        <!-- SLIDE: Five Memory Scenarios Overview -->
         <!-- ============================================================ -->
         <section>
-            <h2>The Five Stress Scenarios</h2>
+            <h2>Memory Stress Scenarios</h2>
+            <h3>Five adversarial workloads targeting G1 weaknesses</h3>
             <table>
                 <tr>
                     <th>Scenario</th>
@@ -1632,11 +1679,68 @@ public class MemoryPressureService {
                 </tr>
             </table>
             <p class="muted" style="font-size: 0.8em; margin-top: 15px;">
-                Each scenario uses <span class="hl">4 parallel virtual threads</span> to mirror production multi-handler workloads. All defined in <code>AllocationMode.java</code>.
+                Each scenario uses <span class="hl">4 parallel virtual threads</span> to mirror production multi-handler workloads. Memory scenarios defined in <code>AllocationMode.java</code>, CPU workloads via CDI <code>Workload</code> implementations.
             </p>
             <aside class="notes">
-                <p><strong>Simon:</strong> Five scenarios, five different weaknesses. STEADY_LOAD is the baseline. GROWING_HEAP tests how pause time scales with live set. PROMOTION_STORM floods old generation. FRAGMENTATION creates small objects with random lifetimes. And CROSS_GEN_REFS is the killer scenario for remembered sets.</p>
+                <p><strong>Simon:</strong> Five memory scenarios, five different weaknesses. STEADY_LOAD is the baseline. GROWING_HEAP tests how pause time scales with live set. PROMOTION_STORM floods old generation. FRAGMENTATION creates small objects with random lifetimes. And CROSS_GEN_REFS is the killer scenario for remembered sets.</p>
                 <p>We'll look at CROSS_GEN_REFS in detail next - it's the most technically interesting.</p>
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SLIDE: CPU Workloads -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>CPU Workloads</h2>
+            <h3>Seven compute-intensive workloads that stress GC under realistic pressure</h3>
+            <table>
+                <tr>
+                    <th>Workload</th>
+                    <th>Allocation Rate</th>
+                    <th>What It Stresses</th>
+                </tr>
+                <tr>
+                    <td><code>COMPRESSION_CPU</code></td>
+                    <td>300 MB/s</td>
+                    <td>Gzip compress/decompress temp buffers</td>
+                </tr>
+                <tr>
+                    <td><code>SERIALIZATION_CPU</code></td>
+                    <td>250 MB/s</td>
+                    <td>Jakarta JSON object graph materialization</td>
+                </tr>
+                <tr>
+                    <td><code>CRYPTO_CPU</code></td>
+                    <td>200 MB/s</td>
+                    <td>SHA-256, HMAC-SHA256, AES-GCM encrypt/decrypt</td>
+                </tr>
+                <tr>
+                    <td><code>COLLECTION_CPU</code></td>
+                    <td>300 MB/s</td>
+                    <td>HashMap/TreeMap insert/lookup/remove churn</td>
+                </tr>
+                <tr>
+                    <td><code>STRING_CPU</code></td>
+                    <td>350 MB/s</td>
+                    <td>Regex, substring, StringBuilder, String.intern</td>
+                </tr>
+                <tr>
+                    <td><code>TRADING_MATCHING</code></td>
+                    <td>400 MB/s</td>
+                    <td>Order/Execution object churn via matching engine</td>
+                </tr>
+                <tr>
+                    <td><code>TECHNICAL_ANALYSIS</code></td>
+                    <td>300 MB/s</td>
+                    <td>ta4j indicator objects (SMA, EMA, RSI, MACD, BB, ATR)</td>
+                </tr>
+            </table>
+            <div class="box-orange" style="margin-top: 15px;">
+                <p><strong>Key insight:</strong> The last two workloads (<code>TRADING_MATCHING</code> and <code>TECHNICAL_ANALYSIS</code>) exercise real business logic from the matching engine and ta4j analysis library. They generate production-like allocation patterns from actual computation, not synthetic byte arrays.</p>
+            </div>
+            <aside class="notes">
+                <p><strong>Simon:</strong> Seven CPU workloads. The first five test GC under pure computational pressure - compression, serialization, crypto, collections, and string interning. Each creates short-lived objects as a side effect of CPU-bound work.</p>
+                <p>The last two are the most interesting: TRADING_MATCHING runs the actual order matching engine under load, creating Order, Execution, and OrderBookEntry objects at HFT rates. TECHNICAL_ANALYSIS exercises the ta4j library, creating indicator objects (SMA, EMA, RSI, MACD, Bollinger Bands, ATR) that allocate heavily per computation cycle.</p>
             </aside>
         </section>
 
@@ -2108,7 +2212,7 @@ if (event.isEnabled()) { // JIT-compiled check
                 <p><strong>G1's pause time scales with live set.</strong> C4's pause time is <strong>independent of live set</strong> because all collection phases run concurrently. This is the fundamental architectural difference.</p>
             </div>
             <aside class="notes">
-                <p><strong>Simon:</strong> This scenario demonstrates the scaling problem. As the live set grows from 100 MB to 2 GB, G1's pauses get progressively longer. At 2 GB, you're seeing 100-200ms pauses from mixed collections.</p>
+                <p><strong>Simon:</strong> This scenario shows the scaling problem. As the live set grows from 100 MB to 2 GB, G1's pauses get progressively longer. At 2 GB, you're seeing 100-200ms pauses from mixed collections.</p>
                 <p>C4's pause time stays sub-millisecond regardless. The pause duration is independent of heap size, live set, or allocation rate because C4 collects concurrently. Both young and old generation collections run simultaneously and concurrently with the application.</p>
             </aside>
         </section>
@@ -2463,10 +2567,12 @@ curl -X POST http://localhost:8080/api/pressure/mode/OFF
                 <tr><td>Encoding</td><td>SBE</td><td>1.34.0</td><td>Zero-copy binary serialization</td></tr>
                 <tr><td>Clustering</td><td>Hazelcast</td><td>5.5.0</td><td>Distributed topics + CP subsystem</td></tr>
                 <tr><td>Monitoring</td><td>Prometheus + Grafana</td><td>Latest</td><td>JMX metrics and dashboards</td></tr>
+                <tr><td>TA Library</td><td>ta4j-core</td><td>0.22.4</td><td>Technical analysis (SMA, EMA, RSI, MACD, BB, ATR)</td></tr>
                 <tr><td>Java</td><td>OpenJDK</td><td>21</td><td>Records, Pattern Matching, Virtual Threads</td></tr>
             </table>
             <aside class="notes">
-                <p><strong>Luqman:</strong> The full stack. Everything is standard, open-source, or free. The only commercial component is Azul Platform Prime for the C4 collector. But the application runs identically on both runtimes.</p>
+                <p><strong>Luqman:</strong> The full stack. Everything is standard, open-source, or free. The only commercial component is Azul Platform Prime for the C4 collector. ta4j-core is the latest addition, providing realistic technical analysis workloads that generate indicator objects at scale.</p>
+                <p>The application now has ~7,500 methods across matching engine, risk engine, portfolio management, and technical analysis. This gives us real business logic generating real allocation patterns.</p>
             </aside>
         </section>
 
@@ -2481,8 +2587,10 @@ curl -X POST http://localhost:8080/api/pressure/mode/OFF
                     <ul>
                         <li><strong>GitHub:</strong> <code>github.com/pedanticdev/trader-stream-ee</code></li>
                         <li>Full source code, Dockerfiles, compose files</li>
-                        <li>5 GC stress scenarios with REST API control</li>
+                        <li>12 GC stress workloads (5 memory + 7 CPU)</li>
+                        <li>Order matching engine, risk engine, portfolio manager</li>
                         <li>Side-by-side C4 vs G1 comparison stack</li>
+                        <li>Trading desk UI with real-time WebSocket feeds</li>
                         <li>Prometheus/Grafana monitoring dashboards</li>
                     </ul>
                 </div>
@@ -2494,6 +2602,7 @@ curl -X POST http://localhost:8080/api/pressure/mode/OFF
                         <li><strong>Aeron:</strong> aeron.io</li>
                         <li><strong>SBE:</strong> real-logic.github.io/simple-binary-encoding</li>
                         <li><strong>Jakarta EE:</strong> jakarta.ee</li>
+                        <li><strong>ta4j:</strong> ta4j.github.io/ta4j</li>
                     </ul>
                 </div>
             </div>

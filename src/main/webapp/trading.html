@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeStreamEE - Trading Desk</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #334155;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --card-bg: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --buy-color: #10b981;
+            --sell-color: #ef4444;
+        }
+
+        :root.light-theme {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --card-bg: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1920px; margin: 0 auto; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .logo-section h1 {
+            font-size: 1.5em;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-section .subtitle { color: var(--text-muted); font-size: 0.85em; }
+
+        .dropdown { position: relative; }
+        .dropdown-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .dropdown-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+        .dropdown-btn::after { content: '▾'; font-size: 0.8em; }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            min-width: 160px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .dropdown.open .dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 10px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.15s;
+        }
+        .dropdown-menu a:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .dropdown-menu a:first-child { border-radius: 8px 8px 0 0; }
+        .dropdown-menu a:last-child { border-radius: 0 0 8px 8px; }
+
+        .trading-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr 360px;
+            grid-template-rows: auto auto 1fr;
+            gap: 16px;
+            height: calc(100vh - 120px);
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-header h2 { font-size: 0.95em; font-weight: 600; color: var(--text-primary); }
+        .card-header .badge {
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .card-body { padding: 16px; }
+
+        .symbol-selector {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .symbol-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        .symbol-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .symbol-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+        .order-ticket { grid-row: 2 / 4; }
+
+        .order-type-tabs { display: flex; border-bottom: 1px solid var(--border-color); }
+        .order-tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+        .order-tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+        .order-tab.active { color: var(--text-primary); border-bottom: 2px solid var(--accent); }
+
+        .order-form { padding: 16px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-size: 0.8em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
+
+        .side-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .side-btn {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        .side-btn.buy:hover, .side-btn.buy.active { background: var(--buy-color); border-color: var(--buy-color); color: white; }
+        .side-btn.sell:hover, .side-btn.sell.active { background: var(--sell-color); border-color: var(--sell-color); color: white; }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+        .submit-btn.buy { background: var(--buy-color); color: white; }
+        .submit-btn.sell { background: var(--sell-color); color: white; }
+        .submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .order-book { grid-row: 2 / 4; overflow: hidden; display: flex; flex-direction: column; }
+        .order-book .card-body { flex: 1; overflow: hidden; padding: 0; display: flex; flex-direction: column; }
+
+        .book-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 80px;
+            padding: 8px 12px;
+            font-size: 0.75em;
+            color: var(--text-muted);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .book-levels {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+        }
+
+        .book-level {
+            display: grid;
+            grid-template-columns: 1fr 1fr 80px;
+            padding: 6px 12px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.15s;
+        }
+        .book-level:hover { background: var(--bg-tertiary); }
+        .book-level.ask .price { color: var(--sell-color); }
+        .book-level.bid .price { color: var(--buy-color); }
+
+        .spread-indicator {
+            text-align: center;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            font-size: 0.8em;
+            color: var(--text-muted);
+        }
+        .spread-indicator .value { color: var(--accent); font-weight: 600; }
+
+        .positions-panel { grid-row: 2 / 4; overflow: hidden; display: flex; flex-direction: column; }
+        .positions-panel .card-body { flex: 1; overflow-y: auto; padding: 0; }
+
+        .position-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85em;
+            align-items: center;
+        }
+        .position-row:hover { background: var(--bg-tertiary); }
+        .position-symbol { font-weight: 600; color: var(--text-primary); }
+        .position-qty { text-align: right; font-family: 'JetBrains Mono', monospace; }
+        .position-qty.long { color: var(--buy-color); }
+        .position-qty.short { color: var(--sell-color); }
+        .position-pnl { text-align: right; font-family: 'JetBrains Mono', monospace; }
+        .position-pnl.positive { color: var(--buy-color); }
+        .position-pnl.negative { color: var(--sell-color); }
+
+        .indicators-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .indicator-item { background: var(--bg-primary); padding: 12px; border-radius: 6px; }
+        .indicator-item .name { font-size: 0.75em; color: var(--text-muted); margin-bottom: 4px; }
+        .indicator-item .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .risk-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .risk-item { background: var(--bg-primary); padding: 12px; border-radius: 6px; }
+        .risk-item .label { font-size: 0.75em; color: var(--text-muted); margin-bottom: 4px; }
+        .risk-item .value { font-family: 'JetBrains Mono', monospace; font-size: 1em; font-weight: 600; }
+        .risk-item .value.danger { color: var(--danger); }
+        .risk-item .value.warning { color: var(--warning); }
+        .risk-item .value.success { color: var(--success); }
+
+        .executions-list { font-family: 'JetBrains Mono', monospace; font-size: 0.8em; }
+        .execution-row {
+            display: grid;
+            grid-template-columns: 60px 50px 1fr 80px 80px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+        }
+        .execution-row:hover { background: var(--bg-tertiary); }
+        .exec-time { color: var(--text-muted); font-size: 0.9em; }
+        .exec-side { font-weight: 600; }
+        .exec-side.buy { color: var(--buy-color); }
+        .exec-side.sell { color: var(--sell-color); }
+        .exec-symbol { color: var(--text-primary); }
+        .exec-qty { text-align: right; color: var(--text-secondary); }
+        .exec-price { text-align: right; color: var(--text-primary); }
+
+        .panel-tabs { display: flex; border-bottom: 1px solid var(--border-color); }
+        .panel-tab {
+            padding: 10px 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.8em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .panel-tab:hover { color: var(--text-primary); }
+        .panel-tab.active { color: var(--text-primary); border-bottom: 2px solid var(--accent); }
+
+        .status-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 0.85em;
+        }
+
+        .status-item { display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
+        .status-item .value { color: var(--text-primary); font-family: 'JetBrains Mono', monospace; }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+        .connection-dot.connected { background: var(--success); animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 1400px) {
+            .trading-grid { grid-template-columns: 280px 1fr 300px; }
+        }
+
+        @media (max-width: 1100px) {
+            .trading-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto auto auto auto 1fr;
+            }
+            .order-ticket { grid-row: auto; grid-column: 1; }
+            .order-book { grid-row: auto; grid-column: 2; }
+            .positions-panel { grid-row: auto; grid-column: 1 / -1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-section">
+                <h1>Trading Desk</h1>
+                <div class="subtitle">Order Management & Analytics</div>
+            </div>
+            <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+                <button id="darkModeBtn" onclick="toggleDarkMode()" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85em;">☀️ Light</button>
+                <div class="dropdown" id="nav-dropdown">
+                    <button class="dropdown-btn" onclick="toggleDropdown()">Menu</button>
+                    <div class="dropdown-menu">
+                        <a href="index.html">Dashboard</a>
+                        <a href="trading.html" style="color: var(--accent);">Trading Desk</a>
+                        <a href="comparison.html">Comparison</a>
+                        <a href="health.html">Health Check</a>
+                        <a href="blog.html">Blog</a>
+                        <a href="help.html">Help</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="symbol-selector">
+            <button class="symbol-btn active" data-symbol="AAPL">AAPL</button>
+            <button class="symbol-btn" data-symbol="GOOGL">GOOGL</button>
+            <button class="symbol-btn" data-symbol="MSFT">MSFT</button>
+            <button class="symbol-btn" data-symbol="AMZN">AMZN</button>
+            <button class="symbol-btn" data-symbol="TSLA">TSLA</button>
+            <button class="symbol-btn" data-symbol="NVDA">NVDA</button>
+            <button class="symbol-btn" data-symbol="META">META</button>
+            <button class="symbol-btn" data-symbol="NFLX">NFLX</button>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="connection-dot connected" id="ws-indicator"></span>
+                <span>WebSocket: <span class="value" id="ws-status">Connected</span></span>
+            </div>
+            <div class="status-item">
+                <span>Last Price: <span class="value" id="last-price">-</span></span>
+            </div>
+            <div class="status-item">
+                <span>Open Orders: <span class="value" id="open-orders">0</span></span>
+            </div>
+            <div class="status-item">
+                <span>Today P&amp;L: <span class="value" id="daily-pnl" style="color: var(--success);">+$0</span></span>
+            </div>
+        </div>
+
+        <div class="trading-grid">
+            <div class="card order-ticket">
+                <div class="card-header">
+                    <h2>Order Ticket</h2>
+                    <span class="badge" id="selected-symbol">AAPL</span>
+                </div>
+                <div class="order-type-tabs">
+                    <button class="order-tab active" data-type="MARKET">Market</button>
+                    <button class="order-tab" data-type="LIMIT">Limit</button>
+                    <button class="order-tab" data-type="STOP">Stop</button>
+                </div>
+                <div class="order-form">
+                    <div class="form-group">
+                        <label>Side</label>
+                        <div class="side-buttons">
+                            <button class="side-btn buy active" data-side="BUY">BUY</button>
+                            <button class="side-btn sell" data-side="SELL">SELL</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="order-qty" value="100" min="1">
+                    </div>
+                    <div class="form-group" id="price-group" style="display: none;">
+                        <label>Price</label>
+                        <input type="number" id="order-price" step="0.01" placeholder="Limit Price">
+                    </div>
+                    <div class="form-group" id="stop-price-group" style="display: none;">
+                        <label>Stop Price</label>
+                        <input type="number" id="stop-price" step="0.01" placeholder="Stop Trigger Price">
+                    </div>
+                    <div class="form-group">
+                        <label>Time in Force</label>
+                        <select id="order-tif">
+                            <option value="GTC">Good Till Cancelled</option>
+                            <option value="DAY">Day Only</option>
+                            <option value="IOC">Immediate or Cancel</option>
+                            <option value="FOK">Fill or Kill</option>
+                        </select>
+                    </div>
+                    <button class="submit-btn buy" id="submit-order">Submit Buy Order</button>
+                </div>
+
+                <div class="card-header" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <h2>Positions</h2>
+                </div>
+                <div id="positions-list" style="max-height: 200px; overflow-y: auto;">
+                    <div class="position-row"><span class="position-symbol">No positions</span></div>
+                </div>
+
+                <div class="card-header" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <h2>Technical Indicators</h2>
+                </div>
+                <div class="indicators-grid" style="padding: 12px;">
+                    <div class="indicator-item">
+                        <div class="name">SMA(20)</div>
+                        <div class="value" id="sma-20">-</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="name">EMA(12)</div>
+                        <div class="value" id="ema-12">-</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="name">RSI(14)</div>
+                        <div class="value" id="rsi-14">-</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="name">MACD</div>
+                        <div class="value" id="macd">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card order-book">
+                <div class="card-header">
+                    <h2>Order Book</h2>
+                    <span class="badge">10 levels</span>
+                </div>
+                <div class="card-body">
+                    <div class="book-header">
+                        <span>Price</span>
+                        <span>Size</span>
+                        <span>Total</span>
+                    </div>
+                    <div class="book-levels" id="asks"></div>
+                    <div class="spread-indicator">Spread: <span class="value" id="spread">-</span></div>
+                    <div class="book-levels" id="bids"></div>
+                </div>
+            </div>
+
+            <div class="card positions-panel">
+                <div class="panel-tabs">
+                    <button class="panel-tab active" data-panel="executions">Executions</button>
+                    <button class="panel-tab" data-panel="risk">Risk</button>
+                </div>
+                <div id="executions-panel" class="card-body">
+                    <div class="executions-list" id="executions-list">
+                        <div class="execution-row">
+                            <span class="exec-time">-</span>
+                            <span class="exec-side">-</span>
+                            <span class="exec-symbol">No executions yet</span>
+                            <span class="exec-qty">-</span>
+                            <span class="exec-price">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="risk-panel" class="card-body" style="display: none; padding: 16px;">
+                    <div class="risk-metrics">
+                        <div class="risk-item">
+                            <div class="label">Value at Risk (95%)</div>
+                            <div class="value" id="var-95">$0</div>
+                        </div>
+                        <div class="risk-item">
+                            <div class="label">Total Exposure</div>
+                            <div class="value" id="total-exposure">$0</div>
+                        </div>
+                        <div class="risk-item">
+                            <div class="label">Net Delta</div>
+                            <div class="value" id="net-delta">0</div>
+                        </div>
+                        <div class="risk-item">
+                            <div class="label">Max Drawdown</div>
+                            <div class="value danger" id="max-drawdown">0%</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <h3 style="font-size: 0.9em; margin-bottom: 12px; color: var(--text-muted);">Stress Tests</h3>
+                        <div class="risk-item" style="margin-bottom: 8px;">
+                            <div class="label">Flash Crash (20%)</div>
+                            <div class="value" id="stress-flash">-$0</div>
+                        </div>
+                        <div class="risk-item" style="margin-bottom: 8px;">
+                            <div class="label">Vol Spike (3x)</div>
+                            <div class="value" id="stress-vol">-$0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme management
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const btn = document.getElementById('darkModeBtn');
+            const isDark = html.classList.toggle('light-theme');
+            btn.textContent = isDark ? '🌙 Dark' : '☀️ Light';
+            localStorage.setItem('tradingTheme', isDark ? 'light' : 'dark');
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('tradingTheme');
+            const btn = document.getElementById('darkModeBtn');
+
+            // Default to dark, only switch to light if explicitly saved as light
+            if (savedTheme === 'light') {
+                document.documentElement.classList.add('light-theme');
+                if (btn) btn.textContent = '🌙 Dark';
+            }
+        }
+
+        // Initialize theme when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initTheme);
+        } else {
+            initTheme();
+        }
+    </script>
+    <script src="trading.js"></script>
+</body>
+</html>

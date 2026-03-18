@@ -31,6 +31,16 @@
             <type name="numInGroup" primitiveType="uint16"/>
         </composite>
 
+        <composite name="priceLevelEncoding" description="Price level dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint16"/>
+        </composite>
+
+        <composite name="positionLevelEncoding" description="Position dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint16"/>
+        </composite>
+
         <!-- Enumerations -->
         <enum name="Side" encodingType="uint8" description="Order side">
             <validValue name="BUY">0</validValue>
@@ -41,6 +51,9 @@
             <validValue name="MARKET">0</validValue>
             <validValue name="LIMIT">1</validValue>
             <validValue name="STOP">2</validValue>
+            <validValue name="STOP_LIMIT">3</validValue>
+            <validValue name="ICEBERG">4</validValue>
+            <validValue name="TRAILING_STOP">5</validValue>
         </enum>
 
         <enum name="ExecType" encodingType="uint8" description="Execution type">
@@ -49,6 +62,63 @@
             <validValue name="FILL">2</validValue>
             <validValue name="CANCELED">3</validValue>
             <validValue name="REJECTED">4</validValue>
+            <validValue name="PENDING_TRIGGER">5</validValue>
+        </enum>
+
+        <enum name="OrdStatus" encodingType="uint8" description="Order status">
+            <validValue name="NEW">0</validValue>
+            <validValue name="PARTIALLY_FILLED">1</validValue>
+            <validValue name="FILLED">2</validValue>
+            <validValue name="CANCELED">3</validValue>
+            <validValue name="PENDING_CANCEL">4</validValue>
+            <validValue name="REJECTED">5</validValue>
+            <validValue name="SUSPENDED">6</validValue>
+            <validValue name="CALCULATED">7</validValue>
+        </enum>
+
+        <enum name="TimeInForce" encodingType="uint8" description="Time in force">
+            <validValue name="DAY">0</validValue>
+            <validValue name="GTC">1</validValue>
+            <validValue name="IOC">2</validValue>
+            <validValue name="FOK">3</validValue>
+            <validValue name="GTX">4</validValue>
+        </enum>
+
+        <enum name="CancelRejectReason" encodingType="uint8" description="Cancel reject reason">
+            <validValue name="TOO_LATE_TO_CANCEL">0</validValue>
+            <validValue name="UNKNOWN_ORDER">1</validValue>
+            <validValue name="DUPLICATE_CL_ORD_ID">2</validValue>
+            <validValue name="OTHER">99</validValue>
+        </enum>
+
+        <enum name="AlertLevel" encodingType="uint8" description="Alert severity level">
+            <validValue name="INFO">0</validValue>
+            <validValue name="WARNING">1</validValue>
+            <validValue name="CRITICAL">2</validValue>
+        </enum>
+
+        <enum name="AlertType" encodingType="uint8" description="Alert type">
+            <validValue name="DRAWDOWN">0</validValue>
+            <validValue name="EXPOSURE_LIMIT">1</validValue>
+            <validValue name="CONCENTRATION">2</validValue>
+            <validValue name="MARGIN_CALL">3</validValue>
+            <validValue name="VAR_BREACH">4</validValue>
+        </enum>
+
+        <enum name="SystemEventType" encodingType="uint8" description="System event type">
+            <validValue name="STARTUP">0</validValue>
+            <validValue name="SHUTDOWN">1</validValue>
+            <validValue name="CONFIG_CHANGE">2</validValue>
+            <validValue name="FAILOVER">3</validValue>
+            <validValue name="CIRCUIT_BREAKER">4</validValue>
+            <validValue name="MAINTENANCE">5</validValue>
+        </enum>
+
+        <enum name="TradeBustReason" encodingType="uint8" description="Trade bust/cancel reason">
+            <validValue name="ERRONEOUS">0</validValue>
+            <validValue name="BOOKING_ERROR">1</validValue>
+            <validValue name="LATE_REPORT">2</validValue>
+            <validValue name="CANCEL_CORRECT">3</validValue>
         </enum>
     </types>
 
@@ -113,6 +183,290 @@
     <sbe:message name="Heartbeat" id="5" description="Heartbeat">
         <field name="timestamp" id="1" type="timestamp" description="Heartbeat timestamp"/>
         <field name="sequenceNumber" id="2" type="int64" description="Sequence number"/>
+    </sbe:message>
+
+    <!-- ============================================================ -->
+    <!-- Order Management Messages                                    -->
+    <!-- ============================================================ -->
+
+    <!-- NewOrderSingle: submit a new single order -->
+    <sbe:message name="NewOrderSingle" id="6" description="New order single">
+        <field name="timestamp" id="1" type="timestamp" description="Order submission timestamp"/>
+        <field name="orderId" id="2" type="int64" description="Unique order identifier"/>
+        <field name="clientOrderId" id="3" type="int64" description="Client-assigned order identifier"/>
+        <field name="side" id="4" type="Side" description="Buy or sell"/>
+        <field name="orderType" id="5" type="OrderType" description="Order type"/>
+        <field name="price" id="6" type="price" description="Limit price"/>
+        <field name="quantity" id="7" type="quantity" description="Order quantity"/>
+        <field name="timeInForce" id="8" type="TimeInForce" description="Time in force"/>
+        <field name="expireTime" id="9" type="timestamp" description="Expiration timestamp"/>
+        <field name="minQty" id="10" type="quantity" description="Minimum quantity"/>
+        <field name="maxFloor" id="11" type="quantity" description="Maximum floor quantity"/>
+        <data name="symbol" id="12" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- OrderCancelRequest: request cancellation of an existing order -->
+    <sbe:message name="OrderCancelRequest" id="7" description="Order cancel request">
+        <field name="timestamp" id="1" type="timestamp" description="Cancel request timestamp"/>
+        <field name="origClientOrderId" id="2" type="int64" description="Original client order identifier"/>
+        <field name="orderId" id="3" type="int64" description="Order identifier"/>
+        <field name="side" id="4" type="Side" description="Buy or sell"/>
+        <field name="quantity" id="5" type="quantity" description="Quantity to cancel"/>
+        <data name="symbol" id="6" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- OrderCancelReject: reject of a cancel request -->
+    <sbe:message name="OrderCancelReject" id="8" description="Order cancel reject">
+        <field name="timestamp" id="1" type="timestamp" description="Reject timestamp"/>
+        <field name="orderId" id="2" type="int64" description="Order identifier"/>
+        <field name="clientOrderId" id="3" type="int64" description="Client order identifier"/>
+        <field name="origClientOrderId" id="4" type="int64" description="Original client order identifier"/>
+        <field name="cancelRejectReason" id="5" type="CancelRejectReason" description="Reject reason"/>
+        <data name="symbol" id="6" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- ExecutionReport: report on order execution status -->
+    <sbe:message name="ExecutionReport" id="9" description="Execution report">
+        <field name="timestamp" id="1" type="timestamp" description="Execution timestamp"/>
+        <field name="orderId" id="2" type="int64" description="Order identifier"/>
+        <field name="clientOrderId" id="3" type="int64" description="Client order identifier"/>
+        <field name="side" id="4" type="Side" description="Buy or sell"/>
+        <field name="execType" id="5" type="ExecType" description="Execution type"/>
+        <field name="ordStatus" id="6" type="OrdStatus" description="Order status"/>
+        <field name="lastPrice" id="7" type="price" description="Last execution price"/>
+        <field name="lastQty" id="8" type="quantity" description="Last execution quantity"/>
+        <field name="leavesQty" id="9" type="quantity" description="Remaining quantity"/>
+        <field name="cumQty" id="10" type="quantity" description="Cumulative filled quantity"/>
+        <field name="avgPrice" id="11" type="price" description="Average execution price"/>
+        <field name="tradeId" id="12" type="int64" description="Trade identifier"/>
+        <data name="symbol" id="13" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- OrderStatusRequest: request current status of an order -->
+    <sbe:message name="OrderStatusRequest" id="10" description="Order status request">
+        <field name="timestamp" id="1" type="timestamp" description="Request timestamp"/>
+        <field name="orderId" id="2" type="int64" description="Order identifier"/>
+        <field name="clientOrderId" id="3" type="int64" description="Client order identifier"/>
+        <field name="side" id="4" type="Side" description="Buy or sell"/>
+        <data name="symbol" id="5" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- MassCancelRequest: cancel all orders matching criteria -->
+    <sbe:message name="MassCancelRequest" id="11" description="Mass cancel request">
+        <field name="timestamp" id="1" type="timestamp" description="Request timestamp"/>
+        <field name="marketSegmentId" id="2" type="int32" description="Market segment identifier"/>
+        <field name="transactTime" id="3" type="timestamp" description="Transaction timestamp"/>
+        <data name="senderId" id="4" type="varStringEncoding" description="Sender identifier"/>
+        <data name="targetCompId" id="5" type="varStringEncoding" description="Target component identifier"/>
+        <data name="symbol" id="6" type="varStringEncoding" description="Symbol (empty for all symbols)"/>
+    </sbe:message>
+
+    <!-- ============================================================ -->
+    <!-- Market Data Messages                                         -->
+    <!-- ============================================================ -->
+
+    <!-- MarketStatistics: OHLCV and aggregate statistics -->
+    <sbe:message name="MarketStatistics" id="12" description="Market statistics">
+        <field name="timestamp" id="1" type="timestamp" description="Statistics timestamp"/>
+        <field name="openPrice" id="2" type="price" description="Opening price"/>
+        <field name="highPrice" id="3" type="price" description="High price"/>
+        <field name="lowPrice" id="4" type="price" description="Low price"/>
+        <field name="closePrice" id="5" type="price" description="Closing price"/>
+        <field name="vwap" id="6" type="price" description="Volume-weighted average price"/>
+        <field name="totalVolume" id="7" type="quantity" description="Total volume"/>
+        <field name="tradeCount" id="8" type="int32" description="Number of trades"/>
+        <field name="totalValue" id="9" type="int64" description="Total traded value"/>
+        <field name="startTimestamp" id="10" type="timestamp" description="Period start timestamp"/>
+        <field name="endTimestamp" id="11" type="timestamp" description="Period end timestamp"/>
+        <data name="symbol" id="12" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- IndicatorUpdate: technical indicator value update -->
+    <sbe:message name="IndicatorUpdate" id="13" description="Technical indicator update">
+        <field name="timestamp" id="1" type="timestamp" description="Update timestamp"/>
+        <field name="indicatorId" id="2" type="int32" description="Indicator identifier"/>
+        <field name="indicatorType" id="3" type="uint8" description="Indicator type"/>
+        <field name="value" id="4" type="int64" description="Indicator value"/>
+        <field name="signalStrength" id="5" type="int8" description="Signal strength"/>
+        <field name="period" id="6" type="int16" description="Indicator period"/>
+        <field name="referenceValue" id="7" type="int64" description="Reference value"/>
+        <field name="triggerLevel" id="8" type="int64" description="Trigger level"/>
+        <data name="symbol" id="9" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- OrderBookSnapshot: full order book with bid/ask levels -->
+    <sbe:message name="OrderBookSnapshot" id="14" description="Order book snapshot">
+        <field name="timestamp" id="1" type="timestamp" description="Snapshot timestamp"/>
+        <field name="sequenceNumber" id="2" type="int64" description="Sequence number"/>
+        <field name="numLevels" id="3" type="int32" description="Number of levels"/>
+
+        <!-- Repeating group for bid levels -->
+        <group name="bids" id="4" description="Bid price levels">
+            <field name="price" id="5" type="price" description="Bid price"/>
+            <field name="quantity" id="6" type="quantity" description="Bid quantity"/>
+            <field name="numOrders" id="7" type="int32" description="Number of orders at this level"/>
+        </group>
+
+        <!-- Repeating group for ask levels -->
+        <group name="asks" id="8" description="Ask price levels">
+            <field name="price" id="9" type="price" description="Ask price"/>
+            <field name="quantity" id="10" type="quantity" description="Ask quantity"/>
+            <field name="numOrders" id="11" type="int32" description="Number of orders at this level"/>
+        </group>
+
+        <data name="symbol" id="12" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- TradeSummary: periodic trade summary -->
+    <sbe:message name="TradeSummary" id="15" description="Trade summary">
+        <field name="timestamp" id="1" type="timestamp" description="Summary timestamp"/>
+        <field name="openPrice" id="2" type="price" description="Opening price"/>
+        <field name="highPrice" id="3" type="price" description="High price"/>
+        <field name="lowPrice" id="4" type="price" description="Low price"/>
+        <field name="closePrice" id="5" type="price" description="Closing price"/>
+        <field name="volume" id="6" type="quantity" description="Total volume"/>
+        <field name="vwap" id="7" type="price" description="Volume-weighted average price"/>
+        <field name="numTrades" id="8" type="int32" description="Number of trades"/>
+        <field name="turnover" id="9" type="int64" description="Total turnover"/>
+        <data name="symbol" id="10" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- ============================================================ -->
+    <!-- Risk / Portfolio Messages                                    -->
+    <!-- ============================================================ -->
+
+    <!-- RiskAlert: risk threshold breach notification -->
+    <sbe:message name="RiskAlert" id="16" description="Risk alert">
+        <field name="timestamp" id="1" type="timestamp" description="Alert timestamp"/>
+        <field name="alertId" id="2" type="int64" description="Unique alert identifier"/>
+        <field name="alertType" id="3" type="AlertType" description="Alert type"/>
+        <field name="alertLevel" id="4" type="AlertLevel" description="Alert severity"/>
+        <field name="currentValue" id="5" type="int64" description="Current metric value"/>
+        <field name="thresholdValue" id="6" type="int64" description="Threshold value"/>
+        <field name="currentExposure" id="7" type="int64" description="Current exposure"/>
+        <field name="maxExposure" id="8" type="int64" description="Maximum allowed exposure"/>
+        <data name="symbol" id="9" type="varStringEncoding" description="Symbol"/>
+        <data name="portfolioId" id="10" type="varStringEncoding" description="Portfolio identifier"/>
+        <data name="message" id="11" type="varStringEncoding" description="Alert message"/>
+    </sbe:message>
+
+    <!-- PositionUpdate: position change notification -->
+    <sbe:message name="PositionUpdate" id="17" description="Position update">
+        <field name="timestamp" id="1" type="timestamp" description="Update timestamp"/>
+        <field name="accountId" id="2" type="int64" description="Account identifier"/>
+        <field name="side" id="3" type="Side" description="Position side"/>
+        <field name="quantity" id="4" type="quantity" description="Position quantity"/>
+        <field name="avgEntryPrice" id="5" type="price" description="Average entry price"/>
+        <field name="currentPrice" id="6" type="price" description="Current market price"/>
+        <field name="unrealizedPnl" id="7" type="int64" description="Unrealized profit and loss"/>
+        <field name="realizedPnl" id="8" type="int64" description="Realized profit and loss"/>
+        <field name="positionValue" id="9" type="int64" description="Position value"/>
+        <field name="marginUsed" id="10" type="int64" description="Margin used"/>
+        <data name="symbol" id="11" type="varStringEncoding" description="Symbol"/>
+    </sbe:message>
+
+    <!-- PnLReport: profit and loss report -->
+    <sbe:message name="PnLReport" id="18" description="PnL report">
+        <field name="timestamp" id="1" type="timestamp" description="Report timestamp"/>
+        <field name="accountId" id="2" type="int64" description="Account identifier"/>
+        <field name="realizedPnl" id="3" type="int64" description="Realized profit and loss"/>
+        <field name="unrealizedPnl" id="4" type="int64" description="Unrealized profit and loss"/>
+        <field name="totalPnl" id="5" type="int64" description="Total profit and loss"/>
+        <field name="tradingFees" id="6" type="int64" description="Trading fees"/>
+        <field name="commissions" id="7" type="int64" description="Commissions"/>
+        <field name="dailyPnl" id="8" type="int64" description="Daily profit and loss"/>
+        <field name="weeklyPnl" id="9" type="int64" description="Weekly profit and loss"/>
+        <field name="monthlyPnl" id="10" type="int64" description="Monthly profit and loss"/>
+        <field name="winRate" id="11" type="int32" description="Win rate (basis points)"/>
+        <field name="sharpeRatio" id="12" type="int32" description="Sharpe ratio (scaled by 10000)"/>
+        <data name="portfolioId" id="13" type="varStringEncoding" description="Portfolio identifier"/>
+    </sbe:message>
+
+    <!-- PortfolioSnapshot: full portfolio state -->
+    <sbe:message name="PortfolioSnapshot" id="19" description="Portfolio snapshot">
+        <field name="timestamp" id="1" type="timestamp" description="Snapshot timestamp"/>
+        <field name="totalValue" id="2" type="int64" description="Total portfolio value"/>
+        <field name="cashBalance" id="3" type="int64" description="Cash balance"/>
+        <field name="marginAvailable" id="4" type="int64" description="Available margin"/>
+        <field name="marginUsed" id="5" type="int64" description="Used margin"/>
+        <field name="numPositions" id="6" type="int32" description="Number of positions"/>
+        <field name="dailyPnl" id="7" type="int64" description="Daily profit and loss"/>
+        <field name="totalPnl" id="8" type="int64" description="Total profit and loss"/>
+        <field name="riskScore" id="9" type="int32" description="Risk score"/>
+        <field name="leverageRatio" id="10" type="int32" description="Leverage ratio (basis points)"/>
+
+        <!-- Repeating group for positions -->
+        <group name="positions" id="11" description="Portfolio positions">
+            <field name="quantity" id="12" type="quantity" description="Position quantity"/>
+            <field name="avgPrice" id="13" type="price" description="Average entry price"/>
+            <field name="currentPrice" id="14" type="price" description="Current market price"/>
+            <field name="unrealizedPnl" id="15" type="int64" description="Unrealized profit and loss"/>
+            <data name="symbol" id="16" type="varStringEncoding" description="Symbol"/>
+        </group>
+
+        <data name="portfolioId" id="17" type="varStringEncoding" description="Portfolio identifier"/>
+    </sbe:message>
+
+    <!-- MarginCall: margin deficit notification -->
+    <sbe:message name="MarginCall" id="20" description="Margin call">
+        <field name="timestamp" id="1" type="timestamp" description="Margin call timestamp"/>
+        <field name="accountId" id="2" type="int64" description="Account identifier"/>
+        <field name="marginDeficit" id="3" type="int64" description="Margin deficit amount"/>
+        <field name="currentMargin" id="4" type="int64" description="Current margin"/>
+        <field name="requiredMargin" id="5" type="int64" description="Required margin"/>
+        <field name="callDeadline" id="6" type="timestamp" description="Deadline to meet margin call"/>
+
+        <!-- Repeating group for positions contributing to margin call -->
+        <group name="positions" id="7" description="Positions contributing to margin call">
+            <field name="exposure" id="8" type="int64" description="Position exposure"/>
+            <field name="marginUsed" id="9" type="int64" description="Margin used by position"/>
+            <data name="symbol" id="10" type="varStringEncoding" description="Symbol"/>
+        </group>
+
+        <data name="portfolioId" id="11" type="varStringEncoding" description="Portfolio identifier"/>
+    </sbe:message>
+
+    <!-- ============================================================ -->
+    <!-- Admin / Ops Messages                                         -->
+    <!-- ============================================================ -->
+
+    <!-- SystemEvent: system-level event notification -->
+    <sbe:message name="SystemEvent" id="21" description="System event">
+        <field name="timestamp" id="1" type="timestamp" description="Event timestamp"/>
+        <field name="eventType" id="2" type="SystemEventType" description="System event type"/>
+        <field name="severity" id="3" type="AlertLevel" description="Severity level"/>
+        <field name="sequenceNumber" id="4" type="int64" description="Event sequence number"/>
+        <data name="source" id="5" type="varStringEncoding" description="Event source"/>
+        <data name="description" id="6" type="varStringEncoding" description="Event description"/>
+        <data name="affectedComponent" id="7" type="varStringEncoding" description="Affected component"/>
+        <data name="recoveryAction" id="8" type="varStringEncoding" description="Recommended recovery action"/>
+    </sbe:message>
+
+    <!-- TradeCorrect: trade correction notification -->
+    <sbe:message name="TradeCorrect" id="22" description="Trade correction">
+        <field name="timestamp" id="1" type="timestamp" description="Correction timestamp"/>
+        <field name="origTradeId" id="2" type="int64" description="Original trade identifier"/>
+        <field name="correctedTradeId" id="3" type="int64" description="Corrected trade identifier"/>
+        <field name="origPrice" id="4" type="price" description="Original price"/>
+        <field name="correctedPrice" id="5" type="price" description="Corrected price"/>
+        <field name="origQty" id="6" type="quantity" description="Original quantity"/>
+        <field name="correctedQty" id="7" type="quantity" description="Corrected quantity"/>
+        <field name="correctionType" id="8" type="uint8" description="Correction type"/>
+        <data name="symbol" id="9" type="varStringEncoding" description="Symbol"/>
+        <data name="reason" id="10" type="varStringEncoding" description="Correction reason"/>
+        <data name="operatorId" id="11" type="varStringEncoding" description="Operator identifier"/>
+    </sbe:message>
+
+    <!-- TradeCancel: trade cancellation/bust notification -->
+    <sbe:message name="TradeCancel" id="23" description="Trade cancel">
+        <field name="timestamp" id="1" type="timestamp" description="Cancel timestamp"/>
+        <field name="origTradeId" id="2" type="int64" description="Original trade identifier"/>
+        <field name="canceledPrice" id="3" type="price" description="Canceled trade price"/>
+        <field name="canceledQty" id="4" type="quantity" description="Canceled trade quantity"/>
+        <field name="side" id="5" type="Side" description="Trade side"/>
+        <field name="bustReason" id="6" type="TradeBustReason" description="Bust reason"/>
+        <data name="symbol" id="7" type="varStringEncoding" description="Symbol"/>
+        <data name="operatorId" id="8" type="varStringEncoding" description="Operator identifier"/>
     </sbe:message>
 
 </sbe:messageSchema>

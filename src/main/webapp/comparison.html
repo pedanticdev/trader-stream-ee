@@ -604,7 +604,9 @@
                     <div class="dropdown-menu">
                         <a href="index.html">Dashboard</a>
                         <a href="health.html">Health Check</a>
+                        <a href="trading.html">Trading Desk</a>
                         <a href="blog.html">Blog</a>
+                        <a href="help.html">Help</a>
                     </div>
                 </div>
             </nav>
@@ -654,15 +656,11 @@
                 <div class="control-section-title">Manual Scenario Control</div>
                 <div class="control-row">
                     <label for="scenario-select" style="font-weight: 600;">Scenario:</label>
-                    <select id="scenario-select" class="scenario-select">
-                        <option value="">Select a scenario...</option>
-                        <option value="STEADY_LOAD">Steady Load (Baseline)</option>
-                        <option value="GROWING_HEAP">Growing Heap</option>
-                        <option value="PROMOTION_STORM">Promotion Storm</option>
-                        <option value="FRAGMENTATION">Fragmentation</option>
-                        <option value="CROSS_GEN_REFS">Cross-Gen References</option>
-                        <option value="OFF">Off (No Pressure)</option>
-                    </select>
+                    <div id="scenario-select-container">
+                        <select id="scenario-select" class="scenario-select">
+                            <option value="">Loading scenarios...</option>
+                        </select>
+                    </div>
                     <button id="apply-both-btn" class="btn btn-primary">Apply to Both</button>
                     <button id="reset-both-btn" class="btn btn-warning">Reset Both</button>
                 </div>
@@ -774,6 +772,7 @@
         </div>
     </div>
 
+    <script src="pressure-modes.js"></script>
     <script>
         // Chart instances
         let c4Chart = null;
@@ -807,7 +806,7 @@
                 // Toggle visibility of comparison elements based on cluster mode
                 const comparisonGrid = document.querySelector('.comparison-grid');
                 const deltaSection = document.querySelector('.delta-section');
-                const presetControls = document.querySelector('.preset-controls');
+                const presetControls = document.querySelector('.comparison-controls');
                 const clusterWarning = document.getElementById('cluster-warning');
 
                 if (isClusterMode) {
@@ -830,7 +829,7 @@
                 // Default to showing warning on error
                 const comparisonGrid = document.querySelector('.comparison-grid');
                 const deltaSection = document.querySelector('.delta-section');
-                const presetControls = document.querySelector('.preset-controls');
+                const presetControls = document.querySelector('.comparison-controls');
                 const clusterWarning = document.getElementById('cluster-warning');
                 comparisonGrid?.classList.add('hidden');
                 deltaSection?.classList.add('hidden');
@@ -1092,6 +1091,13 @@
             }
 
             initCharts();
+
+            // Load pressure modes from backend
+            if (typeof PressureModes !== 'undefined') {
+                PressureModes.load(document.getElementById('scenario-select-container'), {
+                    layout: 'select'
+                });
+            }
 
             // Connect to both clusters
             const c4Ws = connectWebSocket('c4', 'ws://localhost:8080/trader-stream-ee/market-data');
