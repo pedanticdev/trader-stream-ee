@@ -36,7 +36,7 @@ public class DemoPresetService {
     private HazelcastInstance hazelcastInstance;
 
     private Map<String, PresetExecutionContext> getActiveExecutions() {
-        if(hazelcastInstance != null) {
+        if (hazelcastInstance != null) {
             return hazelcastInstance.getMap(EXECUTIONS_MAP_NAME);
         }
         return Map.of();
