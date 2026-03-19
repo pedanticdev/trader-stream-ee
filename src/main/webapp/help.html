@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeStreamEE - Help &amp; Documentation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header { margin-bottom: 40px; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover { color: #1d4ed8; }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: white;
+            padding: 24px 32px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 40px;
+        }
+
+        .toc h3 {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 12px;
+            margin-top: 0;
+        }
+
+        .toc ol {
+            padding-left: 0;
+            margin: 0;
+            list-style: none;
+            column-count: 2;
+        }
+
+        .toc li { margin-bottom: 6px; }
+
+        .toc a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+
+        .toc a:hover { text-decoration: underline; }
+
+        /* Article content */
+        article {
+            background: white;
+            padding: 48px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-top: 48px;
+            margin-bottom: 20px;
+            color: #1e293b;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        h2:first-of-type { margin-top: 0; }
+
+        h3 {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            color: #334155;
+        }
+
+        p { margin-bottom: 16px; color: #475569; }
+
+        strong { color: #1e293b; font-weight: 700; }
+
+        a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+        a:hover { text-decoration: underline; }
+
+        ul, ol { margin: 16px 0; padding-left: 32px; }
+        li { margin-bottom: 12px; color: #475569; }
+
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.88em;
+            color: #dc2626;
+        }
+
+        pre {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 24px 0;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: #e2e8f0;
+            font-size: 0.88em;
+            line-height: 1.6;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.92em;
+        }
+
+        thead th {
+            text-align: left;
+            padding: 12px 16px;
+            background: #f1f5f9;
+            color: #334155;
+            font-weight: 600;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        tbody td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #475569;
+            vertical-align: top;
+        }
+
+        tbody tr:hover { background: #f8fafc; }
+
+        .term { font-weight: 600; color: #1e293b; white-space: nowrap; }
+
+        /* Cards */
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #3b82f6;
+            padding: 20px 24px;
+            margin: 24px 0;
+            border-radius: 8px;
+        }
+
+        .info-card p { margin: 0; color: #334155; }
+
+        .warn-card {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-left: 4px solid #f59e0b;
+            padding: 20px 24px;
+            margin: 24px 0;
+            border-radius: 8px;
+        }
+
+        .warn-card p { margin: 0; color: #92400e; }
+
+        .endpoint-group {
+            margin-bottom: 28px;
+        }
+
+        .endpoint-group h3 { margin-bottom: 8px; }
+
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            vertical-align: middle;
+        }
+
+        .method-get { background: #d1fae5; color: #065f46; }
+        .method-post { background: #dbeafe; color: #1e40af; }
+        .method-delete { background: #fee2e2; color: #991b1b; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .badge-memory { background: #fee2e2; color: #991b1b; }
+        .badge-cpu { background: #dbeafe; color: #1e40af; }
+
+        footer {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            color: #94a3b8;
+            font-size: 0.85em;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 20px 12px; }
+            article { padding: 24px; }
+            h1 { font-size: 1.8em; }
+            .toc ol { column-count: 1; }
+            table { font-size: 0.82em; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <a href="index.html" class="back-link">&larr; Back to Dashboard</a>
+        <h1>Help &amp; Documentation</h1>
+        <p class="subtitle">Reference guide for TradeStreamEE: architecture, terminology, API, configuration, and deployment.</p>
+    </header>
+
+    <nav class="toc">
+        <h3>Contents</h3>
+        <ol>
+            <li><a href="#overview">What is TradeStreamEE?</a></li>
+            <li><a href="#glossary">Trading Terminology</a></li>
+            <li><a href="#gc-testing">GC Stress Testing</a></li>
+            <li><a href="#api">REST API Reference</a></li>
+            <li><a href="#websocket">WebSocket Endpoints</a></li>
+            <li><a href="#config">Configuration</a></li>
+            <li><a href="#deployment">Deployment</a></li>
+            <li><a href="#stack">Technology Stack</a></li>
+        </ol>
+    </nav>
+
+    <article>
+
+        <!-- ============================================================ -->
+        <h2 id="overview">What is TradeStreamEE?</h2>
+        <!-- ============================================================ -->
+
+        <p>TradeStreamEE is a GC benchmarking platform built on Jakarta EE 11 and Payara Micro 7. It generates realistic allocation patterns by running an actual trading system under load, then measures how different garbage collectors (Azul C4 vs G1) handle the pressure.</p>
+
+        <div class="info-card">
+            <p>The "trading" domain is not window dressing. An order matching engine creates and tears down <code>Order</code>, <code>Execution</code>, and <code>OrderBookEntry</code> objects at HFT rates. A risk engine computes Value-at-Risk with Monte Carlo simulation. A portfolio manager tracks positions and calculates Sharpe ratios. This produces real allocation patterns from real business logic.</p>
+        </div>
+
+        <h3>Subsystem Overview</h3>
+        <table>
+            <thead>
+                <tr><th>Subsystem</th><th>Package</th><th>What It Does</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="term">Market Data Pipeline</td>
+                    <td><code>aeron</code></td>
+                    <td>Publishes synthetic trades/quotes via Aeron IPC with SBE encoding. Subscribes via fragment handler, decodes, broadcasts via Hazelcast ITopic.</td>
+                </tr>
+                <tr>
+                    <td class="term">Matching Engine</td>
+                    <td><code>matching</code></td>
+                    <td>Price-time priority order book. Matches incoming orders against resting orders. Supports limit orders, stop orders, iceberg orders. Tracks execution history.</td>
+                </tr>
+                <tr>
+                    <td class="term">Risk Engine</td>
+                    <td><code>risk</code></td>
+                    <td>Value-at-Risk (parametric, historical, Monte Carlo), position limits, stress testing (crash, volatility spike, liquidity crisis). Tracks per-symbol exposure.</td>
+                </tr>
+                <tr>
+                    <td class="term">Portfolio Manager</td>
+                    <td><code>portfolio</code></td>
+                    <td>Tracks cash balance, positions, NAV. Computes performance metrics (Sharpe ratio, max drawdown, returns). Generates rebalance plans.</td>
+                </tr>
+                <tr>
+                    <td class="term">Technical Analysis</td>
+                    <td><code>analysis</code></td>
+                    <td>Aggregates ticks into OHLCV bars via <code>BarAggregator</code>. Computes indicators (SMA, EMA, RSI, MACD, Bollinger Bands, ATR) using ta4j.</td>
+                </tr>
+                <tr>
+                    <td class="term">GC Stress Engine</td>
+                    <td><code>pressure</code></td>
+                    <td>12 workloads (5 memory scenarios + 7 CPU workloads) that generate adversarial allocation patterns. Dispatched via CDI from <code>MemoryPressureService</code>.</td>
+                </tr>
+            </tbody>
+        </table>
+
+
+        <!-- ============================================================ -->
+        <h2 id="glossary">Trading Terminology</h2>
+        <!-- ============================================================ -->
+
+        <table>
+            <thead>
+                <tr><th>Term</th><th>Definition</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="term">Bid</td>
+                    <td>The highest price a buyer is willing to pay for a security at a given moment. In an order book, bids are sorted in descending order (best bid = highest).</td>
+                </tr>
+                <tr>
+                    <td class="term">Ask (Offer)</td>
+                    <td>The lowest price a seller is willing to accept. Asks are sorted in ascending order (best ask = lowest).</td>
+                </tr>
+                <tr>
+                    <td class="term">Spread</td>
+                    <td>The difference between the best ask and best bid. A tight spread indicates high liquidity. A wide spread indicates low liquidity or high volatility.</td>
+                </tr>
+                <tr>
+                    <td class="term">Order Book</td>
+                    <td>A data structure containing all outstanding buy and sell orders for a symbol. The matching engine maintains two sides: bids (buyers) and asks (sellers), each sorted by price-time priority.</td>
+                </tr>
+                <tr>
+                    <td class="term">Order Matching</td>
+                    <td>The process of pairing incoming orders with resting orders in the book. When a buy order's price meets or exceeds a sell order's price, they match and generate an <code>Execution</code>.</td>
+                </tr>
+                <tr>
+                    <td class="term">Fill</td>
+                    <td>An execution of an order. A <strong>partial fill</strong> means only some of the order quantity was matched. A <strong>full fill</strong> means the entire quantity was matched.</td>
+                </tr>
+                <tr>
+                    <td class="term">Limit Order</td>
+                    <td>An order to buy or sell at a specified price or better. A buy limit at $100 executes only at $100 or lower. A sell limit at $100 executes only at $100 or higher.</td>
+                </tr>
+                <tr>
+                    <td class="term">Market Order</td>
+                    <td>An order that executes immediately at the best available price in the book. No price guarantee.</td>
+                </tr>
+                <tr>
+                    <td class="term">Iceberg Order</td>
+                    <td>A large order where only a fraction (the "display quantity") is visible in the book. As the visible portion is filled, more is revealed. Used to avoid market impact.</td>
+                </tr>
+                <tr>
+                    <td class="term">Stop Order</td>
+                    <td>An order that activates when the price reaches a specified stop price. Becomes a market order once triggered. Used for stop-loss or breakout strategies.</td>
+                </tr>
+                <tr>
+                    <td class="term">Position</td>
+                    <td>Net holdings in a symbol. Positive = long (you own it). Negative = short (you sold borrowed shares). The matching engine tracks positions in <code>PositionService</code>.</td>
+                </tr>
+                <tr>
+                    <td class="term">PnL</td>
+                    <td><strong>Realized PnL</strong>: profit/loss from closed positions. <strong>Unrealized PnL</strong>: mark-to-market gain/loss on open positions.</td>
+                </tr>
+                <tr>
+                    <td class="term">Price-Time Priority</td>
+                    <td>The matching rule used by this engine. The best price always matches first. Within the same price level, the earliest order (time priority) matches first.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Technical Analysis Indicators</h3>
+        <table>
+            <thead>
+                <tr><th>Indicator</th><th>Type</th><th>What It Measures</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="term">SMA</td>
+                    <td>Trend</td>
+                    <td>Simple Moving Average: arithmetic mean of closing prices over N periods. Smooths short-term noise to reveal trend direction.</td>
+                </tr>
+                <tr>
+                    <td class="term">EMA</td>
+                    <td>Trend</td>
+                    <td>Exponential Moving Average: gives more weight to recent prices. Reacts faster to price changes than SMA.</td>
+                </tr>
+                <tr>
+                    <td class="term">RSI</td>
+                    <td>Momentum</td>
+                    <td>Relative Strength Index: bounded oscillator (0-100). Above 70 = overbought. Below 30 = oversold. Measures speed and magnitude of price changes.</td>
+                </tr>
+                <tr>
+                    <td class="term">MACD</td>
+                    <td>Trend / Momentum</td>
+                    <td>Moving Average Convergence Divergence: difference between a fast EMA (12) and slow EMA (26). A signal line (9-period EMA of MACD) generates buy/sell signals on crossovers.</td>
+                </tr>
+                <tr>
+                    <td class="term">Bollinger Bands</td>
+                    <td>Volatility</td>
+                    <td>Three lines: middle (SMA), upper (SMA + k * stddev), lower (SMA - k * stddev, default k=2). Bands widen when volatility increases, contract when it decreases.</td>
+                </tr>
+                <tr>
+                    <td class="term">ATR</td>
+                    <td>Volatility</td>
+                    <td>Average True Range: measures the average range between high and low prices over N periods. Used to set stop-loss distances and assess volatility.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Risk Metrics</h3>
+        <table>
+            <thead>
+                <tr><th>Metric</th><th>Definition</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="term">VaR (Value-at-Risk)</td>
+                    <td>The maximum expected loss over a time horizon at a confidence level. Example: 95% 1-day VaR of $10K means "on the worst 5% of days, we expect to lose more than $10K." Computed via parametric (variance-covariance), historical simulation, or Monte Carlo.</td>
+                </tr>
+                <tr>
+                    <td class="term">Sharpe Ratio</td>
+                    <td>Risk-adjusted return: (portfolio return - risk-free rate) / portfolio standard deviation. Higher = more return per unit of risk. Above 1.0 is good; above 2.0 is excellent.</td>
+                </tr>
+                <tr>
+                    <td class="term">Max Drawdown</td>
+                    <td>The largest peak-to-trough decline in portfolio value, expressed as a percentage. Measures the worst-case loss an investor would have experienced.</td>
+                </tr>
+                <tr>
+                    <td class="term">Stress Testing</td>
+                    <td>Simulating extreme market scenarios to estimate potential losses. This system implements three: <strong>crash</strong> (sudden price drop), <strong>volatility spike</strong> (3x normal volatility), and <strong>liquidity crisis</strong> (50% wider spreads).</td>
+                </tr>
+            </tbody>
+        </table>
+
+
+        <!-- ============================================================ -->
+        <h2 id="gc-testing">GC Stress Testing</h2>
+        <!-- ============================================================ -->
+
+        <p>The stress testing framework generates adversarial allocation patterns to expose GC weaknesses. 12 workloads in two categories:</p>
+
+        <h3>Memory Scenarios <span class="badge badge-memory">5 workloads</span></h3>
+        <p>Directly manipulate byte arrays to target specific G1 architectural weaknesses. All defined in <code>AllocationMode.java</code>.</p>
+        <table>
+            <thead>
+                <tr><th>Scenario</th><th>Rate</th><th>Live Set</th><th>G1 Weakness</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>STEADY_LOAD</code></td>
+                    <td>200 MB/s</td>
+                    <td>512 MB</td>
+                    <td>Young GC pause frequency</td>
+                </tr>
+                <tr>
+                    <td><code>GROWING_HEAP</code></td>
+                    <td>150 MB/s</td>
+                    <td>100 MB &rarr; 2 GB</td>
+                    <td>Mixed collection pause scaling</td>
+                </tr>
+                <tr>
+                    <td><code>PROMOTION_STORM</code></td>
+                    <td>300 MB/s</td>
+                    <td>1 GB (50% survival)</td>
+                    <td>Old generation collection</td>
+                </tr>
+                <tr>
+                    <td><code>FRAGMENTATION</code></td>
+                    <td>200 MB/s</td>
+                    <td>1 GB</td>
+                    <td>Compaction pauses</td>
+                </tr>
+                <tr>
+                    <td><code>CROSS_GEN_REFS</code></td>
+                    <td>150 MB/s</td>
+                    <td>800 MB old gen</td>
+                    <td>Remembered set overhead</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>CPU Workloads <span class="badge badge-cpu">7 workloads</span></h3>
+        <p>CDI beans implementing the <code>Workload</code> interface. Each runs real computation that generates short-lived objects as a side effect.</p>
+        <table>
+            <thead>
+                <tr><th>Workload</th><th>Rate</th><th>What It Stresses</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>COMPRESSION_CPU</code></td>
+                    <td>300 MB/s</td>
+                    <td>Gzip compress/decompress temp buffers</td>
+                </tr>
+                <tr>
+                    <td><code>SERIALIZATION_CPU</code></td>
+                    <td>250 MB/s</td>
+                    <td>Jakarta JSON object graph materialization</td>
+                </tr>
+                <tr>
+                    <td><code>CRYPTO_CPU</code></td>
+                    <td>200 MB/s</td>
+                    <td>SHA-256, HMAC-SHA256, AES-GCM encrypt/decrypt</td>
+                </tr>
+                <tr>
+                    <td><code>COLLECTION_CPU</code></td>
+                    <td>300 MB/s</td>
+                    <td>HashMap/TreeMap insert/lookup/remove churn</td>
+                </tr>
+                <tr>
+                    <td><code>STRING_CPU</code></td>
+                    <td>350 MB/s</td>
+                    <td>Regex, substring, StringBuilder, String.intern</td>
+                </tr>
+                <tr>
+                    <td><code>TRADING_MATCHING</code></td>
+                    <td>400 MB/s</td>
+                    <td>Order/Execution object churn via matching engine</td>
+                </tr>
+                <tr>
+                    <td><code>TECHNICAL_ANALYSIS</code></td>
+                    <td>300 MB/s</td>
+                    <td>ta4j indicator objects (SMA, EMA, RSI, MACD, BB, ATR)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="info-card">
+            <p><strong>Dispatch mechanism:</strong> <code>MemoryPressureService.setAllocationMode(mode)</code> dispatches to either a memory scenario (direct byte array manipulation) or a CPU workload (CDI bean via <code>Instance&lt;Workload&gt;</code>). Adding a new workload requires only: (1) a class implementing <code>Workload</code>, (2) an enum value in <code>WorkloadType</code>, (3) an entry in <code>AllocationMode</code>.</p>
+        </div>
+
+
+        <!-- ============================================================ -->
+        <h2 id="api">REST API Reference</h2>
+        <!-- ============================================================ -->
+
+        <p>All endpoints are prefixed with <code>/trader-stream-ee/api</code>. Responses are JSON.</p>
+
+        <div class="endpoint-group">
+            <h3>System &amp; Health</h3>
+            <table>
+                <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/status</code></td>
+                        <td>Instance name, uptime, JVM info, GC type</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/status/cluster</code></td>
+                        <td>Cluster membership (Hazelcast members)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/health/check</code></td>
+                        <td>Combined health (publisher, subscriber, WebSocket)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/health/ready</code></td>
+                        <td>Readiness probe (is publisher running?)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/health/live</code></td>
+                        <td>Liveness probe</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="endpoint-group">
+            <h3>GC &amp; Pressure Control</h3>
+            <table>
+                <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/gc/stats</code></td>
+                        <td>GC statistics: pause times, counts, allocation rates</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/gc/pauses</code></td>
+                        <td>Recent GC pause events (p50/p95/p99/max)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/gc/sla</code></td>
+                        <td>SLA violation counts by threshold (10ms, 50ms, 100ms)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/gc/comparison</code></td>
+                        <td>Side-by-side C4 vs G1 stats (fetches from both clusters)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/pressure/mode/{mode}</code></td>
+                        <td>Activate a stress workload. <code>{mode}</code> = any <code>AllocationMode</code> enum value (e.g. <code>STEADY_LOAD</code>, <code>TRADING_MATCHING</code>)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/pressure/status</code></td>
+                        <td>Current active mode, iteration count, bytes allocated</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/pressure/modes</code></td>
+                        <td>List all available workload modes</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="endpoint-group">
+            <h3>Matching &amp; Orders</h3>
+            <table>
+                <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/matching/order-book/{symbol}</code></td>
+                        <td>Order book snapshot (bid/ask levels with depth)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/matching/positions</code></td>
+                        <td>All positions (net quantity, average price, unrealized PnL)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/matching/positions/{symbol}</code></td>
+                        <td>Single position detail</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/matching/executions</code></td>
+                        <td>Execution history (paginated)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/matching/orders/submit</code></td>
+                        <td>Submit a new order (JSON body: symbol, side, type, price, quantity)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-delete">DELETE</span></td>
+                        <td><code>/matching/orders/{orderId}</code></td>
+                        <td>Cancel an existing order</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="endpoint-group">
+            <h3>Technical Analysis</h3>
+            <table>
+                <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/analysis/indicators</code></td>
+                        <td>All symbols with current indicator values</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/analysis/indicators/{symbol}</code></td>
+                        <td>Indicators for a symbol (SMA, EMA, RSI, MACD, BB, ATR)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/analysis/indicators/{symbol}/history</code></td>
+                        <td>Historical indicator snapshots (query param: <code>count</code>)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="endpoint-group">
+            <h3>Portfolio</h3>
+            <table>
+                <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/portfolio/snapshot</code></td>
+                        <td>Full portfolio snapshot (cash, positions, NAV, performance metrics)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/portfolio/metrics</code></td>
+                        <td>Performance metrics (Sharpe ratio, max drawdown, returns)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/portfolio/rebalance</code></td>
+                        <td>Generate a rebalance plan (JSON body: target weights map)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/portfolio/reset</code></td>
+                        <td>Reset portfolio to initial state ($1M cash, no positions)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="endpoint-group">
+            <h3>Risk</h3>
+            <table>
+                <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/risk/snapshot</code></td>
+                        <td>Risk snapshot for all tracked symbols</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/risk/{symbol}</code></td>
+                        <td>Risk detail for a symbol (VaR, position, limits)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/risk/var/{symbol}</code></td>
+                        <td>Value-at-Risk for a symbol (query param: <code>method</code> = PARAMETRIC, HISTORICAL, MONTE_CARLO)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/risk/stress</code></td>
+                        <td>Run all stress scenarios (crash, volatility spike, liquidity crisis)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/risk/exposure</code></td>
+                        <td>Exposure summary across all positions</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/risk/limits/{symbol}</code></td>
+                        <td>Set position limit for a symbol (JSON body: <code>limit</code> value)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="endpoint-group">
+            <h3>Business Impact</h3>
+            <table>
+                <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/business/impact</code></td>
+                        <td>Estimated revenue lost to GC pauses</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/business/config</code></td>
+                        <td>Business impact configuration (per-trade value, window)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/business/reset</code></td>
+                        <td>Reset business impact counters</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="endpoint-group">
+            <h3>Demo &amp; JFR</h3>
+            <table>
+                <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/demo/presets</code></td>
+                        <td>Available demo presets (YAML choreographies)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/demo/preset/{id}/start</code></td>
+                        <td>Start a demo preset sequence</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/demo/execution/{id}/step/{n}</code></td>
+                        <td>Advance a demo preset to step n</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/jfr/status</code></td>
+                        <td>JFR recording status</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/jfr/recording/start</code></td>
+                        <td>Start a JFR recording</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-post">POST</span></td>
+                        <td><code>/jfr/recording/stop</code></td>
+                        <td>Stop the current JFR recording</td>
+                    </tr>
+                    <tr>
+                        <td><span class="method method-get">GET</span></td>
+                        <td><code>/jfr/download/{filename}</code></td>
+                        <td>Download a JFR recording file</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+
+        <!-- ============================================================ -->
+        <h2 id="websocket">WebSocket Endpoints</h2>
+        <!-- ============================================================ -->
+
+        <table>
+            <thead>
+                <tr><th>Path</th><th>Purpose</th><th>Message Format</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>/market-data</code></td>
+                    <td>Streams trades, quotes, and market depth updates in real time</td>
+                    <td>JSON: trade/quote/depth events (1-in-50 sampling at high rates)</td>
+                </tr>
+                <tr>
+                    <td><code>/sla</code></td>
+                    <td>Pushes GC pause violation alerts</td>
+                    <td>JSON: warning (&gt;10ms), critical (&gt;50ms), severe (&gt;100ms)</td>
+                </tr>
+                <tr>
+                    <td><code>/executions</code></td>
+                    <td>Broadcasts order match events via Hazelcast ITopic</td>
+                    <td>JSON: execution reports with orderId, price, quantity, side</td>
+                </tr>
+                <tr>
+                    <td><code>/indicators</code></td>
+                    <td>Pushes technical analysis indicator snapshots</td>
+                    <td>JSON: SMA, EMA, RSI, MACD, BB, ATR values per symbol</td>
+                </tr>
+            </tbody>
+        </table>
+
+
+        <!-- ============================================================ -->
+        <h2 id="config">Configuration</h2>
+        <!-- ============================================================ -->
+
+        <p>All configuration uses MicroProfile Config. Override via environment variables or <code>microprofile-config.properties</code>.</p>
+
+        <h3>Ingestion &amp; Publisher</h3>
+        <table>
+            <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>TRADER_INGESTION_MODE</code></td>
+                    <td><code>AERON</code></td>
+                    <td>Data ingestion mode: <code>AERON</code> (shared memory IPC) or <code>DIRECT</code> (in-process, no Aeron)</td>
+                </tr>
+                <tr>
+                    <td><code>ENABLE_PUBLISHER</code></td>
+                    <td><code>true</code></td>
+                    <td>Whether this instance publishes market data. Set to <code>false</code> for pure distribution nodes.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Matching Engine</h3>
+        <table>
+            <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>matching.price.scale</code></td>
+                    <td><code>10000</code></td>
+                    <td>Price decimal precision. 10000 means prices are stored as cents (4 decimal places).</td>
+                </tr>
+                <tr>
+                    <td><code>matching.max.book.depth</code></td>
+                    <td><code>50</code></td>
+                    <td>Maximum price levels returned in order book snapshots.</td>
+                </tr>
+                <tr>
+                    <td><code>matching.max.history.size</code></td>
+                    <td><code>10000</code></td>
+                    <td>Maximum execution history entries retained.</td>
+                </tr>
+                <tr>
+                    <td><code>matching.default.tif</code></td>
+                    <td><code>GTC</code></td>
+                    <td>Default time-in-force for orders (GTC = Good Till Cancelled).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Technical Analysis</h3>
+        <table>
+            <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>analysis.sma.period</code></td>
+                    <td><code>20</code></td>
+                    <td>SMA lookback period</td>
+                </tr>
+                <tr>
+                    <td><code>analysis.ema.period</code></td>
+                    <td><code>12</code></td>
+                    <td>EMA lookback period</td>
+                </tr>
+                <tr>
+                    <td><code>analysis.rsi.period</code></td>
+                    <td><code>14</code></td>
+                    <td>RSI lookback period</td>
+                </tr>
+                <tr>
+                    <td><code>analysis.macd.fast</code></td>
+                    <td><code>12</code></td>
+                    <td>MACD fast EMA period</td>
+                </tr>
+                <tr>
+                    <td><code>analysis.macd.slow</code></td>
+                    <td><code>26</code></td>
+                    <td>MACD slow EMA period</td>
+                </tr>
+                <tr>
+                    <td><code>analysis.bb.period</code></td>
+                    <td><code>20</code></td>
+                    <td>Bollinger Bands SMA period</td>
+                </tr>
+                <tr>
+                    <td><code>analysis.bb.stddev</code></td>
+                    <td><code>2.0</code></td>
+                    <td>Bollinger Bands standard deviation multiplier</td>
+                </tr>
+                <tr>
+                    <td><code>analysis.atr.period</code></td>
+                    <td><code>14</code></td>
+                    <td>ATR lookback period</td>
+                </tr>
+                <tr>
+                    <td><code>analysis.bar.duration.seconds</code></td>
+                    <td><code>60</code></td>
+                    <td>OHLCV bar aggregation window</td>
+                </tr>
+                <tr>
+                    <td><code>analysis.max.bars</code></td>
+                    <td><code>500</code></td>
+                    <td>Maximum bars retained per symbol</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Risk Engine</h3>
+        <table>
+            <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>risk.var.confidence</code></td>
+                    <td><code>0.95</code></td>
+                    <td>VaR confidence level (95% = 1-in-20 chance of exceeding)</td>
+                </tr>
+                <tr>
+                    <td><code>risk.var.lookback.bars</code></td>
+                    <td><code>252</code></td>
+                    <td>Number of bars for historical VaR calculation (252 = 1 year of daily bars)</td>
+                </tr>
+                <tr>
+                    <td><code>risk.position.limit.default</code></td>
+                    <td><code>10000</code></td>
+                    <td>Default position notional limit per symbol</td>
+                </tr>
+                <tr>
+                    <td><code>risk.stress.crash.percent</code></td>
+                    <td><code>20</code></td>
+                    <td>Crash stress: sudden price drop percentage</td>
+                </tr>
+                <tr>
+                    <td><code>risk.stress.vol.spike</code></td>
+                    <td><code>3.0</code></td>
+                    <td>Volatility spike: multiplier on normal volatility</td>
+                </tr>
+                <tr>
+                    <td><code>risk.stress.liquidity.widen</code></td>
+                    <td><code>50</code></td>
+                    <td>Liquidity crisis: spread widening percentage</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Portfolio</h3>
+        <table>
+            <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>portfolio.initial.capital</code></td>
+                    <td><code>1000000</code></td>
+                    <td>Starting cash balance ($1,000,000)</td>
+                </tr>
+                <tr>
+                    <td><code>portfolio.risk.free.rate</code></td>
+                    <td><code>0.02</code></td>
+                    <td>Risk-free rate for Sharpe ratio calculation (2%)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Business Impact</h3>
+        <table>
+            <thead><tr><th>Property</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>business.impact.per.trade</code></td>
+                    <td><code>25000</code></td>
+                    <td>Average revenue per trade ($25,000)</td>
+                </tr>
+                <tr>
+                    <td><code>business.impact.window.seconds</code></td>
+                    <td><code>60</code></td>
+                    <td>Sliding window for missed trade calculation</td>
+                </tr>
+                <tr>
+                    <td><code>business.impact.currency</code></td>
+                    <td><code>USD</code></td>
+                    <td>Currency for revenue display</td>
+                </tr>
+            </tbody>
+        </table>
+
+
+        <!-- ============================================================ -->
+        <h2 id="deployment">Deployment</h2>
+        <!-- ============================================================ -->
+
+        <h3>Docker Compose Variants</h3>
+        <table>
+            <thead><tr><th>File</th><th>Mode</th><th>Use Case</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>docker-compose.yml</code></td>
+                    <td>Aeron IPC</td>
+                    <td>Production mode: shared memory transport between publisher and subscriber. Requires <code>shm_size: 512m</code>.</td>
+                </tr>
+                <tr>
+                    <td><code>docker-compose-standard.yml</code></td>
+                    <td>Direct (no Aeron)</td>
+                    <td>Simplified mode: publisher writes directly to subscriber via method call. No shared memory needed.</td>
+                </tr>
+                <tr>
+                    <td><code>docker-compose-scale.yml</code></td>
+                    <td>Two-cluster comparison</td>
+                    <td>Runs two instances (C4 on :8080, G1 on :9080) for side-by-side GC comparison.</td>
+                </tr>
+                <tr>
+                    <td><code>docker-compose-g1.yml</code></td>
+                    <td>G1GC</td>
+                    <td>Single instance running Eclipse Temurin with G1GC.</td>
+                </tr>
+                <tr>
+                    <td><code>docker-compose-c4.yml</code></td>
+                    <td>C4/GPGC</td>
+                    <td>Single instance running Azul Platform Prime with C4.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Quick Start</h3>
+<pre><code># Build and run (Aeron mode, C4 GC)
+docker compose up --build -d
+
+# Build and run (standard mode, no Aeron)
+docker compose -f docker-compose-standard.yml up --build -d
+
+# Two-cluster comparison (C4 vs G1 side-by-side)
+docker compose -f docker-compose-scale.yml up --build -d
+
+# Apply a GC stress scenario
+curl -X POST http://localhost:8080/trader-stream-ee/api/pressure/mode/STEADY_LOAD
+
+# Check GC stats after 30 seconds
+sleep 30
+curl -s http://localhost:8080/trader-stream-ee/api/gc/stats | jq
+
+# Stop the stress generator
+curl -X POST http://localhost:8080/trader-stream-ee/api/pressure/mode/OFF</code></pre>
+
+        <div class="warn-card">
+            <p><strong>Aeron IPC requires shared memory.</strong> The Docker Compose files set <code>shm_size: 512m</code>. On macOS with Docker Desktop, this is handled automatically. On Linux, ensure <code>/dev/shm</code> is large enough or adjust the value.</p>
+        </div>
+
+
+        <!-- ============================================================ -->
+        <h2 id="stack">Technology Stack</h2>
+        <!-- ============================================================ -->
+
+        <table>
+            <thead><tr><th>Component</th><th>Technology</th><th>Version</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td>Runtime</td>
+                    <td>Azul Platform Prime</td>
+                    <td>21</td>
+                    <td>C4/GPGC pauseless GC</td>
+                </tr>
+                <tr>
+                    <td>Comparison</td>
+                    <td>Eclipse Temurin</td>
+                    <td>21</td>
+                    <td>G1GC baseline</td>
+                </tr>
+                <tr>
+                    <td>App Server</td>
+                    <td>Payara Micro</td>
+                    <td>7.2025.2</td>
+                    <td>Jakarta EE 11 container</td>
+                </tr>
+                <tr>
+                    <td>Jakarta EE</td>
+                    <td>Jakarta EE</td>
+                    <td>11.0.0</td>
+                    <td>CDI, WebSocket, JAX-RS, Concurrency</td>
+                </tr>
+                <tr>
+                    <td>Transport</td>
+                    <td>Aeron</td>
+                    <td>1.50.0</td>
+                    <td>Shared memory IPC messaging</td>
+                </tr>
+                <tr>
+                    <td>Encoding</td>
+                    <td>SBE</td>
+                    <td>1.34.0</td>
+                    <td>Zero-copy binary serialization</td>
+                </tr>
+                <tr>
+                    <td>Clustering</td>
+                    <td>Hazelcast</td>
+                    <td>5.5.0</td>
+                    <td>Distributed topics + CP subsystem</td>
+                </tr>
+                <tr>
+                    <td>TA Library</td>
+                    <td>ta4j-core</td>
+                    <td>0.22.4</td>
+                    <td>Technical analysis indicators</td>
+                </tr>
+                <tr>
+                    <td>Monitoring</td>
+                    <td>Prometheus + Grafana</td>
+                    <td>Latest</td>
+                    <td>JMX metrics and dashboards</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </article>
+
+    <footer>
+        <p>TradeStreamEE &mdash; A GC Benchmarking Platform. Built with Payara Micro 7 + Jakarta EE 11.</p>
+    </footer>
+
+</div>
+</body>
+</html>

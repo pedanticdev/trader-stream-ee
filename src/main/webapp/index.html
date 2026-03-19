@@ -496,17 +496,11 @@
                 flex-direction: column;
                 padding: 12px 16px;
                 gap: 12px;
+                align-items: stretch;
             }
 
-            .scenario-buttons {
-                width: 100%;
-            }
-
-            .scenario-btn {
-                flex: 1;
-                min-width: 70px;
-                padding: 10px 12px;
-                font-size: 0.85em;
+            .scenario-select {
+                max-width: none;
             }
 
             .gc-comparison-panel {
@@ -592,10 +586,6 @@
                 padding: 12px 16px;
                 font-size: 0.9em;
                 min-height: 44px;
-            }
-
-            .scenario-btn {
-                min-height: auto;
             }
 
             .chart-mode-label {
@@ -972,47 +962,58 @@
             border-radius: 8px;
             display: flex;
             align-items: center;
-            gap: 24px;
+            gap: 12px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .scenario-buttons {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .scenario-btn {
-            background: white;
-            color: #475569;
-            border: 1px solid #cbd5e1;
-            padding: 8px 16px;
+        .scenario-select {
+            flex: 1;
+            max-width: 360px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
             font-size: 0.9em;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            min-width: 120px;
+            cursor: pointer;
         }
 
-        .scenario-btn:hover {
-            background: #f1f5f9;
-            border-color: #94a3b8;
-            transform: translateY(-1px);
+        .apply-scenario-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
         }
 
-        .scenario-btn.active {
-            background: #eff6ff;
-            border-color: #3b82f6;
-            color: #1d4ed8;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        .apply-scenario-btn:hover {
+            background: #2563eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        .scenario-btn .hint {
-            font-size: 0.7em;
-            font-weight: 400;
-            opacity: 0.8;
-            text-transform: none;
+        .reset-scenario-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+        }
+
+        .reset-scenario-btn:hover {
+            background: #5a6268;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         /* Comparison View Styles */
@@ -1302,7 +1303,9 @@
                 <div class="dropdown-menu">
                     <a href="health.html">Health Check</a>
                     <a href="comparison.html">Comparison</a>
+                    <a href="trading.html">Trading Desk</a>
                     <a href="blog.html">Blog</a>
+                    <a href="help.html">Help</a>
                     <div class="dropdown-divider"></div>
                     <a href="#" onclick="exportStats('json'); return false;">Export JSON</a>
                 </div>
@@ -1373,38 +1376,14 @@
     </div>
 
     <div class="stress-scenarios">
-        <h3 style="font-size: 1em; color: #64748b; font-weight: 600; text-transform: uppercase;">Test Scenarios</h3>
-        <div class="scenario-buttons">
-            <button onclick="setPressureMode('OFF')" class="scenario-btn" id="btn-OFF">
-                🛑 Stop
-                <span class="hint">Reset all pressure</span>
-            </button>
-
-            <button onclick="setPressureMode('STEADY_LOAD')" class="scenario-btn" id="btn-STEADY_LOAD">
-                ⚖️ Steady Load
-                <span class="hint">200MB/s, 512MB Live</span>
-            </button>
-
-            <button onclick="setPressureMode('GROWING_HEAP')" class="scenario-btn" id="btn-GROWING_HEAP">
-                📈 Growing Heap
-                <span class="hint">Growth to 2GB</span>
-            </button>
-
-            <button onclick="setPressureMode('PROMOTION_STORM')" class="scenario-btn" id="btn-PROMOTION_STORM">
-                🌊 Promotion
-                <span class="hint">High Old Gen Traffic</span>
-            </button>
-
-            <button onclick="setPressureMode('FRAGMENTATION')" class="scenario-btn" id="btn-FRAGMENTATION">
-                🧩 Fragmentation
-                <span class="hint">Small Obj, Rand Life</span>
-            </button>
-
-            <button onclick="setPressureMode('CROSS_GEN_REFS')" class="scenario-btn" id="btn-CROSS_GEN_REFS">
-                🔄 Cross-Gen
-                <span class="hint">Old->Young Refs</span>
-            </button>
+        <h3 style="font-size: 1em; color: #64748b; font-weight: 600; text-transform: uppercase; white-space: nowrap;">Test Scenarios</h3>
+        <div id="main-scenario-select-container">
+            <select id="main-scenario-select" class="scenario-select">
+                <option value="">Loading scenarios...</option>
+            </select>
         </div>
+        <button id="apply-scenario-btn" class="apply-scenario-btn">Apply</button>
+        <button id="reset-scenario-btn" class="reset-scenario-btn">Stop</button>
     </div>
 
     <!-- Demo Presets Section -->
@@ -1678,16 +1657,7 @@
                             <span id="hftPattern">None</span>
                         </div>
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-                         <button onclick="event.stopPropagation(); setPressureMode('STEADY_LOAD')"
-                                style="flex: 1; background: #28a745;">Steady Load<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">Baseline</span></button>
-                        <button onclick="event.stopPropagation(); setPressureMode('GROWING_HEAP')"
-                                style="flex: 1; background: #ffc107; color: #333;">Growing Heap<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">Test Mixed GC</span></button>
-                        <button onclick="event.stopPropagation(); setPressureMode('PROMOTION_STORM')"
-                                style="flex: 1; background: #fd7e14;">Promotion Storm<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">Test Old Gen</span></button>
-                         <button onclick="event.stopPropagation(); setPressureMode('OFF')"
-                                style="flex: 1; background: #6c757d;">OFF<br><span style="font-size: 0.7em; font-weight: 400; opacity: 0.9;">Stop Pressure</span></button>
-                    </div>
+                    <div id="card-mode-container" data-select-id="quick-mode-select" style="margin-top: 10px;"></div>
                 </div>
             </div>
             <div class="card-back">
@@ -1901,6 +1871,7 @@
     </div>
 </div>
 
+<script src="pressure-modes.js"></script>
 <script>
     let ws = null, messageCount = 0, lastMessageTime = 0, messagesLastSecond = 0;
     let lastGcCount = 0, lastGcPollTime = 0;
@@ -2147,20 +2118,10 @@
     }
 
     function setPressureMode(mode) {
-        const buttons = document.querySelectorAll('[onclick*="setPressureMode"]');
-        let clickedButton = null;
-        buttons.forEach(btn => {
-            if (btn.textContent.includes(mode) || btn.id === 'btn-' + mode) {
-                 btn.classList.add('processing');
-                 clickedButton = btn;
-            }
-        });
-
         const isInComparisonMode = document.body.classList.contains('comparison-view-active');
 
-        // Helper function to set mode on a single cluster
         const setModeOnCluster = (port, clusterName) => {
-            const url = `http://localhost:${port}/trader-stream-ee${window.location.pathname.split('/')[1] ? '/' + window.location.pathname.split('/')[1] : ''}/api/pressure/mode/${mode}`;
+            const url = `http://localhost:${port}/trader-stream-ee/api/pressure/mode/${mode}`;
             console.log(`Setting mode to ${mode} on ${clusterName}:`, url);
             return fetch(url, { method: 'POST' })
                 .then(response => {
@@ -2169,7 +2130,6 @@
                 });
         };
 
-        // Get promises for both clusters if in comparison mode
         const promises = isInComparisonMode
             ? [
                 setModeOnCluster(8080, 'C4'),
@@ -2179,9 +2139,6 @@
 
         Promise.all(promises)
             .then(results => {
-                if (clickedButton) {
-                    clickedButton.classList.remove('processing');
-                }
                 const clusterNames = isInComparisonMode ? ['C4', 'G1'] : ['Current'];
                 results.forEach((result, i) => {
                     if (result.success) {
@@ -2191,13 +2148,32 @@
                     }
                 });
                 if (!isInComparisonMode) {
+                    const result = results[0];
+                    const currentMode = result.currentMode || 'OFF';
+                    const rateMBps = result.allocationRateMBPerSec || 0;
+
+                    document.getElementById('pressureMode').textContent = currentMode;
+                    document.getElementById('pressureRate').textContent = rateMBps + ' MB/sec';
+
+                    const patternEl = document.getElementById('hftPattern');
+                    if (patternEl) {
+                        patternEl.textContent = result.description || 'None';
+                        patternEl.title = result.description || '';
+                    }
+
+                    const modeDisplay = document.getElementById('modeDisplay');
+                    if (modeDisplay) {
+                        modeDisplay.textContent = 'Mode: ' + currentMode;
+                    }
+
+                    if (typeof PressureModes !== 'undefined') {
+                        PressureModes.setActiveMode(currentMode);
+                    }
+
                     pollPressureStatus();
                 }
             })
             .catch(errors => {
-                if (clickedButton) {
-                    clickedButton.classList.remove('processing');
-                }
                 console.error('Error setting pressure mode:', errors);
                 addLog('Failed to set mode: ' + (errors[0]?.message || 'Unknown error'));
             });
@@ -2222,13 +2198,10 @@
                      patternEl.title = status.description || '';
                 }
 
-                // Update active state of top buttons
-                document.querySelectorAll('.scenario-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.id === 'btn-' + mode) {
-                        btn.classList.add('active');
-                    }
-                });
+                // Update active state of all mode buttons/selects
+                if (typeof PressureModes !== 'undefined') {
+                    PressureModes.setActiveMode(mode);
+                }
             })
             .catch(error => console.error('Error fetching pressure status:', error));
     }
@@ -2932,9 +2905,41 @@
         initProjectorMode();
         initPollingInterval();
         initCharts();
+
+        // Load pressure modes from backend
+        if (typeof PressureModes !== 'undefined') {
+            PressureModes.load(document.getElementById('main-scenario-select-container'), {
+                layout: 'select'
+            });
+            PressureModes.load(document.getElementById('card-mode-container'), {
+                layout: 'select',
+                onSelect: function (mode) { setPressureMode(mode); },
+                stopPropagation: true
+            });
+
+            // Wire up main dropdown Apply/Stop buttons
+            const mainSelect = document.getElementById('main-scenario-select');
+            const applyBtn = document.getElementById('apply-scenario-btn');
+            const resetBtn = document.getElementById('reset-scenario-btn');
+
+            applyBtn.addEventListener('click', () => {
+                const mode = mainSelect.value;
+                if (mode) {
+                    setPressureMode(mode);
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                setPressureMode('OFF');
+                mainSelect.value = '';
+            });
+        }
+
         pollInstanceStatus();
+        pollPressureStatus();
         updateLastUpdated();
         setInterval(updateLastUpdated, 1000);
+        window.pressureStatusInterval = setInterval(pollPressureStatus, Math.max(3000, currentPollingInterval));
 
         // Store original HTML of preset buttons
         document.querySelectorAll('.preset-btn').forEach(btn => {

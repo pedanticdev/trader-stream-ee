@@ -1,5 +1,6 @@
 package fish.payara.trader.rest;
 
+import fish.payara.trader.dto.PressureStatusResponse;
 import fish.payara.trader.pressure.AllocationMode;
 import fish.payara.trader.pressure.MemoryPressureService;
 import jakarta.inject.Inject;
@@ -22,15 +23,7 @@ public class MemoryPressureResource {
     @Path("/status")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getStatus() {
-        AllocationMode currentMode = pressureService.getCurrentMode();
-
-        Map<String, Object> status = new HashMap<>();
-        status.put("currentMode", currentMode.name());
-        status.put("description", currentMode.getDescription());
-        status.put("running", pressureService.isRunning());
-        status.put("allocationRateMBPerSec", currentMode.getAllocationRateMBPerSec());
-        status.put("liveSetSizeMB", currentMode.getLiveSetSizeMB());
-        status.put("scenarioType", currentMode.getScenarioType());
+        PressureStatusResponse status = PressureStatusResponse.from(pressureService.getCurrentMode(), pressureService.isRunning());
         return Response.ok(status).build();
     }
 
@@ -40,25 +33,18 @@ public class MemoryPressureResource {
     public Response setMode(@PathParam("mode") String modeStr) {
         try {
             AllocationMode mode = AllocationMode.valueOf(modeStr.toUpperCase());
-            LOGGER.info(String.format("POST /api/pressure/mode/%s - Setting memory pressure mode to: %s", modeStr, mode.name()));
+            LOGGER.info("POST /api/pressure/mode/" + modeStr + " - Setting memory pressure mode to: " + mode.name());
 
             pressureService.setAllocationMode(mode);
 
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", true);
-            result.put("mode", mode.name());
-            result.put("description", mode.getDescription());
-            result.put("allocationRateMBPerSec", mode.getAllocationRateMBPerSec());
-            result.put("scenarioType", mode.getScenarioType());
-
+            PressureStatusResponse result = PressureStatusResponse.from(mode, true);
             return Response.ok(result).build();
         } catch (IllegalArgumentException e) {
-            LOGGER.warning(String.format("POST /api/pressure/mode/%s - Invalid mode requested", modeStr));
+            LOGGER.warning("POST /api/pressure/mode/" + modeStr + " - Invalid mode requested");
 
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("error", "Invalid mode: " + modeStr);
-            // Valid modes are all values of AllocationMode
             StringBuilder validModes = new StringBuilder();
             for (AllocationMode m : AllocationMode.values()) {
                 validModes.append(m.name()).append(", ");
@@ -74,16 +60,9 @@ public class MemoryPressureResource {
     public Response getModes() {
         LOGGER.fine("GET /api/pressure/modes - Listing all allocation modes");
 
-        Map<String, Map<String, Object>> modes = new HashMap<>();
-
+        Map<String, PressureStatusResponse> modes = new HashMap<>();
         for (AllocationMode mode : AllocationMode.values()) {
-            Map<String, Object> modeInfo = new HashMap<>();
-            modeInfo.put("name", mode.name());
-            modeInfo.put("description", mode.getDescription());
-            modeInfo.put("allocationRateMBPerSec", mode.getAllocationRateMBPerSec());
-            modeInfo.put("liveSetSizeMB", mode.getLiveSetSizeMB());
-            modeInfo.put("scenarioType", mode.getScenarioType());
-            modes.put(mode.name(), modeInfo);
+            modes.put(mode.name(), PressureStatusResponse.from(mode, false));
         }
 
         return Response.ok(modes).build();

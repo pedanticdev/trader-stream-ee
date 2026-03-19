@@ -1,10 +1,12 @@
 package fish.payara.trader.pressure;
 
+import fish.payara.trader.pressure.workload.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
 import jakarta.enterprise.concurrent.ManagedExecutorService;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.concurrent.CompletableFuture;
@@ -59,6 +61,30 @@ public class MemoryPressureService {
 
     @Resource
     private ManagedExecutorService executorService;
+
+    // CPU workloads
+    @Inject
+    private CompressionWorkload compressionWorkload;
+
+    @Inject
+    private SerializationWorkload serializationWorkload;
+
+    @Inject
+    private CryptoWorkload cryptoWorkload;
+
+    @Inject
+    private CollectionWorkload collectionWorkload;
+
+    @Inject
+    private StringWorkload stringWorkload;
+
+    @Inject
+    private TradingMatchingWorkload tradingMatchingWorkload;
+
+    @Inject
+    private TechnicalAnalysisWorkload technicalAnalysisWorkload;
+
+    private WorkloadConfig workloadConfig = new WorkloadConfig();
 
     @PostConstruct
     public void init() {
