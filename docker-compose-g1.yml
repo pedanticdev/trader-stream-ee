@@ -6,7 +6,7 @@
 
 services:
   traefik-g1:
-    image: traefik:v3.6.5
+    image: traefik:v3.6.12
     container_name: trader-traefik-g1
     command:
       - "--api.dashboard=true"
@@ -58,7 +58,7 @@ services:
         -XX:ParallelGCThreads=12
         -XX:ConcGCThreads=4
         -XX:-ExplicitGCInvokesConcurrent
-        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=20,filesize=10M
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
         --add-opens java.base/java.nio=ALL-UNNAMED
@@ -114,7 +114,7 @@ services:
         -XX:ParallelGCThreads=12
         -XX:ConcGCThreads=4
         -XX:-ExplicitGCInvokesConcurrent
-        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=20,filesize=10M
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
         --add-opens java.base/java.nio=ALL-UNNAMED
@@ -170,7 +170,7 @@ services:
         -XX:ParallelGCThreads=12
         -XX:ConcGCThreads=4
         -XX:-ExplicitGCInvokesConcurrent
-        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=20,filesize=10M
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
         --add-opens java.base/java.nio=ALL-UNNAMED
