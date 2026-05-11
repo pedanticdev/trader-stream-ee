@@ -4,8 +4,7 @@
     "tags": [ "jvm", "gc", "performance", "comparison" ],
     "timezone": "browser",
     "editable": true,
-    "panels": [
-    {
+    "panels": [ {
       "id": 10,
       "title": "Response Latency - JIT Warmup (P50 / P99)",
       "type": "timeseries",
@@ -16,18 +15,15 @@
         "x": 0,
         "y": 0
       },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.50, rate(traefik_service_request_duration_seconds_bucket{job=~\"traefik-c4|traefik-g1\"}[30s]))",
-          "legendFormat": "P50 - {{job}}",
-          "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.99, rate(traefik_service_request_duration_seconds_bucket{job=~\"traefik-c4|traefik-g1\"}[30s]))",
-          "legendFormat": "P99 - {{job}}",
-          "refId": "B"
-        }
-      ],
+      "targets": [ {
+        "expr": "histogram_quantile(0.50, rate(traefik_service_request_duration_seconds_bucket{job=~\"traefik-c4|traefik-g1\"}[30s]))",
+        "legendFormat": "P50 - {{job}}",
+        "refId": "A"
+      }, {
+        "expr": "histogram_quantile(0.99, rate(traefik_service_request_duration_seconds_bucket{job=~\"traefik-c4|traefik-g1\"}[30s]))",
+        "legendFormat": "P99 - {{job}}",
+        "refId": "B"
+      } ],
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -44,42 +40,71 @@
           },
           "thresholds": {
             "mode": "absolute",
-            "steps": [
-              { "value": 0, "color": "green" },
-              { "value": 0.5, "color": "yellow" },
-              { "value": 1, "color": "red" }
-            ]
+            "steps": [ {
+              "value": 0,
+              "color": "green"
+            }, {
+              "value": 0.5,
+              "color": "yellow"
+            }, {
+              "value": 1,
+              "color": "red"
+            } ]
           }
         },
-        "overrides": [
-          {
-            "matcher": { "id": "byRegexp", "options": ".*P99.*" },
-            "properties": [
-              { "id": "lineWidth", "value": 1 },
-              { "id": "dashes", "value": true },
-              { "id": "dashLength", "value": 5 }
-            ]
+        "overrides": [ {
+          "matcher": {
+            "id": "byRegexp",
+            "options": ".*P99.*"
           },
-          {
-            "matcher": { "id": "byRegexp", "options": ".*traefik-c4.*" },
-            "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
-            ]
+          "properties": [ {
+            "id": "lineWidth",
+            "value": 1
+          }, {
+            "id": "dashes",
+            "value": true
+          }, {
+            "id": "dashLength",
+            "value": 5
+          } ]
+        }, {
+          "matcher": {
+            "id": "byRegexp",
+            "options": ".*traefik-c4.*"
           },
-          {
-            "matcher": { "id": "byRegexp", "options": ".*traefik-g1.*" },
-            "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }
-            ]
-          }
-        ]
+          "properties": [ {
+            "id": "color",
+            "value": {
+              "mode": "fixed",
+              "fixedColor": "green"
+            }
+          } ]
+        }, {
+          "matcher": {
+            "id": "byRegexp",
+            "options": ".*traefik-g1.*"
+          },
+          "properties": [ {
+            "id": "color",
+            "value": {
+              "mode": "fixed",
+              "fixedColor": "orange"
+            }
+          } ]
+        } ]
       },
       "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": [ "mean", "max", "lastNotNull" ] }
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [ "mean", "max", "lastNotNull" ]
+        }
       }
-    },
-    {
+    }, {
       "id": 11,
       "title": "Request Throughput",
       "type": "timeseries",
@@ -90,13 +115,11 @@
         "x": 0,
         "y": 10
       },
-      "targets": [
-        {
-          "expr": "sum(rate(traefik_service_requests_total{code=~\"2..\", job=~\"traefik-c4|traefik-g1\"}[30s])) by (job)",
-          "legendFormat": "{{job}} req/s",
-          "refId": "A"
-        }
-      ],
+      "targets": [ {
+        "expr": "sum(rate(traefik_service_requests_total{code=~\"2..\", job=~\"traefik-c4|traefik-g1\"}[30s])) by (job)",
+        "legendFormat": "{{job}} req/s",
+        "refId": "A"
+      } ],
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
@@ -108,23 +131,33 @@
             "lineWidth": 2
           }
         },
-        "overrides": [
-          {
-            "matcher": { "id": "byRegexp", "options": ".*traefik-c4.*" },
-            "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
-            ]
+        "overrides": [ {
+          "matcher": {
+            "id": "byRegexp",
+            "options": ".*traefik-c4.*"
           },
-          {
-            "matcher": { "id": "byRegexp", "options": ".*traefik-g1.*" },
-            "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }
-            ]
-          }
-        ]
+          "properties": [ {
+            "id": "color",
+            "value": {
+              "mode": "fixed",
+              "fixedColor": "green"
+            }
+          } ]
+        }, {
+          "matcher": {
+            "id": "byRegexp",
+            "options": ".*traefik-g1.*"
+          },
+          "properties": [ {
+            "id": "color",
+            "value": {
+              "mode": "fixed",
+              "fixedColor": "orange"
+            }
+          } ]
+        } ]
       }
-    },
-    {
+    }, {
       "id": 1,
       "title": "GC Pause Time Comparison (P99)",
       "type": "timeseries",

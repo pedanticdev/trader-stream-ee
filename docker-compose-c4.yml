@@ -71,6 +71,7 @@ services:
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
       - ./monitoring/logs/c4-1:/opt/payara/logs
       - ./monitoring/gc-logs/c4-1:/opt/payara/gc-logs
+      - ./monitoring/recordings/c4-1:/opt/payara/recordings
     labels:
       - "traefik.enable=true"
       - "cluster=c4"
@@ -119,6 +120,7 @@ services:
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
       - ./monitoring/logs/c4-2:/opt/payara/logs
       - ./monitoring/gc-logs/c4-2:/opt/payara/gc-logs
+      - ./monitoring/recordings/c4-2:/opt/payara/recordings
     labels:
       - "traefik.enable=true"
       - "cluster=c4"
@@ -167,6 +169,7 @@ services:
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
       - ./monitoring/logs/c4-3:/opt/payara/logs
       - ./monitoring/gc-logs/c4-3:/opt/payara/gc-logs
+      - ./monitoring/recordings/c4-3:/opt/payara/recordings
     labels:
       - "traefik.enable=true"
       - "cluster=c4"

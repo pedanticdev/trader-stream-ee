@@ -49,7 +49,9 @@ EXPOSE 8080
 # docker-compose-g1.yml environment variables. See that file for actual runtime
 # flags in cluster mode.
 #
-# JFR is enabled by default - entrypoint script handles JFR_ENABLED environment variable
+# JFR is OFF by default. Ad-hoc recordings are produced via the /api/jfr REST
+# endpoints. To enable an always-on circular recording, set JFR_ALWAYS_ON=true
+# in the environment; see docker-entrypoint.sh.
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
     -XX:+UseG1GC \
