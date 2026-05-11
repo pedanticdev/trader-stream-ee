@@ -11,14 +11,18 @@ Use one copy of this template per stress scenario.
 
 ## Headline metrics
 
-|           Metric           | C4 | G1 | Why they differ |
-|----------------------------|----|----|-----------------|
-| Max pause (ms)             |    |    |                 |
-| P99 pause (ms)             |    |    |                 |
-| P50 pause (ms)             |    |    |                 |
-| Pause count                |    |    |                 |
-| GC throughput (% app time) |    |    |                 |
-| Live heap at end (MB)      |    |    |                 |
+| Metric | C4 | G1 | Why they differ |
+|---|---|---|---|
+| Pause count over the window | | | |
+| Max pause (ms) | | | |
+| P99 pause (ms) | | | |
+| P50 pause (ms) | | | |
+| Total pause time (ms) | | | |
+| GC throughput (% app time) | | | |
+| Old gen growth (MB) | | | |
+| Live heap at end (MB) | | | |
+| Application throughput (msg/sec) | | | |
+| SLA violations (>10 ms pause) | | | |
 
 ## Event counts
 

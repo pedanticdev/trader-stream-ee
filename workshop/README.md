@@ -4,15 +4,19 @@ Hands-on workshop materials for JNation.
 
 ## Quick map
 
-|                You want to                |                      Read this                       |
-|-------------------------------------------|------------------------------------------------------|
-| Run the workshop end-to-end               | [WORKSHOP.md](./WORKSHOP.md)                         |
-| Verify your laptop is ready               | `./scripts/verify-setup.sh`                          |
-| Print a desk reference                    | [analysis-checklist.md](./analysis-checklist.md)     |
-| Read the speaker slides                   | [slides/slides.md](./slides/slides.md)               |
-| Reproduce the pre-recorded files          | `./scripts/record-scenarios.sh`                      |
-| Compare two recordings on the CLI         | `./scripts/compare-recordings.sh`                    |
+| You want to | Read this |
+|---|---|
+| Run the workshop end-to-end | [WORKSHOP.md](./WORKSHOP.md) |
+| Speaker day-of checklist | [speaker-prep.md](./speaker-prep.md) |
+| Risk matrix and live diagnostic steps | [operational-notes.md](./operational-notes.md) |
+| Verify your laptop is ready | `./scripts/verify-setup.sh` |
+| Print a desk reference | [analysis-checklist.md](./analysis-checklist.md) |
+| Read the speaker slides | [slides/slides.md](./slides/slides.md) |
+| Reproduce the pre-recorded files | `./scripts/record-scenarios.sh` |
+| Compare two recordings on the CLI | `./scripts/compare-recordings.sh` |
+| Inspect any recording from the terminal | `./scripts/jfr-query.sh summary <file>.jfr` |
 | Add a Module 3 starter to the source tree | `./scripts/install-exercise.sh module-3-burst-event` |
+| GC pathology catalogue (take-home reference) | [exercises/module-5-apply-to-your-app/gc-pathology-catalog.md](./exercises/module-5-apply-to-your-app/gc-pathology-catalog.md) |
 
 ## JFR mode
 

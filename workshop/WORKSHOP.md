@@ -18,6 +18,10 @@ By the end of this workshop you will be able to:
 
 Senior Java developers comfortable with Jakarta EE, virtual threads, and idiomatic Java 21. No prior JFR or HFT experience required. Bring a laptop with Docker, Git, and JDK Mission Control installed; see [README.md](./README.md) for setup details.
 
+### For the speaker
+
+Before running this workshop in front of a room, read [speaker-prep.md](./speaker-prep.md) and [operational-notes.md](./operational-notes.md). The speaker-prep file has the day-of checklist; operational-notes has the risk matrix and the live diagnostic checklist for when something misbehaves.
+
 ---
 
 ## Architecture you will be running
@@ -75,8 +79,15 @@ Run this on your laptop before the session. Allow 20 minutes the first time.
 git clone <repo-url>
 cd trader-stream-ee
 ./workshop/scripts/verify-setup.sh
-./start-comparison.sh all          # builds images, starts both clusters + monitoring
+
+# Recommended on laptops: one Azul Platform Prime instance with the full app
+docker compose -f docker-compose-workshop.yml up -d --build
+
+# Or, for the full C4 vs G1 comparison stack (3 + 3 instances; needs a beefy host):
+./start-comparison.sh all
 ```
+
+The single-instance workshop compose exists specifically to avoid the Zing safepoint-sync issue that the 6-JVM cluster triggers on laptop-class hardware (see operational-notes.md). All modules except Module 4 work entirely against the single instance.
 
 You should end up with:
 
@@ -432,7 +443,7 @@ The four pathologies are not specific to trading systems. The closest analogues 
 | Cross-gen refs     | Mutable singletons that hold references to recent request objects            |
 | Evacuation failure | Heap sized too tight for the survivor space; allocation bursts               |
 
-If you can recognise the JFR signature, you can diagnose any of these in any Java application.
+If you can recognise the JFR signature, you can diagnose any of these in any Java application. The take-home reference is [gc-pathology-catalogue](./exercises/module-5-apply-to-your-app/gc-pathology-catalog.md), which restates the four patterns with their JFR signatures, plain-language root causes, and a fix-order list per pattern.
 
 ### 5.2 Allocation versus collector choice (10 min)
 
