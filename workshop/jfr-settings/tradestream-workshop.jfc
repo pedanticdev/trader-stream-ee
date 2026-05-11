@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration version="2.0"
+    label="TradeStream Workshop"
+    description="JFR profile tuned for the TradeStreamEE JNation workshop: enough resolution to see allocation hot paths, GC phases, and custom application events at roughly 1-2% overhead. Avoids per-TLAB stack traces that would dominate recording size under 200+ MB/sec allocation."
+    provider="TradeStreamEE">
+
+  <!-- ===================================================================
+       GC events: the headline data for this workshop
+       =================================================================== -->
+
+  <event name="jdk.GarbageCollection">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.YoungGarbageCollection">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.OldGarbageCollection">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.G1GarbageCollection">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.GCPhasePause">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.GCPhasePauseLevel1">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.GCPhasePauseLevel2">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.GCPhaseParallel">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.GCPhaseConcurrent">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.GCHeapSummary">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <event name="jdk.MetaspaceSummary">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <event name="jdk.PromoteObjectInNewPLAB">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <event name="jdk.PromoteObjectOutsidePLAB">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <event name="jdk.GCReferenceStatistics">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <event name="jdk.G1HeapRegionInformation">
+    <setting name="enabled">true</setting>
+    <setting name="period">everyChunk</setting>
+  </event>
+
+  <event name="jdk.G1HeapSummary">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <event name="jdk.G1HeapRegionTypeChange">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <event name="jdk.EvacuationInformation">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <event name="jdk.EvacuationFailed">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <event name="jdk.PromotionFailed">
+    <setting name="enabled">true</setting>
+  </event>
+
+  <!-- ===================================================================
+       Allocation profiling: sampling-based to keep recording size sane
+       =================================================================== -->
+
+  <event name="jdk.ObjectAllocationSample">
+    <setting name="enabled">true</setting>
+    <setting name="throttle">300/s</setting>
+    <setting name="stackTrace">true</setting>
+  </event>
+
+  <event name="jdk.ObjectAllocationInNewTLAB">
+    <setting name="enabled">false</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="jdk.ObjectAllocationOutsideTLAB">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">true</setting>
+  </event>
+
+  <event name="jdk.ThreadAllocationStatistics">
+    <setting name="enabled">true</setting>
+    <setting name="period">1000 ms</setting>
+  </event>
+
+  <!-- ===================================================================
+       CPU profiling: enough to find allocation/CPU hot stacks
+       =================================================================== -->
+
+  <event name="jdk.ExecutionSample">
+    <setting name="enabled">true</setting>
+    <setting name="period">10 ms</setting>
+  </event>
+
+  <event name="jdk.NativeMethodSample">
+    <setting name="enabled">true</setting>
+    <setting name="period">20 ms</setting>
+  </event>
+
+  <event name="jdk.CPUInformation">
+    <setting name="enabled">true</setting>
+    <setting name="period">endChunk</setting>
+  </event>
+
+  <event name="jdk.CPULoad">
+    <setting name="enabled">true</setting>
+    <setting name="period">1000 ms</setting>
+  </event>
+
+  <event name="jdk.JavaThreadStatistics">
+    <setting name="enabled">true</setting>
+    <setting name="period">1000 ms</setting>
+  </event>
+
+  <!-- ===================================================================
+       Virtual threads: the publisher loop runs on one; carrier pinning
+       under Aeron writes is a real concern
+       =================================================================== -->
+
+  <event name="jdk.VirtualThreadStart">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="jdk.VirtualThreadEnd">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="jdk.VirtualThreadPinned">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">10 ms</setting>
+    <setting name="stackTrace">true</setting>
+  </event>
+
+  <event name="jdk.VirtualThreadSubmitFailed">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">true</setting>
+  </event>
+
+  <!-- ===================================================================
+       Safepoints: where stop-the-world actually happens
+       =================================================================== -->
+
+  <event name="jdk.SafepointBegin">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.SafepointStateSynchronization">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <event name="jdk.SafepointEnd">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ms</setting>
+  </event>
+
+  <!-- ===================================================================
+       Custom application events: domain-specific signal
+       =================================================================== -->
+
+  <event name="trade.published">
+    <setting name="enabled">true</setting>
+    <setting name="threshold">0 ns</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="quote.published">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="marketdepth.published">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="message.batch.processed">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="websocket.broadcast">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="sbe.encode">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="sbe.decode">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="gc.sla.violation">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">true</setting>
+  </event>
+
+  <event name="aeron.backpressure">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">true</setting>
+  </event>
+
+  <event name="burst.mode.activated">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="order.submitted">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="order.matched">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="stop.triggered">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+  <event name="order.canceled">
+    <setting name="enabled">true</setting>
+    <setting name="stackTrace">false</setting>
+  </event>
+
+</configuration>

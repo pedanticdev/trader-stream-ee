@@ -47,3 +47,15 @@ monitoring/.scraper.pid
 # Crash dumps from any local JVM (Zing safepoint aborts in particular).
 hs_err_pid*.log
 hs_err_pid*
+
+# Workshop tree: everything is intentional content. Re-include it explicitly
+# so the broad *.md / *.jar ignores above don't swallow it.
+!workshop/
+!workshop/**
+!workshop/**/*.md
+!workshop/**/*.jfc
+!workshop/**/*.jfr
+!workshop/**/*.java
+!workshop/**/*.xml
+!workshop/**/*.sh
+!workshop/**/*.txt
