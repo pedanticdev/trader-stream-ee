@@ -52,7 +52,9 @@ EXPOSE 9009
 #
 # Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
 #
-# JFR is enabled by default - entrypoint script handles JFR_ENABLED environment variable
+# JFR is OFF by default. Ad-hoc recordings are produced via the /api/jfr REST
+# endpoints. To enable an always-on circular recording, set JFR_ALWAYS_ON=true
+# in the environment; see docker-entrypoint.sh.
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
     -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \

@@ -47,7 +47,9 @@ EXPOSE 5701
 #
 # Reduced heap size (4GB vs 8GB) for multi-instance deployments.
 #
-# JFR is enabled by default - disable via JFR_ENABLED=false environment variable
+# JFR is OFF by default. Workshop scenarios use ad-hoc recordings via the REST API
+# (POST /api/jfr/recording/start). To enable a long-running always-on circular
+# recording, set JFR_ALWAYS_ON=true in the environment.
 ENV JAVA_OPTS="-Xms4g \
     -Xmx4g \
     -XX:+UseG1GC \
@@ -66,8 +68,6 @@ ENV JAVA_OPTS="-Xms4g \
     -XX:+UseStringDeduplication \
     -XX:+OptimizeStringConcat \
     -Djava.net.preferIPv4Stack=true \
-    -XX:StartFlightRecording=\${JFR_ENABLED:-name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal} \
-    -XX:FlightRecorderOptions=stackdepth=256 \
     -Xlog:jfr*=info"
 
 # Health check
@@ -81,10 +81,9 @@ COPY src/main/resources/hazelcast-config.xml /opt/payara/hazelcast-config.xml
 RUN sed -i 's/payara-trader-cluster/payara-trader-g1/' /opt/payara/hazelcast-config.xml && \
     sed -i 's/trader-stream-/trader-stream-g1-/' /opt/payara/hazelcast-config.xml
 
-# Run Payara Micro with the WAR
-# NOTE: --nohazelcast flag is REMOVED to enable clustering
-# Use custom Hazelcast configuration with split-brain protection
-CMD java ${JAVA_OPTS} -jar payara-micro.jar \
-    --deploy trader-stream-ee.war \
-    --contextroot trader-stream-ee \
-    --hzconfigfile /opt/payara/hazelcast-config.xml
+# Run Payara Micro with the WAR.
+# NOTE: --nohazelcast is omitted so clustering stays enabled.
+# When JFR_ALWAYS_ON=true is set, the shell substitution below appends a
+# circular always-on recording. Otherwise only ad-hoc recordings via the
+# /api/jfr REST endpoints will produce .jfr files.
+CMD ["sh", "-c", "exec java $JAVA_OPTS ${JFR_ALWAYS_ON:+-XX:StartFlightRecording=name=${JFR_RECORDING_NAME:-g1-cluster},filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal -XX:FlightRecorderOptions=stackdepth=256} -jar payara-micro.jar --deploy /opt/payara/trader-stream-ee.war --contextroot trader-stream-ee --hzconfigfile /opt/payara/hazelcast-config.xml"]
