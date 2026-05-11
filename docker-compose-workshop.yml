@@ -1,0 +1,79 @@
+# Laptop-friendly workshop compose: one Azul Platform Prime instance.
+#
+# Why this exists:
+#   The 3 + 3 cluster in docker-compose-c4.yml / docker-compose-g1.yml runs
+#   six embedded Aeron MediaDrivers in parallel. On a 16-thread host the
+#   busy-spin idle strategies can starve a thread of safepoint progress
+#   under sustained pressure scenarios; Zing aborts with a "Checkpoint sync
+#   time longer than 200000 ms" fatal. One instance does not hit this.
+#
+# What it provides:
+#   - A single Payara Micro on port 8080 with the full TradeStreamEE app
+#   - 2 GB heap (laptop-friendly; still large enough for every scenario in
+#     workshop/jfr-settings/tradestream-workshop.jfc to fire characteristic
+#     GC behaviour)
+#   - Always-on circular JFR via JFR_ALWAYS_ON=true, so attendees get a
+#     recording dumped to ./monitoring/recordings/workshop/recording.jfr
+#     on container exit
+#   - Bind mount for workshop/jfr-settings so /api/jfr/recording/start
+#     can load named profiles by name
+#   - Bind mount for monitoring/recordings/workshop so ad-hoc recordings
+#     persist on the host
+#
+# When to use this:
+#   - Modules 1, 2, 3, 5 (single-instance workflow)
+#   - Module 4 collector comparison: prefer pre-recorded .jfr files in
+#     workshop/recordings/ rather than booting the 6-JVM comparison stack
+#     on a laptop. If you really need live comparison, use the full
+#     start-comparison.sh on a beefier host.
+
+services:
+  trader-stream-workshop:
+    image: trader-stream-ee:workshop
+    build:
+      context: .
+      dockerfile: Dockerfile.scale
+      args:
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.3}
+    container_name: trader-stream-workshop
+    hostname: trader-stream-workshop
+    ports:
+      - "8080:8080"
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=${TRADER_INGESTION_MODE:-AERON}
+      - PAYARA_INSTANCE_NAME=workshop
+      - HAZELCAST_MEMBER_NAME=trader-stream-workshop
+      - ENABLE_PUBLISHER=true
+      - JVM_TYPE=azul-prime
+      - JFR_ALWAYS_ON=true
+      - JFR_RECORDING_NAME=workshop
+      - JAVA_OPTS=-Xms2g -Xmx2g
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
+        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+        --add-opens java.base/java.nio=ALL-UNNAMED
+        -XX:+AlwaysPreTouch
+        -XX:+UseTransparentHugePages
+        -XX:+UseContainerSupport
+        -Djava.net.preferIPv4Stack=true
+    volumes:
+      - ./monitoring/logs/workshop:/opt/payara/logs
+      - ./monitoring/gc-logs/workshop:/opt/payara/gc-logs
+      - ./monitoring/recordings/workshop:/opt/payara/recordings
+      - ./workshop/jfr-settings:/opt/payara/jfr-settings:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/trader-stream-ee/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - trader-network
+    restart: unless-stopped
+
+networks:
+  trader-network:
+    driver: bridge
