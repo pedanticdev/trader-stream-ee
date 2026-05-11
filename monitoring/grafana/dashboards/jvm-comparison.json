@@ -4,7 +4,127 @@
     "tags": [ "jvm", "gc", "performance", "comparison" ],
     "timezone": "browser",
     "editable": true,
-    "panels": [ {
+    "panels": [
+    {
+      "id": 10,
+      "title": "Response Latency - JIT Warmup (P50 / P99)",
+      "type": "timeseries",
+      "description": "Request latency from Traefik edge. Watch for the latency drop during the first few minutes as JIT compiles hot methods.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(traefik_service_request_duration_seconds_bucket{job=~\"traefik-c4|traefik-g1\"}[30s]))",
+          "legendFormat": "P50 - {{job}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(traefik_service_request_duration_seconds_bucket{job=~\"traefik-c4|traefik-g1\"}[30s]))",
+          "legendFormat": "P99 - {{job}}",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "axisLabel": "Response Time (s)",
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10,
+            "pointSize": 3,
+            "showPoints": "never",
+            "spanNulls": false,
+            "lineWidth": 2,
+            "gradientMode": "scheme"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 0.5, "color": "yellow" },
+              { "value": 1, "color": "red" }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byRegexp", "options": ".*P99.*" },
+            "properties": [
+              { "id": "lineWidth", "value": 1 },
+              { "id": "dashes", "value": true },
+              { "id": "dashLength", "value": 5 }
+            ]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": ".*traefik-c4.*" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": ".*traefik-g1.*" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": [ "mean", "max", "lastNotNull" ] }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Request Throughput",
+      "type": "timeseries",
+      "description": "Requests per second through each cluster. Use this to correlate throughput changes with the warmup latency drop.",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(traefik_service_requests_total{code=~\"2..\", job=~\"traefik-c4|traefik-g1\"}[30s])) by (job)",
+          "legendFormat": "{{job}} req/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "axisLabel": "Requests/sec",
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15,
+            "lineWidth": 2
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byRegexp", "options": ".*traefik-c4.*" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": ".*traefik-g1.*" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "id": 1,
       "title": "GC Pause Time Comparison (P99)",
       "type": "timeseries",
@@ -12,7 +132,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 16
       },
       "targets": [ {
         "expr": "histogram_quantile(0.99, rate(jvm_gc_collection_time_ms[5m])) by (jvm_type, gc)",
@@ -60,7 +180,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 16
       },
       "targets": [ {
         "expr": "rate(jvm_gc_collection_count[5m]) by (jvm_type, gc)",
@@ -83,7 +203,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 24
       },
       "targets": [ {
         "expr": "jvm_memory_heap_used by (jvm_type, instance) / jvm_memory_heap_max * 100",
@@ -106,7 +226,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 24
       },
       "targets": [ {
         "expr": "jvm_threads_current by (jvm_type, instance)",
@@ -129,7 +249,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 32
       },
       "targets": [ {
         "expr": "rate(jvm_gc_collection_time_ms[1m]) by (jvm_type, le)",
@@ -145,7 +265,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 40
       },
       "targets": [ {
         "expr": "histogram_quantile(0.99, rate(jvm_gc_collection_time_ms[5m])) by (jvm_type)",

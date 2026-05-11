@@ -133,6 +133,19 @@ echo "✓ G1 cluster started"
 echo "Waiting for clusters to initialize..."
 sleep 10
 
+# Start Traefik metrics scraper
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRAPER_PID_FILE="$SCRIPT_DIR/monitoring/.scraper.pid"
+if [ -f "$SCRAPER_PID_FILE" ]; then
+    kill "$(cat "$SCRAPER_PID_FILE")" 2>/dev/null
+    rm -f "$SCRAPER_PID_FILE"
+fi
+echo "Starting Traefik metrics scraper..."
+"$SCRIPT_DIR/monitoring/scrape-traefik.sh" &
+SCRAPER_PID=$!
+echo "$SCRAPER_PID" > "$SCRAPER_PID_FILE"
+echo "✓ Metrics scraper started (PID $SCRAPER_PID)"
+
 # Check cluster status
 echo ""
 echo "Checking cluster status..."

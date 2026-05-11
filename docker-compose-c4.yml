@@ -6,7 +6,7 @@
 
 services:
   traefik-c4:
-    image: traefik:v3.6.5
+    image: traefik:v3.6.12
     container_name: trader-traefik-c4
     command:
       - "--api.dashboard=true"
@@ -51,7 +51,12 @@ services:
       - ENABLE_PUBLISHER=true
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
-        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=20,filesize=10M
+        -XX:+PrintCompilation
+        -XX:+TraceDeoptimization
+        -XX:+LogVMOutput
+        -XX:-DisplayVMOutput
+        -XX:LogFile=/opt/payara/gc-logs/hotspot.log
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
         --add-opens java.base/java.nio=ALL-UNNAMED
@@ -95,7 +100,12 @@ services:
       - ENABLE_PUBLISHER=true
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
-        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=20,filesize=10M
+        -XX:+PrintCompilation
+        -XX:+TraceDeoptimization
+        -XX:+LogVMOutput
+        -XX:-DisplayVMOutput
+        -XX:LogFile=/opt/payara/gc-logs/hotspot.log
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
         --add-opens java.base/java.nio=ALL-UNNAMED
@@ -138,7 +148,12 @@ services:
       - ENABLE_PUBLISHER=true
       - JVM_TYPE=azul-c4
       - JAVA_OPTS=-Xms4g -Xmx4g
-        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=20,filesize=10M
+        -XX:+PrintCompilation
+        -XX:+TraceDeoptimization
+        -XX:+LogVMOutput
+        -XX:-DisplayVMOutput
+        -XX:LogFile=/opt/payara/gc-logs/hotspot.log
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
         --add-opens java.base/java.nio=ALL-UNNAMED

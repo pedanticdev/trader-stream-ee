@@ -72,7 +72,7 @@ public class HealthResource {
         health.put("gcCollectors", jvm.gcCollectors());
         health.put("javaVersion", System.getProperty("java.version"));
 
-        boolean clusterMode = hazelcastInstance != null && hazelcastInstance.getCluster().getMembers().size() > 1;
+        boolean clusterMode = hazelcastInstance != null && !hazelcastInstance.getCluster().getMembers().isEmpty();
         health.put("clusterMode", clusterMode);
 
         health.put("status", allHealthy ? "healthy" : "unhealthy");
