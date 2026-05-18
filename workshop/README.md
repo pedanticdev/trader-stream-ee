@@ -7,6 +7,7 @@ Hands-on workshop materials for JNation.
 | You want to | Read this |
 |---|---|
 | Run the workshop end-to-end | [WORKSHOP.md](./WORKSHOP.md) |
+| One-command laptop bring-up | `./scripts/quickstart.sh` |
 | Speaker day-of checklist | [speaker-prep.md](./speaker-prep.md) |
 | Risk matrix and live diagnostic steps | [operational-notes.md](./operational-notes.md) |
 | Verify your laptop is ready | `./scripts/verify-setup.sh` |
