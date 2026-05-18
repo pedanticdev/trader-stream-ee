@@ -78,12 +78,17 @@ Run this on your laptop before the session. Allow 20 minutes the first time.
 ```bash
 git clone <repo-url>
 cd trader-stream-ee
-./workshop/scripts/verify-setup.sh
 
-# Recommended on laptops: one Azul Platform Prime instance with the full app
+# Recommended on laptops: one Azul Platform Prime instance with the full app.
+# quickstart.sh runs verify-setup, builds, starts, waits for healthy, and
+# fires a 15-second smoke recording so you know the pipeline works.
+./workshop/scripts/quickstart.sh
+
+# What quickstart does, step by step (useful if you prefer to run it manually):
+./workshop/scripts/verify-setup.sh
 docker compose -f docker-compose-workshop.yml up -d --build
 
-# Or, for the full C4 vs G1 comparison stack (3 + 3 instances; needs a beefy host):
+# For the full C4 vs G1 comparison stack (3 + 3 instances; needs a beefy host):
 ./start-comparison.sh all
 ```
 
