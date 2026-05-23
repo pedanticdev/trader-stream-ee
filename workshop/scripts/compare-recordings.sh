@@ -5,7 +5,7 @@
 #
 # Usage:
 #   ./workshop/scripts/compare-recordings.sh \
-#       workshop/recordings/c4-promotion-storm.jfr \
+#       workshop/recordings/zgc-promotion-storm.jfr \
 #       workshop/recordings/g1-promotion-storm.jfr
 
 set -euo pipefail
@@ -14,7 +14,7 @@ C4_REC="${1:-}"
 G1_REC="${2:-}"
 
 if [ -z "$C4_REC" ] || [ -z "$G1_REC" ]; then
-    echo "Usage: $0 <c4-recording.jfr> <g1-recording.jfr>"
+    echo "Usage: $0 <zgc-recording.jfr> <g1-recording.jfr>"
     exit 2
 fi
 
@@ -62,7 +62,7 @@ summary() {
     echo "trade.published #:     $(count_event "$rec" trade.published)"
 }
 
-summary "$C4_REC" "C4"
+summary "$C4_REC" "ZGC"
 summary "$G1_REC" "G1"
 
 echo

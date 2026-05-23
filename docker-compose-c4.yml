@@ -26,7 +26,7 @@ services:
       - trader-network
       - monitoring
     labels:
-      - "jvm_type=azul-c4"
+      - "jvm_type=zulu-zgc"
     restart: unless-stopped
 
   trader-stream-c4-1:
@@ -35,7 +35,7 @@ services:
       context: .
       dockerfile: Dockerfile.scale
       args:
-        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.3}
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.5}
     container_name: trader-stream-c4-1
     hostname: trader-stream-c4-1
     ports:
@@ -49,14 +49,10 @@ services:
       - PAYARA_INSTANCE_NAME=c4-instance-1
       - HAZELCAST_MEMBER_NAME=trader-stream-c4-1
       - ENABLE_PUBLISHER=true
-      - JVM_TYPE=azul-c4
+      - JVM_TYPE=zulu-zgc
       - JAVA_OPTS=-Xms4g -Xmx4g
+        -XX:+UseZGC
         -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=20,filesize=10M
-        -XX:+PrintCompilation
-        -XX:+TraceDeoptimization
-        -XX:+LogVMOutput
-        -XX:-DisplayVMOutput
-        -XX:LogFile=/opt/payara/gc-logs/hotspot.log
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
         --add-opens java.base/java.nio=ALL-UNNAMED
@@ -78,7 +74,7 @@ services:
       - "cluster=c4"
       - "traefik.http.routers.trader-stream-c4.rule=PathPrefix(`/`)"
       - "traefik.http.services.trader-stream-c4.loadbalancer.server.port=8080"
-      - "jvm_type=azul-c4"
+      - "jvm_type=zulu-zgc"
       - "instance=c4-1"
     networks:
       - trader-network
@@ -100,14 +96,10 @@ services:
       - PAYARA_INSTANCE_NAME=c4-instance-2
       - HAZELCAST_MEMBER_NAME=trader-stream-c4-2
       - ENABLE_PUBLISHER=true
-      - JVM_TYPE=azul-c4
+      - JVM_TYPE=zulu-zgc
       - JAVA_OPTS=-Xms4g -Xmx4g
+        -XX:+UseZGC
         -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=20,filesize=10M
-        -XX:+PrintCompilation
-        -XX:+TraceDeoptimization
-        -XX:+LogVMOutput
-        -XX:-DisplayVMOutput
-        -XX:LogFile=/opt/payara/gc-logs/hotspot.log
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
         --add-opens java.base/java.nio=ALL-UNNAMED
@@ -128,7 +120,7 @@ services:
       - "cluster=c4"
       - "traefik.http.routers.trader-stream-c4.rule=PathPrefix(`/`)"
       - "traefik.http.services.trader-stream-c4.loadbalancer.server.port=8080"
-      - "jvm_type=azul-c4"
+      - "jvm_type=zulu-zgc"
       - "instance=c4-2"
     networks:
       - trader-network
@@ -150,14 +142,10 @@ services:
       - PAYARA_INSTANCE_NAME=c4-instance-3
       - HAZELCAST_MEMBER_NAME=trader-stream-c4-3
       - ENABLE_PUBLISHER=true
-      - JVM_TYPE=azul-c4
+      - JVM_TYPE=zulu-zgc
       - JAVA_OPTS=-Xms4g -Xmx4g
+        -XX:+UseZGC
         -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=20,filesize=10M
-        -XX:+PrintCompilation
-        -XX:+TraceDeoptimization
-        -XX:+LogVMOutput
-        -XX:-DisplayVMOutput
-        -XX:LogFile=/opt/payara/gc-logs/hotspot.log
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
         --add-opens java.base/java.nio=ALL-UNNAMED
@@ -178,7 +166,7 @@ services:
       - "cluster=c4"
       - "traefik.http.routers.trader-stream-c4.rule=PathPrefix(`/`)"
       - "traefik.http.services.trader-stream-c4.loadbalancer.server.port=8080"
-      - "jvm_type=azul-c4"
+      - "jvm_type=zulu-zgc"
       - "instance=c4-3"
     networks:
       - trader-network

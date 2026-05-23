@@ -8,8 +8,8 @@ Open the baseline recording. Find the longest pause in the recording. Note its d
 
 Either of:
 
-- A fresh recording you produced with `curl -X POST 'http://localhost:8081/trader-stream-ee/api/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop'` (output appears in `monitoring/recordings/c4-1/`).
-- The pre-recorded `workshop/recordings/c4-baseline.jfr`.
+- A fresh recording you produced with `curl -X POST 'http://localhost:8080/trader-stream-ee/api/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop'` (output appears in `monitoring/recordings/workshop-zgc/`).
+- The pre-recorded `workshop/recordings/zgc-baseline.jfr`.
 
 ## Steps
 
@@ -43,7 +43,7 @@ The Duration column is in milliseconds. JMC displays it formatted (e.g., "5.20 m
 
 <details>
 <summary>Hint 2</summary>
-For C4, the longest pause is usually 0 ms or near it. The "longest" might still be a sub-millisecond entry. That itself is the data point: there is nothing to optimise.
+For ZGC, the longest pause is usually 0 ms or near it. The "longest" might still be a sub-millisecond entry. That itself is the data point: there is nothing to optimise.
 </details>
 
 <details>

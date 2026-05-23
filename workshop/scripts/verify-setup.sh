@@ -71,7 +71,7 @@ else
     warn "jmc not on PATH. Install one of:"
     echo "         - Azul Mission Control (free): https://www.azul.com/products/components/azul-mission-control/"
     echo "         - OpenJDK JMC build:           https://github.com/openjdk/jmc"
-    echo "         - bundled with Azul Platform Prime (the C4 image used here)"
+    echo "         - bundled with Azul Zulu (the ZGC image used here)"
 fi
 
 section "Port availability"

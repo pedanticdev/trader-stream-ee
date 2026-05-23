@@ -103,16 +103,15 @@ Throughput target: 100K messages per second.
 
 ---
 
-## Two clusters, one variable
+## Two instances, one variable
 
 ```
-:8080  ┌─ C4 cluster ──┐         :9080  ┌─ G1 cluster ──┐
-       │ c4-1 (Prime)  │                │ g1-1 (Temurin)│
-       │ c4-2          │                │ g1-2          │
-       │ c4-3          │                │ g1-3          │
-       └───────────────┘                └───────────────┘
+:8080  ┌─ ZGC instance ─┐         :9080  ┌─ G1 instance ──┐
+       │ Zulu 25         │                │ Temurin 25      │
+       │ -XX:+UseZGC     │                │ (default G1)    │
+       └─────────────────┘                └─────────────────┘
 
-       Identical heap (-Xms4g -Xmx4g, AlwaysPreTouch, THP)
+       Identical heap (-Xms2g -Xmx2g, AlwaysPreTouch, THP)
        Identical workload
        Only the collector differs.
 ```
@@ -129,13 +128,12 @@ Throughput target: 100K messages per second.
 
 ---
 
-## Bring up the clusters
+## Bring up the instances
 
 ```bash
 git clone <repo>
 cd trader-stream-ee
-./workshop/scripts/verify-setup.sh
-./start-comparison.sh all
+./workshop/scripts/quickstart.sh
 ```
 
 Then:
@@ -154,14 +152,14 @@ Both must return `"status": "healthy"`.
 The application exposes JFR control over HTTP. No `jcmd`, no docker exec.
 
 ```bash
-# Start a 60-second recording
-curl -X POST 'http://localhost:8081/trader-stream-ee/api/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop'
+# Start a 60-second recording on the ZGC instance
+curl -X POST 'http://localhost:8080/trader-stream-ee/api/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop'
 
 # List captured files (auto-dumped on duration expiry)
-curl http://localhost:8081/trader-stream-ee/api/jfr/files | jq
+curl http://localhost:8080/trader-stream-ee/api/jfr/files | jq
 
 # Recordings persist to host via Docker bind mount:
-ls -lh monitoring/recordings/c4-1/
+ls -lh monitoring/recordings/workshop-zgc/
 ```
 
 ---
@@ -169,7 +167,7 @@ ls -lh monitoring/recordings/c4-1/
 ## Open in JMC
 
 ```bash
-jmc -open monitoring/recordings/c4-1/baseline-*.jfr
+jmc -open monitoring/recordings/workshop-zgc/baseline-*.jfr
 ```
 
 Three views to read first:
@@ -200,7 +198,7 @@ Hint: in JMC, sort the Duration column descending. The first row is your answer.
 
 Compare across the room.
 
-- C4 baseline: pauses under 1 ms
+- ZGC baseline: pauses under 1 ms (concurrent collection)
 - G1 baseline: occasional young-gen pauses around 5-15 ms
 
 The interesting question: **why is there any difference at idle?**
@@ -252,7 +250,7 @@ Sample size matters. P99 from 10 collections is meaningless.
 | `Full GC`                   | Whole-heap stop-the-world    | "You have a problem" |
 | `Concurrent Cycle`          | Marking with the application | Not a pause          |
 
-C4 collapses these into `GPGC New` and `GPGC Old`, both concurrent.
+ZGC collapses these: both young and old gen are collected concurrently with no stop-the-world phases.
 
 ---
 
@@ -289,7 +287,7 @@ Fix order: reduce allocation → increase young gen → change collector.
 - Pause time scales with region count, not heap size
 - `Object Copy` phase dominates
 
-Fix: compacting concurrent collector, or consolidate small objects.
+Fix: concurrent compacting collector (ZGC, C4), or consolidate small objects.
 
 ---
 
@@ -299,7 +297,7 @@ Fix: compacting concurrent collector, or consolidate small objects.
 - `ExecutionSample` stacks point into `G1BarrierSet`
 - Mutable singletons holding refs to recent young-gen objects
 
-Fix: immutable holders, copy-on-write, or a collector without remembered sets.
+Fix: immutable holders, copy-on-write, or a concurrent collector without remembered sets (ZGC, C4).
 
 ---
 
@@ -310,12 +308,12 @@ Fix: immutable holders, copy-on-write, or a collector without remembered sets.
 ```bash
 # Pre-recorded:
 jmc -open workshop/recordings/g1-promotion-storm.jfr
-jmc -open workshop/recordings/c4-promotion-storm.jfr
+jmc -open workshop/recordings/zgc-promotion-storm.jfr
 ```
 
 For G1: when does the first mixed collection trigger? What was old gen at that moment?
 
-For C4: same workload. Why no pause increase?
+For ZGC: same workload. Why no pause increase?
 
 > Template: `workshop/exercises/module-2-diagnose-promotion-storm/analysis-template.md`
 
@@ -402,9 +400,9 @@ workshop/exercises/module-3-burst-event/BurstPatternEvent.starter.java
 # Install into source tree:
 ./workshop/scripts/install-exercise.sh module-3-burst-event
 
-# Rebuild and roll instance 1:
-docker compose -f docker-compose-c4.yml build trader-stream-c4-1
-docker compose -f docker-compose-c4.yml up -d --no-deps trader-stream-c4-1
+# Rebuild and roll the ZGC instance:
+docker compose -f docker-compose-workshop.yml build trader-stream-workshop-zgc
+docker compose -f docker-compose-workshop.yml up -d --no-deps trader-stream-workshop-zgc
 ```
 
 Verify the event appears in JMC's Event Browser.
@@ -446,12 +444,12 @@ Same code. Same heap. Different collector. Different outcome.
 
 ```bash
 # Visual:
-jmc -open workshop/recordings/c4-fragmentation.jfr \
+jmc -open workshop/recordings/zgc-fragmentation.jfr \
     -open workshop/recordings/g1-fragmentation.jfr
 
 # CLI:
 ./workshop/scripts/compare-recordings.sh \
-    workshop/recordings/c4-fragmentation.jfr \
+    workshop/recordings/zgc-fragmentation.jfr \
     workshop/recordings/g1-fragmentation.jfr
 ```
 
@@ -474,10 +472,26 @@ jmc -open workshop/recordings/c4-fragmentation.jfr \
 
 ## Module 4 checkpoint
 
-C4 is not always the right answer. Two questions:
+The recordings show ZGC eliminating stop-the-world pauses that G1 incurs. Two questions:
 
-1. For a 200 ms P99.9 budget, is Prime's cost justified? On what does the answer depend?
-2. How much of C4 do you get for free with ZGC in OpenJDK 21? Where does ZGC still differ?
+1. For a 200 ms P99.9 budget, is ZGC's concurrent overhead justified? On what does the answer depend?
+2. ZGC uses load barriers on every object access. What does that cost at very high throughput?
+
+---
+
+## Beyond ZGC
+
+ZGC solves most latency problems in most applications. But it has limits:
+
+|                    | ZGC (OpenJDK)              | C4 (Azul Prime)                   |
+|--------------------|-----------------------------|-----------------------------------|
+| Barriers           | Load barrier on every read | No read barrier                   |
+| Generational       | Since JDK 21 (new)         | Always generational               |
+| Throughput cost    | 2-5% at moderate heaps     | Lower overhead at large heaps     |
+| Heap scale         | Good to ~8 TB              | Tested to 8 TB, production-hardened |
+| Compaction         | Concurrent                 | Concurrent, cooperative with app  |
+
+The diagnostic skills from this workshop apply to both. JFR cannot tell the difference between ZGC and C4 pauses because there are no stop-the-world pauses to measure in either case. The difference shows up in throughput under sustained load.
 
 ---
 
@@ -511,13 +525,15 @@ Long GC pauses observed
     │
     ├─ allocation > 500 MB/s?  → reduce allocation FIRST
     │                            (flyweight, off-heap, primitive arrays)
-    ├─ heap > 8 GB?            → consider concurrent collector
-    │                            (ZGC, C4, Shenandoah)
+    ├─ heap > 8 GB?            → concurrent collector
+    │                            (ZGC, Shenandoah, C4)
+    ├─ throughput-sensitive     → C4 (no read barrier overhead)
+    │  + low latency?           │
     └─ G1 fits but tail is bad → tune MaxGCPauseMillis,
                                   InitiatingHeapOccupancyPercent
 ```
 
-Reducing allocation is almost always cheaper than changing JVM.
+Reducing allocation is almost always cheaper than changing collector.
 
 ---
 
@@ -574,9 +590,11 @@ We will walk through real attendee data for the last 10 minutes.
 
 - *Java Performance: The Definitive Guide* (Scott Oaks), ch. 5
 - JEP 328: Flight Recorder
-- Azul C4 paper: <https://www.azul.com/products/components/azul-platform-prime/>
+- ZGC documentation: <https://openjdk.org/projects/zgc/>
+- Generational ZGC (JEP 439): <https://openjdk.org/jeps/439>
 - G1 ergonomics: <https://docs.oracle.com/en/java/javase/21/gctuning/>
 - JMC user guide: <https://docs.oracle.com/en/java/java-components/jdk-mission-control/9/user-guide/>
+- Azul Platform Prime (C4): <https://www.azul.com/products/azul-platform-prime/>
 
 Workshop materials: `workshop/` in this repo.
 

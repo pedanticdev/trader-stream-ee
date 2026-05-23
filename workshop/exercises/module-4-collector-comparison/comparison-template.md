@@ -6,12 +6,12 @@ Use one copy of this template per stress scenario.
 
 ## Recording files
 
-- C4: `workshop/recordings/c4-________.jfr`
+- ZGC: `workshop/recordings/zgc-________.jfr`
 - G1: `workshop/recordings/g1-________.jfr`
 
 ## Headline metrics
 
-| Metric | C4 | G1 | Why they differ |
+| Metric | ZGC | G1 | Why they differ |
 |---|---|---|---|
 | Pause count over the window | | | |
 | Max pause (ms) | | | |
@@ -26,7 +26,7 @@ Use one copy of this template per stress scenario.
 
 ## Event counts
 
-|             Event              | C4 count | G1 count |
+|             Event              | ZGC count | G1 count |
 |--------------------------------|----------|----------|
 | `jdk.GarbageCollection`        |          |          |
 | `jdk.GCPhasePauseLevel1`       |          |          |
@@ -42,7 +42,7 @@ Use one copy of this template per stress scenario.
 
 In JMC: `Outline → Threads → Hot Methods`.
 
-C4 top three:
+ZGC top three:
 
 1. 
 

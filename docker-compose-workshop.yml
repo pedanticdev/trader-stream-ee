@@ -1,42 +1,27 @@
-# Laptop-friendly workshop compose: one Azul Platform Prime instance.
+# Laptop-friendly workshop compose: one ZGC instance + one G1 instance.
 #
-# Why this exists:
-#   The 3 + 3 cluster in docker-compose-c4.yml / docker-compose-g1.yml runs
-#   six embedded Aeron MediaDrivers in parallel. On a 16-thread host the
-#   busy-spin idle strategies can starve a thread of safepoint progress
-#   under sustained pressure scenarios; Zing aborts with a "Checkpoint sync
-#   time longer than 200000 ms" fatal. One instance does not hit this.
+# Two single-node Hazelcast clusters for live side-by-side collector comparison
+# on a laptop. Each JDK runs exactly one Payara Micro instance with its own
+# Hazelcast cluster name (zgc vs g1), so there is no cross-discovery.
 #
-# What it provides:
-#   - A single Payara Micro on port 8080 with the full TradeStreamEE app
-#   - 2 GB heap (laptop-friendly; still large enough for every scenario in
-#     workshop/jfr-settings/tradestream-workshop.jfc to fire characteristic
-#     GC behaviour)
-#   - Always-on circular JFR via JFR_ALWAYS_ON=true, so attendees get a
-#     recording dumped to ./monitoring/recordings/workshop/recording.jfr
-#     on container exit
-#   - Bind mount for workshop/jfr-settings so /api/jfr/recording/start
-#     can load named profiles by name
-#   - Bind mount for monitoring/recordings/workshop so ad-hoc recordings
-#     persist on the host
+# Ports:
+#   8080  Zulu 25 + ZGC   (trader-stream-workshop-zgc)
+#   9080  Temurin 25 + G1  (trader-stream-workshop-g1)
 #
-# When to use this:
-#   - Modules 1, 2, 3, 5 (single-instance workflow)
-#   - Module 4 collector comparison: prefer pre-recorded .jfr files in
-#     workshop/recordings/ rather than booting the 6-JVM comparison stack
-#     on a laptop. If you really need live comparison, use the full
-#     start-comparison.sh on a beefier host.
+# Heap is 2 GB per instance (4 GB total). Large enough for every scenario in
+# workshop/jfr-settings/tradestream-workshop.jfc to fire characteristic GC
+# behaviour without swapping on a 16 GB laptop.
 
 services:
-  trader-stream-workshop:
-    image: trader-stream-ee:workshop
+  trader-stream-workshop-zgc:
+    image: trader-stream-ee:workshop-zgc
     build:
       context: .
       dockerfile: Dockerfile.scale
       args:
-        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.3}
-    container_name: trader-stream-workshop
-    hostname: trader-stream-workshop
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.5}
+    container_name: trader-stream-workshop-zgc
+    hostname: trader-stream-zgc-1
     ports:
       - "8080:8080"
     expose:
@@ -44,13 +29,14 @@ services:
     shm_size: 512m
     environment:
       - TRADER_INGESTION_MODE=${TRADER_INGESTION_MODE:-AERON}
-      - PAYARA_INSTANCE_NAME=workshop
-      - HAZELCAST_MEMBER_NAME=trader-stream-workshop
+      - PAYARA_INSTANCE_NAME=workshop-zgc
+      - HAZELCAST_MEMBER_NAME=trader-stream-zgc-1
       - ENABLE_PUBLISHER=true
-      - JVM_TYPE=azul-prime
+      - JVM_TYPE=zulu-zgc
       - JFR_ALWAYS_ON=true
-      - JFR_RECORDING_NAME=workshop
+      - JFR_RECORDING_NAME=workshop-zgc
       - JAVA_OPTS=-Xms2g -Xmx2g
+        -XX:+UseZGC
         -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
         --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
         --add-opens java.base/sun.nio.ch=ALL-UNNAMED
@@ -58,11 +44,63 @@ services:
         -XX:+AlwaysPreTouch
         -XX:+UseTransparentHugePages
         -XX:+UseContainerSupport
+        -XX:ErrorFile=/opt/payara/logs/hs_err_pid%p.log
         -Djava.net.preferIPv4Stack=true
     volumes:
-      - ./monitoring/logs/workshop:/opt/payara/logs
-      - ./monitoring/gc-logs/workshop:/opt/payara/gc-logs
-      - ./monitoring/recordings/workshop:/opt/payara/recordings
+      - ./monitoring/logs/workshop-zgc:/opt/payara/logs
+      - ./monitoring/gc-logs/workshop-zgc:/opt/payara/gc-logs
+      - ./monitoring/recordings/workshop-zgc:/opt/payara/recordings
+      - ./workshop/jfr-settings:/opt/payara/jfr-settings:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/trader-stream-ee/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - trader-network
+    restart: unless-stopped
+
+  trader-stream-workshop-g1:
+    image: trader-stream-ee:workshop-g1
+    build:
+      context: .
+      dockerfile: Dockerfile.scale.standard
+      args:
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.5}
+    container_name: trader-stream-workshop-g1
+    hostname: trader-stream-g1-1
+    ports:
+      - "9080:8080"
+    expose:
+      - "5701"
+    shm_size: 512m
+    environment:
+      - TRADER_INGESTION_MODE=${TRADER_INGESTION_MODE:-AERON}
+      - PAYARA_INSTANCE_NAME=workshop-g1
+      - HAZELCAST_MEMBER_NAME=trader-stream-g1-1
+      - ENABLE_PUBLISHER=true
+      - JVM_TYPE=eclipse-temurin-g1
+      - JFR_ALWAYS_ON=true
+      - JFR_RECORDING_NAME=workshop-g1
+      - JAVA_OPTS=-Xms2g -Xmx2g
+        -XX:+UseG1GC
+        -XX:G1HeapRegionSize=8m
+        -XX:MaxGCPauseMillis=10
+        -XX:InitiatingHeapOccupancyPercent=40
+        -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M
+        --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
+        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+        --add-opens java.base/java.nio=ALL-UNNAMED
+        -XX:+AlwaysPreTouch
+        -XX:+UseTransparentHugePages
+        -XX:+UseContainerSupport
+        -XX:ErrorFile=/opt/payara/logs/hs_err_pid%p.log
+        -Djava.net.preferIPv4Stack=true
+    volumes:
+      - ./monitoring/logs/workshop-g1:/opt/payara/logs
+      - ./monitoring/gc-logs/workshop-g1:/opt/payara/gc-logs
+      - ./monitoring/recordings/workshop-g1:/opt/payara/recordings
       - ./workshop/jfr-settings:/opt/payara/jfr-settings:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/trader-stream-ee/api/status"]

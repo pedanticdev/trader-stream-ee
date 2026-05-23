@@ -115,7 +115,7 @@
 
   <event name="jdk.ObjectAllocationOutsideTLAB">
     <setting name="enabled">true</setting>
-    <setting name="stackTrace">true</setting>
+    <setting name="stackTrace">false</setting>
   </event>
 
   <event name="jdk.ThreadAllocationStatistics">
@@ -202,23 +202,23 @@
        =================================================================== -->
 
   <event name="trade.published">
-    <setting name="enabled">true</setting>
+    <setting name="enabled">false</setting>
     <setting name="threshold">0 ns</setting>
     <setting name="stackTrace">false</setting>
   </event>
 
   <event name="quote.published">
-    <setting name="enabled">true</setting>
+    <setting name="enabled">false</setting>
     <setting name="stackTrace">false</setting>
   </event>
 
   <event name="marketdepth.published">
-    <setting name="enabled">true</setting>
+    <setting name="enabled">false</setting>
     <setting name="stackTrace">false</setting>
   </event>
 
   <event name="message.batch.processed">
-    <setting name="enabled">true</setting>
+    <setting name="enabled">false</setting>
     <setting name="stackTrace">false</setting>
   </event>
 
@@ -228,12 +228,12 @@
   </event>
 
   <event name="sbe.encode">
-    <setting name="enabled">true</setting>
+    <setting name="enabled">false</setting>
     <setting name="stackTrace">false</setting>
   </event>
 
   <event name="sbe.decode">
-    <setting name="enabled">true</setting>
+    <setting name="enabled">false</setting>
     <setting name="stackTrace">false</setting>
   </event>
 

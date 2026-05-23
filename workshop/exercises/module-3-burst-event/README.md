@@ -29,8 +29,8 @@ This copies your file to `src/main/java/fish/payara/trader/jfr/BurstPatternEvent
 The container builds with Maven inside the Docker image, so a quick rebuild loop:
 
 ```bash
-docker compose -f docker-compose-c4.yml build trader-stream-c4-1
-docker compose -f docker-compose-c4.yml up -d --no-deps trader-stream-c4-1
+docker compose -f docker-compose-workshop.yml build trader-stream-workshop-zgc
+docker compose -f docker-compose-workshop.yml up -d --no-deps trader-stream-workshop-zgc
 ```
 
 This rolls only one instance, so the cluster stays up.
@@ -39,14 +39,14 @@ This rolls only one instance, so the cluster stays up.
 
 ```bash
 # Start a fresh recording
-curl -X POST 'http://localhost:8081/trader-stream-ee/api/jfr/recording/start?name=burst-test&durationSeconds=120&settings=tradestream-workshop'
+curl -X POST 'http://localhost:8080/trader-stream-ee/api/jfr/recording/start?name=burst-test&durationSeconds=120&settings=tradestream-workshop'
 
 # Trigger MARKET_OPEN_SPIKE (a multi-step preset that includes a 5x burst phase)
-curl -X POST 'http://localhost:8081/trader-stream-ee/api/demo/presets/MARKET_OPEN_SPIKE/execute'
+curl -X POST 'http://localhost:8080/trader-stream-ee/api/demo/presets/MARKET_OPEN_SPIKE/execute'
 
 # Wait for the recording to finish, then open it
-ls -lh monitoring/recordings/c4-1/
-jmc -open monitoring/recordings/c4-1/burst-test-*.jfr
+ls -lh monitoring/recordings/workshop-zgc/
+jmc -open monitoring/recordings/workshop-zgc/burst-test-*.jfr
 ```
 
 In JMC: `Event Browser → All → burst.pattern.detected`. If your event is there with non-zero count during the spike phase, you have it.

@@ -35,39 +35,29 @@ flowchart LR
     M[MatchingEngine]
     B[BarAggregator + ta4j]
     W[MarketDataBroadcaster]
-    HZ[Hazelcast ITopic]
     WS[WebSocket clients]
 
     P --> SBE --> A --> F
     F --> M
     F --> B
-    F --> W
-    W --> HZ --> WS
+    F --> W --> WS
 ```
 
-The application runs as two parallel clusters under Traefik:
+The default workshop setup (`docker-compose-workshop.yml`) runs two single-instance Payara Micro containers, one per collector, each with 2 GB heap:
 
 ```mermaid
 flowchart TB
-    subgraph C4 cluster :8080
-      C1[trader-stream-c4-1<br/>Azul Prime / C4 GC]
-      C2[trader-stream-c4-2]
-      C3[trader-stream-c4-3]
+    subgraph ZGC :8080
+      Z[trader-stream-workshop-zgc<br/>Zulu 25 / ZGC<br/>2 GB heap]
     end
-    subgraph G1 cluster :9080
-      G1[trader-stream-g1-1<br/>Temurin 21 / G1 GC]
-      G2[trader-stream-g1-2]
-      G3[trader-stream-g1-3]
+    subgraph G1 :9080
+      G[trader-stream-workshop-g1<br/>Temurin 25 / G1GC<br/>2 GB heap]
     end
-    Prom[Prometheus :9090]
-    Graf[Grafana :3000]
-
-    C1 & C2 & C3 --> Prom
-    G1 & G2 & G3 --> Prom
-    Prom --> Graf
 ```
 
-Heap is identical on both sides (`-Xms4g -Xmx4g`, `AlwaysPreTouch`, transparent huge pages). The only deliberate difference is the garbage collector. That isolates GC behaviour as the dependent variable.
+Each instance forms its own single-node Hazelcast cluster. Heap size, `AlwaysPreTouch`, and transparent huge pages are identical on both sides. The only deliberate difference is the garbage collector.
+
+For a more powerful host (16+ GB RAM), you can run the full 3+3 side-by-side cluster with monitoring via `docker-compose-scale.yml` (ZGC) and `docker-compose-scale-standard.yml` (G1).
 
 ---
 
@@ -78,8 +68,7 @@ Run this on your laptop before the session. Allow 20 minutes the first time.
 ```bash
 git clone <repo-url>
 cd trader-stream-ee
-
-# Recommended on laptops: one Azul Platform Prime instance with the full app.
+git checkout jnation-workshop
 # quickstart.sh runs verify-setup, builds, starts, waits for healthy, and
 # fires a 15-second smoke recording so you know the pipeline works.
 ./workshop/scripts/quickstart.sh
@@ -88,31 +77,22 @@ cd trader-stream-ee
 ./workshop/scripts/verify-setup.sh
 docker compose -f docker-compose-workshop.yml up -d --build
 
-# For the full C4 vs G1 comparison stack (3 + 3 instances; needs a beefy host):
-./start-comparison.sh all
+# For the full 3+3 comparison stack (needs a beefy host):
+# docker compose -f docker-compose-scale.yml -f docker-compose-scale-standard.yml up -d
 ```
-
-The single-instance workshop compose exists specifically to avoid the Zing safepoint-sync issue that the 6-JVM cluster triggers on laptop-class hardware (see operational-notes.md). All modules except Module 4 work entirely against the single instance.
 
 You should end up with:
 
-|                    URL                    |         Purpose          |
-|-------------------------------------------|--------------------------|
-| `http://localhost:8080/trader-stream-ee/` | C4 cluster (Azul Prime)  |
-| `http://localhost:9080/trader-stream-ee/` | G1 cluster (Temurin)     |
-| `http://localhost:3000`                   | Grafana (admin/admin)    |
-| `http://localhost:9090`                   | Prometheus               |
-| `http://localhost:8084`                   | Traefik dashboard for C4 |
-| `http://localhost:9084`                   | Traefik dashboard for G1 |
-
-> **Ports 8080 / 9080 versus 8081 / 9081.** Health checks and UI traffic go through Traefik on the cluster ports (8080, 9080), which load-balances across all three instances. JFR commands and `/api/pressure/mode/*` calls in this workshop target the instance-1 direct ports (8081, 9081) so that recordings stay on a single JVM and end up in the bind-mounted `monitoring/recordings/{c4,g1}-1` directory.
+|                    URL                    |              Purpose               |
+|-------------------------------------------|------------------------------------|
+| `http://localhost:8080/trader-stream-ee/` | ZGC instance (Zulu 25)            |
+| `http://localhost:9080/trader-stream-ee/` | G1 instance (Temurin 25)          |
 
 JDK Mission Control installation:
 
 - Azul Mission Control (free): <https://www.azul.com/products/components/azul-mission-control/>
 - OpenJDK JMC build: <https://github.com/openjdk/jmc>
-- Azul Platform Prime bundles JMC; if you install Prime on your laptop separately, you have JMC.
-
+- 
 ---
 
 ## Module 1: Setup and warm-up (30 min)
@@ -133,45 +113,45 @@ Both must return `"status": "healthy"`. If one is unhealthy, give it another 30 
 The application exposes a JFR REST API. We will start a 60-second recording while the publisher runs in steady mode.
 
 ```bash
-# C4 baseline
-curl -X POST 'http://localhost:8081/trader-stream-ee/api/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop'
+# ZGC baseline
+curl -X POST 'http://localhost:8080/trader-stream-ee/api/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop'
 
 # G1 baseline
-curl -X POST 'http://localhost:9081/trader-stream-ee/api/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop'
+curl -X POST 'http://localhost:9080/trader-stream-ee/api/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop'
 ```
 
 The recording auto-stops after 60 seconds and dumps to disk. Find it:
 
 ```bash
-ls -lh monitoring/recordings/c4-1/
-ls -lh monitoring/recordings/g1-1/
+ls -lh monitoring/recordings/workshop-zgc/
+ls -lh monitoring/recordings/workshop-g1/
 ```
 
 ### 1.3 Open in JMC (10 min)
 
 ```bash
-jmc -open monitoring/recordings/c4-1/baseline-*.jfr
+jmc -open monitoring/recordings/workshop-zgc/baseline-*.jfr
 ```
 
-In JMC, open these pages:
+In JMC, find these views (exact path varies between OpenJDK JMC and Azul Mission Control; the view names are the same):
 
-1. **Outline → General → Garbage Collections** — the headline pause times.
-2. **Outline → Memory → Allocation** — per-thread allocation rates.
-3. **Outline → Threads** — find the publisher virtual thread.
+1. **Garbage Collections** (under General or JVM Internals) — the headline pause times.
+2. **Memory → Allocation** — per-thread allocation rates.
+3. **Threads** — find `market-data-publisher` (the virtual thread driving the Aeron burst loop).
 
 ### 1.4 Exercise: find the longest GC pause
 
 Find the longest GC pause in your baseline recording. Note:
 
 - Its duration in milliseconds.
-- The collector that produced it (`G1 Young Generation`, `GPGC New`, etc.).
+- The collector that produced it (`G1 Young Generation`, `ZGC`, etc.).
 - The cause field (`G1 Evacuation Pause`, `Allocation Failure`, etc.).
 
-Hint: in JMC, `Garbage Collections → Longest Pause` is one click. The duration column sorts in place. See [exercises/module-1-find-longest-pause/](./exercises/module-1-find-longest-pause/README.md) for hints and the expected output.
+Hint: in JMC, find the **Garbage Collections** view and sort by `Longest Pause` descending. The duration column sorts in place. See [exercises/module-1-find-longest-pause/](./exercises/module-1-find-longest-pause/README.md) for hints and the expected output.
 
 ### Module 1 discussion checkpoint
 
-Compare findings across the room. The C4 baseline should show pauses under 1 ms; the G1 baseline should show occasional young-gen pauses around 5-15 ms even under steady allocation. The interesting question is *why the difference exists at idle*, not just under stress.
+Compare findings across the room. The ZGC baseline should show pauses under 1 ms; the G1 baseline should show occasional young-gen pauses around 5-15 ms even under steady allocation. The interesting question is *why the difference exists at idle*, not just under stress.
 
 ---
 
@@ -197,46 +177,84 @@ Average pause time lies. Distributions tell the truth.
 
 ```mermaid
 flowchart LR
-    P50[P50 = "typical user feels"] --> P99
-    P99[P99 = "what one in 100 requests hits"] --> P999
-    P999[P99.9 = "the ones that cause incidents"] --> Max[Max = "the worst single pause"]
+    P50["P50 = typical user feels"] --> P99
+    P99["P99 = what 1 in 100 requests hits"] --> P999
+    P999["P99.9 = the ones that cause incidents"] --> Max["Max = the worst single pause"]
 ```
 
-In JMC: `Outline → General → Garbage Collections → Pause Time` shows the histogram. Sort by duration descending. The first row is your Max. P99 lives roughly at the 99th-percentile mark of the cumulative distribution.
+In JMC, find the **Garbage Collections** view and look at the Pause Time histogram. Sort by duration descending. The first row is your Max. P99 lives roughly at the 99th-percentile mark of the cumulative distribution.
 
 A 5-second recording at 60K msg/sec produces approximately 100 young collections under steady allocation. P99 over that sample size is barely meaningful. Workshop recordings are 60 seconds long for that reason, and even then your statistical confidence is limited; in production, recordings should be hours long for stable percentiles.
 
 ### 2.3 Young versus mixed versus full (10 min)
 
-Look at the `Name` column in `Garbage Collections`:
+The **Collector Name** column tells you which GC algorithm ran. This workshop uses two of the four main collectors available in OpenJDK:
 
-|          Name pattern          |                     What G1 was doing                      |
-|--------------------------------|------------------------------------------------------------|
-| `G1 Young Generation` (Normal) | Young-only collection. Cheap.                              |
-| `G1 Young Generation` (Mixed)  | Young plus some old regions. The expensive case.           |
-| `G1 Full GC`                   | Whole-heap, stop-the-world. The "you have a problem" case. |
-| `G1 Concurrent Cycle`          | Mark phases running with the application; not a pause.     |
+| Collector | Source | Strategy | Pause behaviour |
+|-----------|--------|----------|-----------------|
+| **G1** (Garbage First) | OpenJDK, ships with JDK 9+ | Generational, mostly concurrent. Young collections are STW; old-gen marking is concurrent. | Pauses scale with live set. Typical 5-50 ms. |
+| **ZGC** (Z Garbage Collector) | OpenJDK, ships with JDK 11+ (production-ready JDK 15+) | Generational (since JDK 21), fully concurrent. STW phases do only root scanning. | Sub-millisecond regardless of heap size. |
+| **Shenandoah** | OpenJDK, ships with JDK 12+ | Concurrent, uses brooks pointers for object movement. | Similar to ZGC: sub-millisecond. |
+| **C4** (Continuously Concurrent Compacting Collector) | Azul Platform Prime (commercial, not OpenJDK) | Fully concurrent, no STW phases at all. | Zero pauses, even during compaction. |
 
-C4 will show:
+G1 is the OpenJDK default. ZGC and Shenandoah are the low-latency OpenJDK alternatives. C4 is Azul's proprietary collector that goes one step further: where ZGC has brief sub-ms STW pauses for root scanning, C4 eliminates even those.
 
-| Name pattern |           What C4 was doing            |
-|--------------|----------------------------------------|
-| `GPGC New`   | New-gen concurrent collection.         |
-| `GPGC Old`   | Old-gen concurrent collection.         |
-| Pause = 0 ms | Nearly always. C4 is fully concurrent. |
+This workshop compares ZGC (Azul Zulu 25) against G1 (Eclipse Temurin 25). The contrast is the same: concurrent vs STW collection under allocation pressure.
+
+In the Garbage Collections view, filter by **Collector Name** to see each collector's behaviour:
+
+|      Collector Name       |                     What G1 was doing                      |
+|---------------------------|------------------------------------------------------------|
+| `G1New` (Normal)          | Young-only collection. Cheap.                              |
+| `G1Mixed`                 | Young plus some old regions. The expensive case.           |
+| `G1Old`                   | Whole-heap, stop-the-world. The "you have a problem" case. |
+| `G1ConcurrentMark`        | Mark phases running with the application; not a pause.     |
+
+ZGC will show:
+
+| Collector Name | What ZGC was doing                          |
+|----------------|---------------------------------------------|
+| `ZGC Minor`    | Concurrent young-gen collection.            |
+| `ZGC Major`    | Concurrent full collection.                 |
+
+The **Cause** column tells you what triggered the collection. The common causes you will see:
+
+| Cause                     | Meaning                                                                                                          | Typical collector |
+|---------------------------|------------------------------------------------------------------------------------------------------------------|-------------------|
+| `Allocation Rate`         | Application allocating fast enough to fill the young generation. This is the normal, healthy cause.              | G1, ZGC           |
+| `G1 Evacuation Pause`     | G1 needs to move (evacuate) live objects out of young regions to reclaim space.                                  | G1                |
+| `High Usage`              | Heap occupancy crossed a threshold. ZGC initiates a concurrent cycle to bring usage down.                        | ZGC               |
+| `G1 Humongous Allocation` | An object larger than half a G1 region was allocated. G1 treats these specially because they waste region space. | G1                |
+| `System.gc()`             | Application code (or a library) explicitly requested a GC. Usually unwanted in production.                       | Any               |
+| `Metadata GC Threshold`   | Metaspace (loaded classes) filled up. Often caused by dynamic class generation.                                  | Any               |
+
+**How to read `G1 Humongous Allocation`:** G1 divides the heap into fixed-size regions (16 MB in this workshop). Any object larger than half a region (8 MB) is a "humongous" object. G1 cannot move these objects during collection, so they cause fragmentation and force immediate old-gen allocation. In this application, the pressure scenarios generate large arrays that trigger this cause. If you see it frequently, the fix is either smaller allocations or larger G1 regions (`-XX:G1HeapRegionSize`).
 
 ### 2.4 The four pathologies (15 min)
 
+GC pauses fall into four categories, each with a distinct JFR signature. These four patterns let you diagnose any GC problem from a recording, regardless of the application.
+
+**Background: how generational GC works.** Both G1 and ZGC divide the heap into generations. New objects are allocated in the young generation. Objects that survive enough collections get *promoted* to the old generation. The collector must track references from old objects pointing to young objects (the *remembered set*). When the collector decides a region is no longer efficient to maintain, it *compacts* it by moving live objects elsewhere and reclaiming the space. These mechanics produce four failure modes:
+
+| Pathology                         | What goes wrong                                                                                                                                      | Layman's analogy                                                                                                                                                     |
+|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Promotion storm**               | Objects survive young-gen collections faster than the collector can promote them. Old gen fills rapidly.                                             | A conveyor belt dumping packages into a warehouse faster than the forklifts can shelve them.                                                                         |
+| **Fragmentation**                 | Many short-lived objects of different sizes leave the heap pitted with small free gaps. No single gap is large enough for a big allocation.          | A parking lot where every space has a motorcycle in it; no room for a delivery truck even though half the lot is "empty."                                            |
+| **Cross-generational references** | Old objects hold many references to young objects. The collector must scan these references during every young-gen collection, adding to pause time. | A filing cabinet (old gen) full of sticky notes pointing at documents on your desk (young gen). Every time you clear your desk, you have to check every sticky note. |
+| **Evacuation failure**            | The collector tries to move objects out of a region but there is nowhere to put them. The entire heap is too full.                                   | A removals truck shows up but every storage unit in the city is already rented.                                                                                      |
+
+The decision tree for triaging a recording:
+
 ```mermaid
 flowchart TB
-    P[Long GC pause] --> Q1{Pause time scales with old gen?}
-    Q1 -->|yes| PS[Promotion storm:<br/>too many objects surviving]
-    Q1 -->|no| Q2{Many small regions?}
-    Q2 -->|yes| FR[Fragmentation:<br/>compaction overhead]
-    Q2 -->|no| Q3{High RememberedSet update time?}
-    Q3 -->|yes| RS[Cross-generational refs:<br/>write barrier pressure]
-    Q3 -->|no| Q4{EvacuationFailed events?}
-    Q4 -->|yes| EF[Evacuation failure:<br/>to-space exhausted]
+    P[Long GC pause] --> Q1{"Pause time scales with old gen?"}
+    Q1 -->|yes| PS["Promotion storm: too many objects surviving"]
+    Q1 -->|no| Q2{"Many small regions?"}
+    Q2 -->|yes| FR["Fragmentation: compaction overhead"]
+    Q2 -->|no| Q3{"High RememberedSet update time?"}
+    Q3 -->|yes| RS["Cross-generational refs: write barrier pressure"]
+    Q3 -->|no| Q4{"EvacuationFailed events?"}
+    Q4 -->|yes| EF["Evacuation failure: to-space exhausted"]
 ```
 
 For each pathology there is one or two telltale events in JFR. See [analysis-checklist.md](./analysis-checklist.md) for the full triage tree.
@@ -248,18 +266,18 @@ For each pathology there is one or two telltale events in JFR. See [analysis-che
 Use the pre-recorded files:
 
 ```bash
+jmc -open workshop/recordings/zgc-promotion-storm.jfr
 jmc -open workshop/recordings/g1-promotion-storm.jfr
-jmc -open workshop/recordings/c4-promotion-storm.jfr
 ```
 
 Or generate fresh:
 
 ```bash
-curl -X POST 'http://localhost:9081/trader-stream-ee/api/jfr/recording/start?name=promo-live&durationSeconds=75&settings=tradestream-workshop'
+curl -X POST 'http://localhost:9080/trader-stream-ee/api/jfr/recording/start?name=promo-live&durationSeconds=75&settings=tradestream-workshop'
 sleep 10
-curl -X POST 'http://localhost:9081/trader-stream-ee/api/pressure/mode/PROMOTION_STORM'
+curl -X POST 'http://localhost:9080/trader-stream-ee/api/pressure/mode/PROMOTION_STORM'
 sleep 60
-curl -X POST 'http://localhost:9081/trader-stream-ee/api/pressure/mode/OFF'
+curl -X POST 'http://localhost:9080/trader-stream-ee/api/pressure/mode/OFF'
 ```
 
 In the G1 recording you should see:
@@ -269,7 +287,7 @@ In the G1 recording you should see:
 - `PromoteObjectOutsidePLAB` events climbing.
 - Eventually a mixed collection with a noticeable pause.
 
-In the C4 recording the same workload should produce no visible pause increase. Use this as the comparison anchor for Module 4. Full hints and expected outputs are in [exercises/module-2-diagnose-promotion-storm/](./exercises/module-2-diagnose-promotion-storm/README.md).
+In the ZGC recording the same workload should produce no visible pause increase. Use this as the comparison anchor for Module 4. Full hints and expected outputs are in [exercises/module-2-diagnose-promotion-storm/](./exercises/module-2-diagnose-promotion-storm/README.md).
 
 ### Module 2 discussion checkpoint
 
@@ -329,10 +347,10 @@ Three principles for choosing emission points:
 
 ### 3.3 Correlating with GC events (10 min)
 
-In JMC, the `Event Browser` lets you overlay timelines. To see whether GC pauses cause SBE encoding stalls:
+In JMC, the **Event Browser** lets you overlay timelines. To see whether GC pauses cause SBE encoding stalls:
 
-1. Open `Event Browser → Custom → Market Data → SBE Encode Operation`.
-2. Open `Event Browser → Java Virtual Machine → GC → Pause`.
+1. Find `sbe.encode` under the Custom events section.
+2. Find `jdk.GCPhasePause` under GC events.
 3. Drag both onto the same time axis.
 
 A correlated stall looks like this:
@@ -356,7 +374,7 @@ The exercise walks through:
 2. Add fields: `multiplier` (int), `windowMillis` (long), `peakRate` (double).
 3. Wire it into `MarketDataPublisher.detectBurstMode()`.
 4. Install with `./workshop/scripts/install-exercise.sh module-3-burst-event`.
-5. Rebuild, re-record, and verify the event appears in `Event Browser → Custom`.
+5. Rebuild, re-record, and verify the event appears in the Event Browser under Custom events.
 6. Build a custom JMC dashboard that overlays your event with `gc.sla.violation` and `aeron.backpressure`.
 
 The completed dashboard XML is at [`exercises/module-3-burst-event/jmc-dashboard.xml`](./exercises/module-3-burst-event/jmc-dashboard.xml); import it via JMC's `File → Open → Custom Dashboard`.
@@ -369,7 +387,7 @@ What would you instrument in your own application? What is the single hottest co
 
 ## Module 4: Collector comparison (45 min)
 
-**Goal:** Run identical workloads on C4 and G1, then read the resulting recordings as evidence.
+**Goal:** Run identical workloads on ZGC and G1, then read the resulting recordings as evidence.
 
 ### 4.1 The setup is already running (5 min)
 
@@ -391,20 +409,20 @@ Pre-recorded files are in `workshop/recordings/`. To save time, work from those.
 ./workshop/scripts/record-scenarios.sh
 ```
 
-This takes about 16 minutes and produces all 10 .jfr files (~20-30 MB each).
+This takes about 7 minutes and produces all 10 .jfr files (2-3 MB each).
 
 ### 4.3 Side-by-side analysis (20 min)
 
 Open paired recordings in JMC:
 
 ```bash
-jmc -open workshop/recordings/c4-fragmentation.jfr -open workshop/recordings/g1-fragmentation.jfr
+jmc -open workshop/recordings/zgc-fragmentation.jfr -open workshop/recordings/g1-fragmentation.jfr
 ```
 
 For each pair, fill in this comparison table (template at [exercises/module-4-collector-comparison/comparison-template.md](./exercises/module-4-collector-comparison/comparison-template.md)):
 
-|            Metric             | C4 | G1 | Why they differ |
-|-------------------------------|----|----|-----------------|
+|            Metric             | ZGC | G1 | Why they differ |
+|-------------------------------|-----|----|-----------------|
 | Max pause (ms)                |    |    |                 |
 | P99 pause (ms)                |    |    |                 |
 | GC throughput (% of app time) |    |    |                 |
@@ -416,7 +434,7 @@ For CLI-only comparison:
 
 ```bash
 ./workshop/scripts/compare-recordings.sh \
-    workshop/recordings/c4-fragmentation.jfr \
+    workshop/recordings/zgc-fragmentation.jfr \
     workshop/recordings/g1-fragmentation.jfr
 ```
 
@@ -426,10 +444,10 @@ For each of the four stress scenarios, write a one-sentence summary of the behav
 
 ### Module 4 discussion checkpoint
 
-C4 is not always the right answer. Two questions worth debating:
+ZGC is not always the right answer. Two questions worth debating:
 
-1. For an application with a 99.9% pause budget of 200 ms, is the operational cost of running Azul Prime justified? What does the answer depend on?
-2. If you change G1 to ZGC (also concurrent, ships with OpenJDK 21), how much of C4's behaviour do you reproduce? Where does ZGC still differ?
+1. For an application with a 99.9% pause budget of 200 ms, is the operational complexity of running a concurrent collector justified? What does the answer depend on?
+2. If you change G1 to ZGC (concurrent, ships with OpenJDK 21+), how much of the pause reduction do you get? Where does throughput trade off against latency?
 
 ---
 
@@ -459,7 +477,7 @@ flowchart LR
     A[Long GC pauses observed] --> Q1{Allocation rate > 500 MB/sec?}
     Q1 -->|yes| O1[Reduce allocation first<br/>flyweight, off-heap, primitive arrays]
     Q1 -->|no| Q2{Heap > 8 GB?}
-    Q2 -->|yes| O2[Consider concurrent collector<br/>ZGC, C4, Shenandoah]
+    Q2 -->|yes| O2[Consider concurrent collector<br/>ZGC, Shenandoah]
     Q2 -->|no| Q3{Pause sensitive but P99 acceptable?}
     Q3 -->|yes| O3[Tune G1: MaxGCPauseMillis,<br/>InitiatingHeapOccupancyPercent]
     Q3 -->|no| O2
@@ -513,7 +531,7 @@ The repository will keep producing fresh recordings as you change scenarios or a
 
 - JEP 328: Flight Recorder, the original proposal that ships JFR into OpenJDK.
 - *Java Performance: The Definitive Guide* (Scott Oaks), chapter 5 on GC tuning.
-- Azul C4 technical paper: <https://www.azul.com/products/components/azul-platform-prime/>
+- ZGC technical overview: <https://openjdk.org/jeps/333>
 - G1 ergonomics tuning: <https://docs.oracle.com/en/java/javase/21/gctuning/garbage-first-g1-garbage-collector1.html>
 - JMC user guide: <https://docs.oracle.com/en/java/java-components/jdk-mission-control/9/user-guide/>
 

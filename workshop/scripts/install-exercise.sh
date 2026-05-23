@@ -10,7 +10,7 @@
 #      to src/main/java/fish/payara/trader/jfr/BurstPatternEvent.java
 #      (only if the destination does not already exist - protects student edits)
 #   2. Patches MarketDataPublisher to emit the new event in its burst-mode branch.
-#   3. Rebuilds and redeploys the C4 cluster image.
+#   3. Rebuilds and redeploys the ZGC instance image.
 #   4. Reminds the speaker how to roll the running container.
 
 set -euo pipefail
@@ -51,9 +51,9 @@ esac
 echo
 echo "Next steps:"
 echo "  1. Edit $DST in your IDE."
-echo "  2. Rebuild the C4 image (Maven runs inside Docker):"
-echo "       docker compose -f docker-compose-c4.yml build trader-stream-c4-1"
+echo "  2. Rebuild the ZGC image (Maven runs inside Docker):"
+echo "       docker compose -f docker-compose-workshop.yml build trader-stream-workshop-zgc"
 echo "  3. Roll instance 1 only (keeps cluster alive):"
-echo "       docker compose -f docker-compose-c4.yml up -d --no-deps trader-stream-c4-1"
+echo "       docker compose -f docker-compose-workshop.yml up -d --no-deps trader-stream-workshop-zgc"
 echo "  4. Capture a fresh recording with the new event enabled:"
 echo "       curl -X POST 'http://localhost:8081/trader-stream-ee/api/jfr/recording/start?name=burst-event&durationSeconds=60&settings=tradestream-workshop'"

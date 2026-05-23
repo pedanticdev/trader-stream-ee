@@ -2,12 +2,13 @@
 # record-scenarios.sh
 # Generates the 10 pre-recorded JFR files used by the workshop.
 #
-# Prereq: both clusters running and healthy.
-#   ./start-comparison.sh
+# Prereq: workshop containers running and healthy.
+#   ./workshop/scripts/quickstart.sh
+#   (or: docker compose -f docker-compose-workshop.yml up -d)
 #
 # Output:
-#   workshop/recordings/c4-<scenario>.jfr  (5 files)
-#   workshop/recordings/g1-<scenario>.jfr  (5 files)
+#   workshop/recordings/zgc-<scenario>.jfr  (5 files)
+#   workshop/recordings/g1-<scenario>.jfr   (5 files)
 #
 # Typical invocation (uses all defaults below):
 #   ./workshop/scripts/record-scenarios.sh
@@ -26,10 +27,9 @@ mkdir -p "$OUT_DIR"
 # ---------------------------------------------------------------------------
 # Configuration defaults
 # ---------------------------------------------------------------------------
-# Hosts target instance 1 directly (not Traefik) so each recording stays on
-# one JVM and lands in the bind-mounted monitoring/recordings/{cluster}-1 dir.
-C4_HOST="${C4_HOST:-http://localhost:8081}"
-G1_HOST="${G1_HOST:-http://localhost:9081}"
+# Hosts target the workshop containers directly (single instance each).
+ZGC_HOST="${ZGC_HOST:-http://localhost:8080}"
+G1_HOST="${G1_HOST:-http://localhost:9080}"
 CONTEXT="/trader-stream-ee"
 
 # Per-scenario timing. The total recording window is WARMUP + RECORD seconds.
@@ -40,8 +40,8 @@ WARMUP_SECS="${WARMUP_SECS:-5}"     # JFR runs before the scenario starts; calib
 SETTLE_SECS="${SETTLE_SECS:-3}"     # idle pause between scenarios so OFF mode actually quiesces the JVM
 RECORD_SECS="${RECORD_SECS:-30}"    # active recording window with the scenario allocating
 
-C4_RECORDINGS_DIR="$ROOT_DIR/monitoring/recordings/c4-1"
-G1_RECORDINGS_DIR="$ROOT_DIR/monitoring/recordings/g1-1"
+ZGC_RECORDINGS_DIR="$ROOT_DIR/monitoring/recordings/workshop-zgc"
+G1_RECORDINGS_DIR="$ROOT_DIR/monitoring/recordings/workshop-g1"
 
 SCENARIOS=(
     "STEADY_LOAD:baseline"
@@ -60,7 +60,7 @@ require_health() {
     local resp
     resp=$(curl -s -o /dev/null -w '%{http_code}' "$host$CONTEXT/api/health/ready") || resp=000
     if [ "$resp" != "200" ]; then
-        fail "$label not healthy (HTTP $resp). Run ./start-comparison.sh and wait for /api/health/ready"
+        fail "$label not healthy (HTTP $resp). Start workshop: docker compose -f docker-compose-workshop.yml up -d"
     fi
 }
 
@@ -118,7 +118,7 @@ main() {
     command -v jq >/dev/null 2>&1 || fail "jq is required"
     command -v curl >/dev/null 2>&1 || fail "curl is required"
 
-    require_health "$C4_HOST" "C4"
+    require_health "$ZGC_HOST" "ZGC"
     require_health "$G1_HOST" "G1"
 
     log "Output directory: $OUT_DIR"
@@ -127,7 +127,7 @@ main() {
     for spec in "${SCENARIOS[@]}"; do
         local mode="${spec%%:*}"
         local name="${spec##*:}"
-        record_one "$C4_HOST" "c4" "$mode" "$name" "$C4_RECORDINGS_DIR"
+        record_one "$ZGC_HOST" "zgc" "$mode" "$name" "$ZGC_RECORDINGS_DIR"
         record_one "$G1_HOST" "g1" "$mode" "$name" "$G1_RECORDINGS_DIR"
     done
 

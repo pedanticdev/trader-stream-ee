@@ -126,7 +126,7 @@ jfr print --events jdk.GarbageCollection recording.jfr
 jfr print --events 'trade.*,gc.sla.violation' recording.jfr
 
 # Compare two recordings (workshop helper)
-./workshop/scripts/compare-recordings.sh c4.jfr g1.jfr
+./workshop/scripts/compare-recordings.sh zgc.jfr g1.jfr
 
 # Open in JMC
 jmc -open recording.jfr

@@ -23,7 +23,6 @@ Run through this list at least 48 hours before the workshop. Most items are one-
   ls -lh monitoring/recordings/workshop/
   docker compose -f docker-compose-workshop.yml down
   ```
-
 - [ ] Open the produced `dry-run-*.jfr` in JMC and confirm all 14 custom application events fire (`trade.published`, `quote.published`, `gc.sla.violation`, etc.).
 
 ## Day before
@@ -34,15 +33,13 @@ Run through this list at least 48 hours before the workshop. Most items are one-
   docker compose -f docker-compose-workshop.yml build
   docker save trader-stream-ee:workshop > /tmp/trader-stream-ee-workshop.tar
   ```
-
 - [ ] Copy the tar to a USB stick as a no-internet fallback. To restore: `docker load -i /tmp/trader-stream-ee-workshop.tar`.
 - [ ] Verify the pre-recorded files exist and open in JMC:
 
   ```bash
   ls -lh workshop/recordings/*.jfr
-  jmc -open workshop/recordings/c4-baseline.jfr
+  jmc -open workshop/recordings/zgc-baseline.jfr
   ```
-
 - [ ] Print one copy each per attendee:
   - `workshop/analysis-checklist.md` (2-page reference)
   - `workshop/exercises/module-4-collector-comparison/comparison-template.md` (worksheet)
@@ -51,7 +48,6 @@ Run through this list at least 48 hours before the workshop. Most items are one-
   ```bash
   npx @marp-team/marp-cli@latest workshop/slides/slides.md --pdf -o /tmp/slides.pdf
   ```
-
 - [ ] Make sure JMC starts cleanly on the projector machine (some macOS versions hide the JFR plug-in on first launch).
 - [ ] Charge the workshop laptop to full and bring a power adapter that matches the venue.
 
@@ -67,8 +63,7 @@ Run through this list at least 48 hours before the workshop. Most items are one-
   curl -fsS http://localhost:8080/trader-stream-ee/api/health/check | jq
   open http://localhost:8080/trader-stream-ee/    # macOS; xdg-open elsewhere
   ```
-
-- [ ] Open JMC and load `workshop/recordings/c4-baseline.jfr` so the first switch is instant.
+- [ ] Open JMC and load `workshop/recordings/zgc-baseline.jfr` so the first switch is instant.
 - [ ] Keep this terminal layout open:
   - Terminal 1: Docker logs (`docker compose -f docker-compose-workshop.yml logs -f trader-stream-workshop`)
   - Terminal 2: `curl` for REST calls
@@ -85,3 +80,4 @@ Run through this list at least 48 hours before the workshop. Most items are one-
 - [ ] Push `jnation-workshop` to GitHub so attendees can fork the exact repo state they used.
 - [ ] Tag the commit (`git tag -a workshop-jnation-2025 -m '...'`) so the working state is preserved even if `develop` moves.
 - [ ] Collect feedback and file any code issues in the repo's issue tracker.
+
