@@ -2,15 +2,15 @@
 
 A Payara Platform (Jakarta EE 11) application that serves two purposes:
 
-1. **GC Performance Comparison** - Side-by-side benchmark of Azul C4 vs G1GC under realistic allocation pressure from market data ingestion
-2. **Trading System Reference** - A matching engine, risk engine, portfolio analytics, and technical analysis built with idiomatic Java 21
+1. **GC Performance Comparison** - Side-by-side benchmark of Azul Zulu 25 (ZGC) vs Eclipse Temurin 25 (G1GC) under realistic allocation pressure from market data ingestion
+2. **Trading System Reference** - A matching engine, risk engine, portfolio analytics, and technical analysis built with idiomatic Java 25
 
 The application simulates a high-frequency trading desk that ingests market data via Aeron IPC + SBE (zero-copy binary), processes it through a price-time priority matching engine, computes risk metrics, and streams results to a browser dashboard via WebSocket.
 
 ## Prerequisites
 
 - Docker and Docker Compose (for containerized deployment)
-- Java 21+ JDK (for building from source; Maven wrapper included)
+- Java 25+ JDK (for building from source; Maven wrapper included)
 
 ## Quick Start
 
@@ -20,14 +20,14 @@ The application simulates a high-frequency trading desk that ingests market data
 ./start-comparison.sh all
 ```
 
-Deploys both Azul C4 and G1GC clusters (3 instances each) plus a full monitoring stack (Prometheus, Grafana, Loki).
+Deploys both ZGC and G1GC clusters (3 instances each) plus a full monitoring stack (Prometheus, Grafana, Loki).
 
-| Endpoint   | URL                                     |
-|:-----------|:----------------------------------------|
-| C4 Cluster | http://localhost:8080/trader-stream-ee/ |
-| G1 Cluster | http://localhost:9080/trader-stream-ee/ |
-| Grafana    | http://localhost:3000 (admin/admin)     |
-| Prometheus | http://localhost:9090                   |
+| Endpoint    | URL                                     |
+|:------------|:----------------------------------------|
+| ZGC Cluster | http://localhost:8080/trader-stream-ee/ |
+| G1 Cluster  | http://localhost:9080/trader-stream-ee/ |
+| Grafana     | http://localhost:3000 (admin/admin)     |
+| Prometheus  | http://localhost:9090                   |
 
 Other options:
 
@@ -41,18 +41,18 @@ Other options:
 ### Single-JVM Testing
 
 ```bash
-./start.sh azul-aeron          # Azul Prime (C4) + Aeron (peak performance)
-./start.sh standard-direct     # Eclipse Temurin (G1GC) + Direct (baseline)
-./start.sh azul-direct         # C4 with high allocation (stabilizes legacy code)
-./start.sh standard-aeron      # G1GC with Aeron (tests architectural improvement)
+./start.sh azul-aeron          # Azul Zulu 25 (ZGC) + Aeron (peak performance)
+./start.sh standard-direct     # Eclipse Temurin 25 (G1GC) + Direct (baseline)
+./start.sh azul-direct         # ZGC with high allocation
+./start.sh standard-aeron      # G1GC with Aeron
 ```
 
 Cluster modes (3 instances + Traefik LB + Hazelcast):
 
 ```bash
-./start.sh cluster             # C4 + Aeron cluster
+./start.sh cluster             # ZGC + Aeron cluster
 ./start.sh cluster-standard    # G1GC + Aeron cluster
-./start.sh cluster-direct      # C4 + Direct cluster
+./start.sh cluster-direct      # ZGC + Direct cluster
 ./start.sh cluster-dynamic 5   # Scale to N instances on the fly
 ```
 
@@ -122,18 +122,18 @@ MatchingEngine
 
 ## Tech Stack
 
-| Component          | Technology                                               | Version                                                       |
-|:-------------------|:---------------------------------------------------------|:--------------------------------------------------------------|
-| Language           | Java 21                                                  | Records, pattern matching, virtual threads, sealed interfaces |
-| Runtime            | Jakarta EE 11 / Payara Micro 7                           | CDI, WebSocket, REST, Concurrency 3.1                         |
-| Transport          | Aeron                                                    | 1.50.0 (IPC shared memory, kernel bypass)                     |
-| Serialization      | SBE (Simple Binary Encoding)                             | 1.34.0 (FIX standard, flyweight decoders)                     |
-| Technical Analysis | ta4j                                                     | 0.22.4                                                        |
-| Clustering         | Hazelcast                                                | 5.5.0 (distributed topics, atomic counters)                   |
-| GC Comparison      | Azul Platform Prime 21 (C4) vs Eclipse Temurin 21 (G1GC) |                                                               |
-| Frontend           | HTML5 + Chart.js + vanilla JS                            | No build tools, no frameworks                                 |
-| Observability      | Prometheus + Grafana + Loki + JFR                        |                                                               |
-| Build              | Maven (wrapper) + Docker                                 | Multi-stage builds                                            |
+| Component          | Technology                                      | Version                                                       |
+|:-------------------|:------------------------------------------------|:--------------------------------------------------------------|
+| Language           | Java 25                                         | Records, pattern matching, virtual threads, sealed interfaces |
+| Runtime            | Jakarta EE 11 / Payara Micro 7                  | CDI, WebSocket, REST, Concurrency 3.1                         |
+| Transport          | Aeron                                           | 1.50.0 (IPC shared memory, kernel bypass)                     |
+| Serialization      | SBE (Simple Binary Encoding)                    | 1.34.0 (FIX standard, flyweight decoders)                     |
+| Technical Analysis | ta4j                                            | 0.22.4                                                        |
+| Clustering         | Hazelcast                                       | 5.5.0 (distributed topics, atomic counters)                   |
+| GC Comparison      | Azul Zulu 25 (ZGC) vs Eclipse Temurin 25 (G1GC) |                                                               |
+| Frontend           | HTML5 + Chart.js + vanilla JS                   | No build tools, no frameworks                                 |
+| Observability      | Prometheus + Grafana + Loki + JFR               |                                                               |
+| Build              | Maven (wrapper) + Docker                        | Multi-stage builds                                            |
 
 ## Project Structure
 
@@ -178,7 +178,7 @@ src/main/resources/
 src/main/webapp/
   index.html        Main dashboard (GC charts, market data, demo presets)
   trading.html      Trading desk (order entry, order book, positions)
-  comparison.html   C4 vs G1 side-by-side view
+  comparison.html   ZGC vs G1 side-by-side view
   presentation.html Conference presentation mode
   blog.html         Documentation page
   health.html       Health check
@@ -294,11 +294,11 @@ CPU workloads: `TRADING_MATCHING`, `TECHNICAL_ANALYSIS`, `COMPRESSION`, `CRYPTO`
 | FRAGMENTATION   | 200 MB/s | 1 GB fragmented         | Compaction behavior                  |
 | CROSS_GEN_REFS  | 150 MB/s | 800 MB in old gen       | Remembered set scanning overhead     |
 
-Expected behavior: G1GC shows stop-the-world pauses that scale with live set size. C4 maintains pauses at or below 1ms across all scenarios.
+Expected behavior: G1GC shows stop-the-world pauses that scale with live set size. ZGC maintains sub-millisecond pauses across all scenarios.
 
 ### JFR Integration
 
-Java Flight Recorder runs by default (circular buffer, 1h/1GB, dumps on exit). 14 custom JFR events correlate domain metrics with JVM behavior:
+Java Flight Recorder is OFF by default. Set `JFR_ALWAYS_ON=true` to enable a circular recording (1h/1GB, dumps on exit). Ad-hoc recordings via the REST API always work regardless. 14 custom JFR events correlate domain metrics with JVM behavior:
 
 Market data: `TradePublished`, `QuotePublished`, `MarketDepthPublished`, `BatchProcessed`, `WebSocketBroadcast`
 Pipeline: `SbeEncode`, `SbeDecode`, `BackpressureEvent`, `BurstModeActivated`, `SlaViolation`
@@ -316,19 +316,20 @@ jmc analysis.jfr
 
 ### Environment Variables
 
-| Variable                | Values                          | Default | Description                   |
-|:------------------------|:--------------------------------|:--------|:------------------------------|
-| `TRADER_INGESTION_MODE` | `AERON`, `DIRECT`               | `AERON` | Data ingestion architecture   |
-| `ENABLE_PUBLISHER`      | `true`, `false`                 | -       | Enable market data publishing |
-| `JFR_ENABLED`           | `true`, `false`                 | `true`  | Enable default JFR recording  |
-| `JVM_TYPE`              | `azul-c4`, `eclipse-temurin-g1` | -       | Label for monitoring          |
+| Variable                | Values                           | Default | Description                   |
+|:------------------------|:---------------------------------|:--------|:------------------------------|
+| `TRADER_INGESTION_MODE` | `AERON`, `DIRECT`                | `AERON` | Data ingestion architecture   |
+| `ENABLE_PUBLISHER`      | `true`, `false`                  | -       | Enable market data publishing |
+| `JFR_ENABLED`           | `true`, `false`                  | `true`  | Enable default JFR recording  |
+| `JVM_TYPE`              | `zulu-zgc`, `eclipse-temurin-g1` | -       | Label for monitoring          |
 
 ### JVM Heap Sizes
 
-| Deployment              | Dockerfiles                                     | Heap | Reason             |
-|:------------------------|:------------------------------------------------|:-----|:-------------------|
-| Single instance         | `Dockerfile`, `Dockerfile.standard`             | 8 GB | Maximum throughput |
-| Clustered (3 instances) | `Dockerfile.scale`, `Dockerfile.scale.standard` | 4 GB | ~12 GB per cluster |
+| Deployment              | Dockerfiles                                     | Heap | Reason                  |
+|:------------------------|:------------------------------------------------|:-----|:------------------------|
+| Single instance         | `Dockerfile`, `Dockerfile.standard`             | 8 GB | Maximum throughput      |
+| Clustered (3 instances) | `Dockerfile.scale`, `Dockerfile.scale.standard` | 4 GB | ~12 GB per cluster      |
+| Workshop (1+1)          | `docker-compose-workshop.yml`                   | 2 GB | 4 GB total, laptop host |
 
 ### Notable JVM Flags (Both)
 
@@ -367,7 +368,7 @@ Test stack: JUnit 5.13.4 + Mockito 5.20.0 + AssertJ 3.27.6. Tests instantiate ob
 ./mvnw clean package -DskipTests  # Build without tests
 ```
 
-Build pipeline: SBE code generation (`exec-maven-plugin` against `market-data.xml`) -> compile (Java 21) -> WAR packaging -> test -> JaCoCo report -> Spotless format check.
+Build pipeline: SBE code generation (`exec-maven-plugin` against `market-data.xml`) -> compile (Java 25) -> WAR packaging -> test -> JaCoCo report -> Spotless format check.
 
 Maven wrapper included.
 
@@ -375,16 +376,16 @@ Maven wrapper included.
 
 Four Dockerfiles for the JVM comparison matrix:
 
-| Dockerfile                  | Runtime            | JVM  | Cluster                   |
+| Dockerfile                  | Runtime            | GC   | Cluster                   |
 |:----------------------------|:-------------------|:-----|:--------------------------|
-| `Dockerfile`                | Azul Prime 21      | C4   | No                        |
-| `Dockerfile.standard`       | Eclipse Temurin 21 | G1GC | No                        |
-| `Dockerfile.scale`          | Azul Prime 21      | C4   | Yes (Hazelcast + Traefik) |
-| `Dockerfile.scale.standard` | Eclipse Temurin 21 | G1GC | Yes (Hazelcast + Traefik) |
+| `Dockerfile`                | Azul Zulu 25       | ZGC  | No                        |
+| `Dockerfile.standard`       | Eclipse Temurin 25 | G1GC | No                        |
+| `Dockerfile.scale`          | Azul Zulu 25       | ZGC  | Yes (Hazelcast + Traefik) |
+| `Dockerfile.scale.standard` | Eclipse Temurin 25 | G1GC | Yes (Hazelcast + Traefik) |
 
-All use multi-stage builds: compile on `azul/zulu-openjdk:21`, copy WAR to runtime image. Payara Micro 7.2026.3 downloaded at build time.
+All use multi-stage builds: compile and runtime on JDK 25, copy WAR to runtime image. Payara Micro 7.2026.5 downloaded at build time.
 
-Six docker-compose files: `docker-compose.yml` (single C4), `docker-compose-standard.yml` (single G1), `docker-compose-scale.yml` (dynamic cluster), `docker-compose-c4.yml` (3-instance C4 + Traefik + JMX exporter), `docker-compose-g1.yml` (3-instance G1 + Traefik + JMX exporter), `docker-compose-monitoring.yml` (Prometheus + Grafana + Loki + Promtail).
+Seven docker-compose files: `docker-compose.yml` (single ZGC), `docker-compose-standard.yml` (single G1), `docker-compose-scale.yml` (dynamic cluster), `docker-compose-c4.yml` (3-instance ZGC + Traefik + JMX exporter), `docker-compose-g1.yml` (3-instance G1 + Traefik + JMX exporter), `docker-compose-workshop.yml` (laptop: 1 ZGC + 1 G1, no monitoring stack), `docker-compose-monitoring.yml` (Prometheus + Grafana + Loki + Promtail).
 
 ## Design Patterns
 
@@ -425,14 +426,14 @@ Six docker-compose files: `docker-compose.yml` (single C4), `docker-compose-stan
 
 ### Memory & GC
 
-| Term                  | Definition                                                                                   |
-|:----------------------|:---------------------------------------------------------------------------------------------|
-| Allocation Rate       | Speed of object creation (bytes/sec). Higher rates increase GC pressure.                     |
-| Live Set              | Total size of reachable objects. G1's mixed collection pause time scales with live set size. |
-| Concurrent Collection | GC running alongside application threads. C4 is concurrent; G1GC uses stop-the-world pauses. |
-| Promotion             | Moving objects from young to old generation after surviving multiple collections.            |
-| Remembered Set        | G1 data structure tracking old-to-young references. Scanning adds overhead. C4 has none.     |
-| Heap Fragmentation    | Free space scattered in small chunks. G1 pauses to compact; C4 compacts concurrently.        |
+| Term                  | Definition                                                                                    |
+|:----------------------|:----------------------------------------------------------------------------------------------|
+| Allocation Rate       | Speed of object creation (bytes/sec). Higher rates increase GC pressure.                      |
+| Live Set              | Total size of reachable objects. G1's mixed collection pause time scales with live set size.  |
+| Concurrent Collection | GC running alongside application threads. ZGC is concurrent; G1GC uses stop-the-world pauses. |
+| Promotion             | Moving objects from young to old generation after surviving multiple collections.             |
+| Remembered Set        | G1 data structure tracking old-to-young references. Scanning adds overhead. ZGC has none.     |
+| Heap Fragmentation    | Free space scattered in small chunks. G1 pauses to compact; ZGC compacts concurrently.        |
 
 ### Serialization & Performance
 
@@ -447,8 +448,9 @@ Six docker-compose files: `docker-compose.yml` (single C4), `docker-compose-stan
 
 ## References
 
-- [Azul C4 Garbage Collection](https://docs.azul.com/prime/c4-garbage-collection.html)
-- [Azul Platform Prime](https://www.azul.com/products/components/pgc/)
+- [ZGC Garbage Collector](https://openjdk.org/jeps/333)
+- [Azul Zulu JDK](https://www.azul.com/downloads/?package=jdk)
+- [Eclipse Temurin JDK](https://adoptium.net/)
 - [Aeron Messaging](https://aeron.io/)
 - [Simple Binary Encoding](https://github.com/Real-Logic-FIX/Simple-Binary-Encoding)
 - [Payara Platform](https://www.payara.fish/)

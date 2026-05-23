@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for TradeStreamEE
-# Uses Eclipse Temurin (Standard OpenJDK) for comparison against Azul Platform Prime
+# Uses Eclipse Temurin 25 (Standard OpenJDK) for comparison against Azul Zulu ZGC
 
-FROM azul/zulu-openjdk:21 AS build
+FROM eclipse-temurin:25 AS build
 WORKDIR /app
 
 # Copy Maven wrapper and pom.xml first for better layer caching
@@ -18,8 +18,8 @@ COPY src ./src
 RUN ./mvnw spotless:apply
 RUN ./mvnw clean package -DskipTests
 
-# Use Eclipse Temurin (Standard OpenJDK)
-FROM eclipse-temurin:21
+# Eclipse Temurin 25 with G1GC for comparison against ZGC
+FROM eclipse-temurin:25
 
 LABEL maintainer="TradeStreamEE"
 LABEL description="High-frequency trading dashboard (Standard JVM Comparison)"
@@ -27,7 +27,7 @@ LABEL description="High-frequency trading dashboard (Standard JVM Comparison)"
 WORKDIR /opt/payara
 
 # Add Payara Micro from URL
-ARG PAYARA_VERSION=7.2026.3
+ARG PAYARA_VERSION=7.2026.5
 ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/payara-micro/${PAYARA_VERSION}/payara-micro-${PAYARA_VERSION}.jar /opt/payara/payara-micro.jar
 
 # Copy WAR file from build stage

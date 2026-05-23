@@ -8,9 +8,8 @@
 
 set -e
 
-DEFAULT_OPTS="-Xms8g -Xmx8g \
+DEFAULT_OPTS="-Xms8g -Xmx8g -XX:+UseZGC \
 -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \
--XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions \
 -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages \
 -XX:+UseStringDeduplication \
 -XX:+OptimizeStringConcat \

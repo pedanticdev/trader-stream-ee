@@ -35,7 +35,7 @@ services:
       context: .
       dockerfile: Dockerfile.scale.standard
       args:
-        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.3}
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.5}
     container_name: trader-stream-g1-1
     hostname: trader-stream-g1-1
     ports:

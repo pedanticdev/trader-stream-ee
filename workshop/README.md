@@ -4,19 +4,19 @@ Hands-on workshop materials for JNation.
 
 ## Quick map
 
-| You want to | Read this |
-|---|---|
-| Run the workshop end-to-end | [WORKSHOP.md](./WORKSHOP.md) |
-| One-command laptop bring-up | `./scripts/quickstart.sh` |
-| Speaker day-of checklist | [speaker-prep.md](./speaker-prep.md) |
-| Risk matrix and live diagnostic steps | [operational-notes.md](./operational-notes.md) |
-| Verify your laptop is ready | `./scripts/verify-setup.sh` |
-| Print a desk reference | [analysis-checklist.md](./analysis-checklist.md) |
-| Read the speaker slides | [slides/slides.md](./slides/slides.md) |
-| Reproduce the pre-recorded files | `./scripts/record-scenarios.sh` |
-| Compare two recordings on the CLI | `./scripts/compare-recordings.sh` |
-| Inspect any recording from the terminal | `./scripts/jfr-query.sh summary <file>.jfr` |
-| Add a Module 3 starter to the source tree | `./scripts/install-exercise.sh module-3-burst-event` |
+|                 You want to                  |                                                           Read this                                                            |
+|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| Run the workshop end-to-end                  | [WORKSHOP.md](./WORKSHOP.md)                                                                                                   |
+| One-command laptop bring-up                  | `./scripts/quickstart.sh`                                                                                                      |
+| Speaker day-of checklist                     | [speaker-prep.md](./speaker-prep.md)                                                                                           |
+| Risk matrix and live diagnostic steps        | [operational-notes.md](./operational-notes.md)                                                                                 |
+| Verify your laptop is ready                  | `./scripts/verify-setup.sh`                                                                                                    |
+| Print a desk reference                       | [analysis-checklist.md](./analysis-checklist.md)                                                                               |
+| Read the speaker slides                      | [slides/slides.md](./slides/slides.md)                                                                                         |
+| Reproduce the pre-recorded files             | `./scripts/record-scenarios.sh`                                                                                                |
+| Compare two recordings on the CLI            | `./scripts/compare-recordings.sh`                                                                                              |
+| Inspect any recording from the terminal      | `./scripts/jfr-query.sh summary <file>.jfr`                                                                                    |
+| Add a Module 3 starter to the source tree    | `./scripts/install-exercise.sh module-3-burst-event`                                                                           |
 | GC pathology catalogue (take-home reference) | [exercises/module-5-apply-to-your-app/gc-pathology-catalog.md](./exercises/module-5-apply-to-your-app/gc-pathology-catalog.md) |
 
 ## JFR mode
@@ -32,9 +32,9 @@ To opt in to a long-running circular always-on recording in addition (for exampl
 3. **JDK Mission Control** installed (`jmc` command available). Free options:
    - Azul Mission Control: <https://www.azul.com/products/components/azul-mission-control/>
    - OpenJDK Mission Control: <https://github.com/openjdk/jmc>
-4. Ports `8080-8084`, `9080-9084`, `9090`, `3000`, `3100` free.
-5. Run `./scripts/verify-setup.sh` and resolve any `[FAIL]` items.
-6. Run `./start-comparison.sh all` once before the workshop to pre-cache Docker images.
+4. Ports `8080` and `9080` free.
+5. Run `./workshop/scripts/verify-setup.sh` and resolve any `[FAIL]` items.
+6. Run `./workshop/scripts/quickstart.sh` once before the workshop to pre-build and pre-cache Docker images.
 
 ## Folder layout
 

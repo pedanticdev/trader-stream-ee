@@ -186,6 +186,7 @@ public class MarketDataPublisher {
     private void startPublishing() {
         running = true;
         publisherFuture = managedExecutorService.submit(() -> {
+            Thread.currentThread().setName("market-data-publisher");
             LOGGER.info("Market data publisher task started - burst pattern: 1,500 messages per 5μs (rate limited by Aeron backpressure)");
 
             final int BASE_BURST_SIZE = 500;
@@ -225,6 +226,7 @@ public class MarketDataPublisher {
         });
 
         statsFuture = managedExecutorService.submit(() -> {
+            Thread.currentThread().setName("market-data-stats");
             long lastCount = 0;
             long lastTime = System.currentTimeMillis();
 

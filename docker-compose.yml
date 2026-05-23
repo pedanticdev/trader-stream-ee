@@ -5,13 +5,13 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.3}
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.5}
     container_name: trader-stream-ee
     ports:
       - "8080:8080"
     # Increase shared memory for Aeron IPC transport
     shm_size: 512m
-    # JVM options are set in Dockerfile by default (C4 GC with 2g heap)
+    # JVM options are set in Dockerfile by default (ZGC with 8g heap)
     # Uncomment below to override with custom settings:
     # environment:
     #   - JAVA_OPTS=-XX:+UseZGC -Xms4g -Xmx4g -Xlog:gc*:stdout:time,uptime

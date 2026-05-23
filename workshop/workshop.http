@@ -1,0 +1,322 @@
+### Workshop environment
+@host_zgc = http://localhost:8080
+@host_g1 = http://localhost:9080
+@context = /trader-stream-ee
+@base_zgc = {{host_zgc}}{{context}}/api
+@base_g1 = {{host_g1}}{{context}}/api
+
+### --------------------------------------------------
+### Health & Status
+### --------------------------------------------------
+
+### ZGC - Health check
+GET {{base_zgc}}/health/check
+Accept: application/json
+
+### G1 - Health check
+GET {{base_g1}}/health/check
+Accept: application/json
+
+### ZGC - Readiness probe
+GET {{base_zgc}}/health/ready
+Accept: application/json
+
+### G1 - Readiness probe
+GET {{base_g1}}/health/ready
+Accept: application/json
+
+### ZGC - System status
+GET {{base_zgc}}/status
+Accept: application/json
+
+### G1 - System status
+GET {{base_g1}}/status
+Accept: application/json
+
+### ZGC - Hazelcast cluster info
+GET {{base_zgc}}/status/cluster
+Accept: application/json
+
+### --------------------------------------------------
+### JFR Recordings
+### --------------------------------------------------
+
+### ZGC - JFR status
+GET {{base_zgc}}/jfr/status
+Accept: application/json
+
+### G1 - JFR status
+GET {{base_g1}}/jfr/status
+Accept: application/json
+
+### ZGC - List active recordings
+GET {{base_zgc}}/jfr/recordings
+Accept: application/json
+
+### ZGC - List JFR statistics
+GET {{base_zgc}}/jfr/stats
+Accept: application/json
+
+### ZGC - Available .jfr files
+GET {{base_zgc}}/jfr/files
+Accept: application/json
+
+### ZGC - Start baseline recording (60s)
+POST {{base_zgc}}/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop
+Accept: application/json
+
+### G1 - Start baseline recording (60s)
+POST {{base_g1}}/jfr/recording/start?name=baseline&durationSeconds=60&settings=tradestream-workshop
+Accept: application/json
+
+### ZGC - Start short recording (15s)
+POST {{base_zgc}}/jfr/recording/start?name=quick&durationSeconds=15&settings=tradestream-workshop
+Accept: application/json
+
+### G1 - Start short recording (15s)
+POST {{base_g1}}/jfr/recording/start?name=quick&durationSeconds=15&settings=tradestream-workshop
+Accept: application/json
+
+### ZGC - Start long recording (120s)
+POST {{base_zgc}}/jfr/recording/start?name=workshop-long&durationSeconds=120&settings=tradestream-workshop
+Accept: application/json
+
+### ZGC - Stop recording by ID
+POST {{base_zgc}}/jfr/recording/stop?id=1
+Accept: application/json
+
+### --------------------------------------------------
+### Memory Pressure Scenarios
+### --------------------------------------------------
+
+### ZGC - View current pressure status
+GET {{base_zgc}}/pressure/status
+Accept: application/json
+
+### G1 - View current pressure status
+GET {{base_g1}}/pressure/status
+Accept: application/json
+
+### List available scenarios and workloads
+GET {{base_zgc}}/pressure/modes
+Accept: application/json
+
+### ZGC - STEADY_LOAD (200 MB/s, 512 MB stable)
+POST {{base_zgc}}/pressure/mode/STEADY_LOAD
+Accept: application/json
+
+### G1 - STEADY_LOAD
+POST {{base_g1}}/pressure/mode/STEADY_LOAD
+Accept: application/json
+
+### ZGC - GROWING_HEAP (150 MB/s, grows to 2 GB)
+POST {{base_zgc}}/pressure/mode/GROWING_HEAP
+Accept: application/json
+
+### G1 - GROWING_HEAP
+POST {{base_g1}}/pressure/mode/GROWING_HEAP
+Accept: application/json
+
+### ZGC - PROMOTION_STORM (300 MB/s, 50% survival)
+POST {{base_zgc}}/pressure/mode/PROMOTION_STORM
+Accept: application/json
+
+### G1 - PROMOTION_STORM
+POST {{base_g1}}/pressure/mode/PROMOTION_STORM
+Accept: application/json
+
+### ZGC - FRAGMENTATION (200 MB/s, fragmented)
+POST {{base_zgc}}/pressure/mode/FRAGMENTATION
+Accept: application/json
+
+### G1 - FRAGMENTATION
+POST {{base_g1}}/pressure/mode/FRAGMENTATION
+Accept: application/json
+
+### ZGC - CROSS_GEN_REFS (150 MB/s, old-gen refs)
+POST {{base_zgc}}/pressure/mode/CROSS_GEN_REFS
+Accept: application/json
+
+### G1 - CROSS_GEN_REFS
+POST {{base_g1}}/pressure/mode/CROSS_GEN_REFS
+Accept: application/json
+
+### Both - Stop all pressure (restore idle)
+POST {{base_zgc}}/pressure/mode/OFF
+Accept: application/json
+
+###
+POST {{base_g1}}/pressure/mode/OFF
+Accept: application/json
+
+### --------------------------------------------------
+### GC Monitoring
+### --------------------------------------------------
+
+### ZGC - GC pause percentiles
+GET {{base_zgc}}/gc/stats
+Accept: application/json
+
+### G1 - GC pause percentiles
+GET {{base_g1}}/gc/stats
+Accept: application/json
+
+### ZGC - Recent pause history
+GET {{base_zgc}}/gc/pauses
+Accept: application/json
+
+### ZGC - SLA violation counts
+GET {{base_zgc}}/gc/sla
+Accept: application/json
+
+### ZGC - Cluster comparison data
+GET {{base_zgc}}/gc/comparison
+Accept: application/json
+
+### ZGC - Reset GC statistics
+POST {{base_zgc}}/gc/reset
+Accept: application/json
+
+### ZGC - Reset SLA counters
+POST {{base_zgc}}/gc/sla/reset
+Accept: application/json
+
+### ZGC - Reset pause history
+POST {{base_zgc}}/gc/pauses/reset
+Accept: application/json
+
+### --------------------------------------------------
+### Business Impact
+### --------------------------------------------------
+
+### ZGC - Business impact of GC pauses
+GET {{base_zgc}}/business/impact
+Accept: application/json
+
+### ZGC - Business impact configuration
+GET {{base_zgc}}/business/config
+Accept: application/json
+
+### ZGC - Reset business impact counters
+POST {{base_zgc}}/business/reset
+Accept: application/json
+
+### --------------------------------------------------
+### Demo Presets
+### --------------------------------------------------
+
+### List all demo presets
+GET {{base_zgc}}/demo/presets
+Accept: application/json
+
+### Get a specific demo preset
+GET {{base_zgc}}/demo/preset/1
+Accept: application/json
+
+### Start demo preset 1
+POST {{base_zgc}}/demo/preset/1/start
+Accept: application/json
+
+### Cancel demo execution (replace {{executionId}})
+POST {{base_zgc}}/demo/execution/{{executionId}}/cancel
+Accept: application/json
+
+### --------------------------------------------------
+### Trading
+### --------------------------------------------------
+
+### Submit a buy order
+POST {{base_zgc}}/matching/orders
+Content-Type: application/json
+
+{
+  "symbol": "AAPL",
+  "side": "BUY",
+  "quantity": 100,
+  "price": 150.50,
+  "orderType": "LIMIT"
+}
+
+### Submit a sell order
+POST {{base_zgc}}/matching/orders
+Content-Type: application/json
+
+{
+  "symbol": "AAPL",
+  "side": "SELL",
+  "quantity": 50,
+  "price": 151.00,
+  "orderType": "LIMIT"
+}
+
+### List all orders
+GET {{base_zgc}}/matching/orders
+Accept: application/json
+
+### Order book for AAPL
+GET {{base_zgc}}/matching/orders/book/AAPL
+Accept: application/json
+
+### All positions
+GET {{base_zgc}}/matching/positions
+Accept: application/json
+
+### Execution history
+GET {{base_zgc}}/matching/executions
+Accept: application/json
+
+### Cancel order (replace {{orderId}})
+DELETE {{base_zgc}}/matching/orders/{{orderId}}
+Accept: application/json
+
+### --------------------------------------------------
+### Risk & Portfolio
+### --------------------------------------------------
+
+### Risk overview
+GET {{base_zgc}}/risk
+Accept: application/json
+
+### Risk snapshot for AAPL
+GET {{base_zgc}}/risk/AAPL
+Accept: application/json
+
+### Risk metrics
+GET {{base_zgc}}/risk/metrics
+Accept: application/json
+
+### Value at Risk
+GET {{base_zgc}}/risk/var
+Accept: application/json
+
+### Stress test results
+GET {{base_zgc}}/risk/stress
+Accept: application/json
+
+### Portfolio exposure
+GET {{base_zgc}}/risk/exposure
+Accept: application/json
+
+### Portfolio overview
+GET {{base_zgc}}/portfolio
+Accept: application/json
+
+### NAV snapshot
+GET {{base_zgc}}/portfolio/snapshot
+Accept: application/json
+
+### Portfolio metrics (Sharpe, drawdown, win rate)
+GET {{base_zgc}}/portfolio/metrics
+Accept: application/json
+
+### Generate rebalance plan
+POST {{base_zgc}}/portfolio/rebalance
+Accept: application/json
+
+### Reset portfolio state
+POST {{base_zgc}}/portfolio/reset
+Accept: application/json
+
+### Technical indicators for AAPL
+GET {{base_zgc}}/analysis/AAPL
+Accept: application/json

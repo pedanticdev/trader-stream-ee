@@ -2,12 +2,12 @@
 
 ## Problem
 
-The `PROMOTION_STORM` scenario allocates at 300 MB/sec with roughly 50% survival to old generation. Use JFR to explain *why* this produces increasing pause times on G1, and *why* C4 does not respond the same way.
+The `PROMOTION_STORM` scenario allocates at 300 MB/sec with roughly 50% survival to old generation. Use JFR to explain *why* this produces increasing pause times on G1, and *why* ZGC does not respond the same way.
 
 ## Inputs
 
 - `workshop/recordings/g1-promotion-storm.jfr`
-- `workshop/recordings/c4-promotion-storm.jfr`
+- `workshop/recordings/zgc-promotion-storm.jfr`
 
 Or generate fresh against your running clusters:
 
@@ -29,7 +29,7 @@ Open the G1 recording in JMC and check these views in order:
 3. **`Event Browser → jdk.PromoteObjectOutsidePLAB`** — events fire when an object is promoted to old gen but the PLAB (promotion buffer) didn't have room. High frequency means the application is over-allocating into PLABs, which is the promotion-storm signature.
 4. **`Outline → General → Garbage Collections → row detail`** for a mixed collection late in the recording. Look at the `Name` column for the `Mixed` qualifier and the per-phase breakdown.
 
-Repeat for the C4 recording. The same heap behaviour should be present (objects are being promoted), but pause time should not move.
+Repeat for the ZGC recording. The same heap behaviour should be present (objects are being promoted), but pause time should not move.
 
 ## Fill this in
 
@@ -42,7 +42,7 @@ G1 PROMOTION_STORM observations:
   PromoteObjectOutsidePLAB count: _____
   First mixed collection at:     second _____
 
-C4 PROMOTION_STORM observations:
+ZGC PROMOTION_STORM observations:
   Max pause across recording:    _____ ms
   Old gen at second 10:          _____ MB
   Old gen at second 50:          _____ MB
@@ -52,7 +52,7 @@ C4 PROMOTION_STORM observations:
 
 G1's old-gen collection is stop-the-world (the mixed phases). Once old gen fills, G1 must run mixed collections, and their cost scales with the live data they have to evacuate. The promotion storm builds the old gen up faster than concurrent marking can keep up, so mixed collections trigger and produce pauses.
 
-C4's old-gen collection (GPGC Old) runs concurrently with the application. Promotion into old gen does not cause a stop-the-world phase. Heap fills the same way; the application doesn't pause.
+ZGC's collection runs concurrently with the application. Promotion into old gen does not cause a stop-the-world phase. Heap fills the same way; the application doesn't pause.
 
 ## Discussion prompt
 
