@@ -1,17 +1,18 @@
 # Demo Preset Configuration for TradeStreamEE
-# Each preset defines a sequence of memory pressure scenarios to demonstrate GC differences
+# Each preset chains memory pressure scenarios to demonstrate runtime behaviour
+# under realistic trading workloads.
 
 presets:
   - id: MARKET_OPEN_SPIKE
     name: "Market Open Spike"
-    description: "Simulates NYSE open with 5x allocation surge. C4 handles burst smoothly; G1 stutters."
+    description: "Simulates NYSE open with 5x allocation surge. Concurrent collectors absorb the burst; STW collectors stutter."
     durationSeconds: 30
     expectedImpact: "High"
     steps:
       - mode: STEADY_LOAD
         durationSeconds: 5
         description: "Baseline warmup"
-      - mode: GROWING_HEAP
+      - mode: INTRADAY_POSITION_GROWTH
         durationSeconds: 15
         description: "5x burst allocation - simulates market open surge"
       - mode: STEADY_LOAD
@@ -20,37 +21,37 @@ presets:
 
   - id: EXECUTIVE_30_SEC
     name: "Executive 30-Sec"
-    description: "Quick demo for executive meetings. Shows clear C4 vs G1 difference in 30 seconds."
+    description: "Quick demo for executive meetings. Shows concurrent-vs-STW runtime difference in 30 seconds."
     durationSeconds: 30
     expectedImpact: "High"
     steps:
-      - mode: PROMOTION_STORM
+      - mode: EARNINGS_SPIKE
         durationSeconds: 30
-        description: "High promotion rate - shows old gen collection differences"
+        description: "Post-earnings surge - tests how the runtime absorbs sudden directional flow"
 
   - id: TRADING_DAY_STRESS
     name: "Trading Day Stress"
-    description: "Full trading day simulation with mixed scenarios. Tests old gen collection efficiency."
+    description: "Full trading day simulation with mixed scenarios. Tests how the runtime sustains long-running mixed pressure."
     durationSeconds: 180
     expectedImpact: "Very High"
     steps:
       - mode: STEADY_LOAD
         durationSeconds: 60
         description: "Morning steady trading"
-      - mode: PROMOTION_STORM
+      - mode: EARNINGS_SPIKE
         durationSeconds: 60
-        description: "Lunch volume spike - old gen stress"
-      - mode: FRAGMENTATION
+        description: "Lunch volume spike - tests how the runtime handles directional flow"
+      - mode: MULTI_VENUE_QUOTE_CHURN
         durationSeconds: 60
-        description: "Afternoon fragmentation stress"
+        description: "Afternoon quote churn stress"
 
-  - id: FRAGMENTATION_HELL
-    name: "Fragmentation Hell"
-    description: "Worst-case scenario for G1 - pure fragmentation. C4's compaction shows no pauses."
+  - id: QUOTE_CHURN_HELL
+    name: "Quote Churn Hell"
+    description: "Worst-case scenario for region-based STW collectors: pure short-lived object churn. Concurrent compacting collectors absorb it."
     durationSeconds: 120
     expectedImpact: "High"
     steps:
-      - mode: FRAGMENTATION
+      - mode: MULTI_VENUE_QUOTE_CHURN
         durationSeconds: 120
         description: "Small objects with random lifetimes - tests compaction"
 
@@ -63,18 +64,18 @@ presets:
       - mode: STEADY_LOAD
         durationSeconds: 60
         description: "Pre-market warmup"
-      - mode: GROWING_HEAP
+      - mode: INTRADAY_POSITION_GROWTH
         durationSeconds: 60
-        description: "Market open - growing heap"
-      - mode: PROMOTION_STORM
+        description: "Market open - growing position book"
+      - mode: EARNINGS_SPIKE
         durationSeconds: 60
-        description: "Mid-morning promotion storm"
+        description: "Mid-morning earnings spike"
       - mode: STEADY_LOAD
         durationSeconds: 30
         description: "Mid-day lull"
-      - mode: CROSS_GEN_REFS
+      - mode: LONG_HORIZON_POSITION_BOOK
         durationSeconds: 60
-        description: "Afternoon cross-gen stress"
-      - mode: FRAGMENTATION
+        description: "Afternoon cross-gen reference stress on the runtime"
+      - mode: MULTI_VENUE_QUOTE_CHURN
         durationSeconds: 30
-        description: "Close fragmentation"
+        description: "Close: multi-venue quote churn"

@@ -207,8 +207,8 @@ show_access_info() {
 
     echo "Quick Demo Commands:"
     echo "  # Apply stress test to both clusters"
-    echo "  curl -X POST http://localhost:8080/trader-stream-ee/api/pressure/mode/PROMOTION_STORM"
-    echo "  curl -X POST http://localhost:9080/trader-stream-ee/api/pressure/mode/PROMOTION_STORM"
+    echo "  curl -X POST http://localhost:8080/trader-stream-ee/api/pressure/mode/EARNINGS_SPIKE"
+    echo "  curl -X POST http://localhost:9080/trader-stream-ee/api/pressure/mode/EARNINGS_SPIKE"
     echo ""
     echo "  # Check GC stats"
     echo "  curl http://localhost:8080/trader-stream-ee/api/gc/stats"

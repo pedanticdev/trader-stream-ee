@@ -258,7 +258,7 @@ All endpoints under `/api/`.
 | GET    | `/pressure/status`      | Current pressure status       |
 | GET    | `/pressure/modes`       | Available scenarios and types |
 
-Memory scenarios: `STEADY_LOAD`, `GROWING_HEAP`, `PROMOTION_STORM`, `FRAGMENTATION`, `CROSS_GEN_REFS`, `OFF`
+Memory scenarios: `STEADY_LOAD`, `INTRADAY_POSITION_GROWTH`, `EARNINGS_SPIKE`, `MULTI_VENUE_QUOTE_CHURN`, `LONG_HORIZON_POSITION_BOOK`, `OFF`
 
 CPU workloads: `TRADING_MATCHING`, `TECHNICAL_ANALYSIS`, `COMPRESSION`, `CRYPTO`, `COLLECTION`, `SERIALIZATION`, `STRING`
 
@@ -286,13 +286,13 @@ CPU workloads: `TRADING_MATCHING`, `TECHNICAL_ANALYSIS`, `COMPRESSION`, `CRYPTO`
 
 `MemoryPressureService` generates controlled allocation pressure with 4 parallel virtual threads. Each scenario targets specific GC algorithm weaknesses.
 
-| Scenario        | Rate     | Live Set                | What It Tests                        |
-|:----------------|:---------|:------------------------|:-------------------------------------|
-| STEADY_LOAD     | 200 MB/s | 512 MB stable           | Baseline young generation collection |
-| GROWING_HEAP    | 150 MB/s | 100 MB to 2 GB over 60s | Mixed collection pause scaling       |
-| PROMOTION_STORM | 300 MB/s | 1 GB (50% survival)     | Old gen under high promotion         |
-| FRAGMENTATION   | 200 MB/s | 1 GB fragmented         | Compaction behavior                  |
-| CROSS_GEN_REFS  | 150 MB/s | 800 MB in old gen       | Remembered set scanning overhead     |
+| Scenario                   | Rate     | Live Set                | What It Tests                        |
+|:---------------------------|:---------|:------------------------|:-------------------------------------|
+| STEADY_LOAD                | 200 MB/s | 512 MB stable           | Baseline young generation collection |
+| INTRADAY_POSITION_GROWTH   | 150 MB/s | 100 MB to 2 GB over 60s | Mixed collection pause scaling       |
+| EARNINGS_SPIKE             | 300 MB/s | 1 GB (50% survival)     | Old gen under high promotion         |
+| MULTI_VENUE_QUOTE_CHURN    | 200 MB/s | 1 GB fragmented         | Compaction behavior                  |
+| LONG_HORIZON_POSITION_BOOK | 150 MB/s | 800 MB in old gen       | Remembered set scanning overhead     |
 
 Expected behavior: G1GC shows stop-the-world pauses that scale with live set size. ZGC maintains sub-millisecond pauses across all scenarios.
 

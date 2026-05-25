@@ -4,7 +4,7 @@ theme: default
 paginate: true
 backgroundColor: "#0c0e14"
 color: "#e6e6e6"
-header: "Java Flight Recorder for Low-Latency Systems"
+header: "Low-Latency Trading with Jakarta EE and Payara Micro"
 footer: "JNation Workshop · TradeStreamEE"
 style: |
   section {
@@ -41,9 +41,9 @@ style: |
 
 <!-- _class: lead -->
 
-# Java Flight Recorder for Low-Latency Systems
+# Low-Latency Trading with Jakarta EE
 
-## A Hands-On Workshop
+## Build, observe, and stress-test a real trading system on Payara Micro
 
 JNation · 3 hours 30 minutes
 
@@ -53,22 +53,22 @@ JNation · 3 hours 30 minutes
 
 ## Today's question
 
-> Your application is fast. Until it isn't.
-> A GC pause of 180 ms in the middle of a latency-sensitive operation.
-> You did not change the code. The heap did not grow.
-> **What happened?**
+> Your trading system meets its latency SLA in staging.
+> Production peak hits. P99 climbs from 8 ms to 110 ms.
+> Support has no recording. Nobody changed the code.
+> **What happened, and how do you prove it?**
 
-This workshop builds the answer from JFR data, not from intuition.
+This workshop builds the answer from JFR data on a real Jakarta EE application.
 
 ---
 
 ## What you leave with
 
-- The TradeStreamEE source and Docker setup
-- Ten pre-recorded `.jfr` files across five scenarios and two collectors
+- The TradeStreamEE source and Docker setup (a real Jakarta EE 11 trading app on Payara Micro 7)
+- Ten pre-recorded `.jfr` files across five scenarios on two OpenJDK runtimes
 - A printable JFR analysis checklist
 - Three reusable JFR event templates
-- A mental model you can carry to any Java application
+- A diagnostic mental model that transfers to any Java application on any runtime
 
 ---
 
@@ -79,7 +79,7 @@ This workshop builds the answer from JFR data, not from intuition.
 | 1 | Setup and warm-up             | 30 min |
 | 2 | Reading JFR recordings        | 60 min |
 | 3 | Custom JFR events             | 45 min |
-| 4 | Collector comparison          | 45 min |
+| 4 | Stress testing & production readiness | 45 min |
 | 5 | Applying to your applications | 30 min |
 
 ---
@@ -103,18 +103,22 @@ Throughput target: 100K messages per second.
 
 ---
 
-## Two instances, one variable
+## One application, two OpenJDK runtimes
 
 ```
-:8080  ┌─ ZGC instance ─┐         :9080  ┌─ G1 instance ──┐
-       │ Zulu 25         │                │ Temurin 25      │
-       │ -XX:+UseZGC     │                │ (default G1)    │
+:8080  ┌─ Runtime A ─────┐         :9080  ┌─ Runtime B ─────┐
+       │ Zulu 25 + ZGC   │                │ Temurin 25 + G1 │
+       │ Payara Micro 7  │                │ Payara Micro 7  │
        └─────────────────┘                └─────────────────┘
 
-       Identical heap (-Xms2g -Xmx2g, AlwaysPreTouch, THP)
-       Identical workload
-       Only the collector differs.
+       Identical Jakarta EE 11 application on both sides.
+       Identical heap (-Xms2g -Xmx2g, AlwaysPreTouch, THP).
+       Identical workload.
+       The OpenJDK runtime is the only deliberate variable.
 ```
+
+The application is the constant; the runtime is the variable.
+This workshop will not declare a winner: the recordings will say what they say, and you will read them.
 
 ---
 
@@ -196,12 +200,14 @@ Hint: in JMC, sort the Duration column descending. The first row is your answer.
 
 ## Module 1 checkpoint
 
-Compare across the room.
+Compare across the room. What does your baseline recording show on each port?
 
-- ZGC baseline: pauses under 1 ms (concurrent collection)
-- G1 baseline: occasional young-gen pauses around 5-15 ms
+- Port 8080 (Zulu 25 + ZGC): which collection events fire, and at what pause duration?
+- Port 9080 (Temurin 25 + G1): which collection events fire, and at what pause duration?
 
-The interesting question: **why is there any difference at idle?**
+Same heap, same workload, same Payara Micro application. **What is each runtime doing differently to produce its characteristic pause profile?**
+
+Hold the question. We will answer it in Module 2 by reading the JFR events.
 
 ---
 
@@ -250,7 +256,7 @@ Sample size matters. P99 from 10 collections is meaningless.
 | `Full GC`                   | Whole-heap stop-the-world    | "You have a problem" |
 | `Concurrent Cycle`          | Marking with the application | Not a pause          |
 
-ZGC collapses these: both young and old gen are collected concurrently with no stop-the-world phases.
+ZGC reports its collections under different names (`ZGen Young`, `ZGen Old`, plus brief `Pause Mark Start` / `Pause Relocate Start` events). Both generations are collected predominantly concurrently; the STW events you see in JFR are short coordination phases, not collection work.
 
 ---
 
@@ -303,19 +309,22 @@ Fix: immutable holders, copy-on-write, or a concurrent collector without remembe
 
 ## Exercise 2.5
 
-**Diagnose PROMOTION_STORM.**
+**Diagnose EARNINGS_SPIKE.**
 
 ```bash
 # Pre-recorded:
-jmc -open workshop/recordings/g1-promotion-storm.jfr
-jmc -open workshop/recordings/zgc-promotion-storm.jfr
+jmc -open workshop/recordings/g1-earnings-spike.jfr
+jmc -open workshop/recordings/zgc-earnings-spike.jfr
 ```
 
-For G1: when does the first mixed collection trigger? What was old gen at that moment?
+For each recording, report what you see:
 
-For ZGC: same workload. Why no pause increase?
+- G1: when does the first mixed collection trigger? What is old gen at that moment? How does pause time change across the recording?
+- ZGC: same workload, what events fire and at what pause duration? Does pause time change across the recording?
 
-> Template: `workshop/exercises/module-2-diagnose-promotion-storm/analysis-template.md`
+Bring your findings to the room. The recordings will say what they say; we will read them together.
+
+> Template: `workshop/exercises/module-2-diagnose-earnings-spike/analysis-template.md`
 
 ---
 
@@ -400,7 +409,7 @@ workshop/exercises/module-3-burst-event/BurstPatternEvent.starter.java
 # Install into source tree:
 ./workshop/scripts/install-exercise.sh module-3-burst-event
 
-# Rebuild and roll the ZGC instance:
+# Rebuild and roll one instance (Zulu shown; the same step works for Temurin):
 docker compose -f docker-compose-workshop.yml build trader-stream-workshop-zgc
 docker compose -f docker-compose-workshop.yml up -d --no-deps trader-stream-workshop-zgc
 ```
@@ -421,7 +430,7 @@ Pick one. Note the fields you would want on the event. We will come back to this
 
 # Module 4
 
-## Collector comparison
+## Stress testing & production readiness
 
 45 minutes
 
@@ -429,14 +438,14 @@ Pick one. Note the fields you would want on the event. We will come back to this
 
 ## The other four scenarios
 
-|     Scenario      |            Stresses            |
-|-------------------|--------------------------------|
-| `GROWING_HEAP`    | Mixed collection scaling       |
-| `PROMOTION_STORM` | Old-gen collection efficiency  |
-| `FRAGMENTATION`   | Compaction overhead            |
-| `CROSS_GEN_REFS`  | Remembered-set / write barrier |
+|             Scenario             |            Stresses            |
+|----------------------------------|--------------------------------|
+| `INTRADAY_POSITION_GROWTH`       | Mixed collection scaling       |
+| `EARNINGS_SPIKE`                 | Old-gen collection efficiency  |
+| `MULTI_VENUE_QUOTE_CHURN`        | Compaction overhead            |
+| `LONG_HORIZON_POSITION_BOOK`     | Remembered-set / write barrier |
 
-Same code. Same heap. Different collector. Different outcome.
+The application and heap are identical across both ports; the OpenJDK runtime is the only variable, and the outcome you will read from JFR follows from that.
 
 ---
 
@@ -444,13 +453,13 @@ Same code. Same heap. Different collector. Different outcome.
 
 ```bash
 # Visual:
-jmc -open workshop/recordings/zgc-fragmentation.jfr \
-    -open workshop/recordings/g1-fragmentation.jfr
+jmc -open workshop/recordings/zgc-multi-venue-quote-churn.jfr \
+    -open workshop/recordings/g1-multi-venue-quote-churn.jfr
 
 # CLI:
 ./workshop/scripts/compare-recordings.sh \
-    workshop/recordings/zgc-fragmentation.jfr \
-    workshop/recordings/g1-fragmentation.jfr
+    workshop/recordings/zgc-multi-venue-quote-churn.jfr \
+    workshop/recordings/g1-multi-venue-quote-churn.jfr
 ```
 
 ---
@@ -459,39 +468,23 @@ jmc -open workshop/recordings/zgc-fragmentation.jfr \
 
 **For each scenario, write a one-sentence behavioural difference.**
 
-|     Scenario      | Difference |
-|-------------------|------------|
-| `GROWING_HEAP`    | ...        |
-| `PROMOTION_STORM` | ...        |
-| `FRAGMENTATION`   | ...        |
-| `CROSS_GEN_REFS`  | ...        |
+|             Scenario             | Difference |
+|----------------------------------|------------|
+| `INTRADAY_POSITION_GROWTH`       | ...        |
+| `EARNINGS_SPIKE`                 | ...        |
+| `MULTI_VENUE_QUOTE_CHURN`        | ...        |
+| `LONG_HORIZON_POSITION_BOOK`     | ...        |
 
-> Template: `workshop/exercises/module-4-collector-comparison/comparison-template.md`
+> Template: `workshop/exercises/module-4-stress-testing/comparison-template.md`
 
 ---
 
 ## Module 4 checkpoint
 
-The recordings show ZGC eliminating stop-the-world pauses that G1 incurs. Two questions:
+Your trading system needs sub-10 ms P99 latency under adversarial load. Two questions:
 
-1. For a 200 ms P99.9 budget, is ZGC's concurrent overhead justified? On what does the answer depend?
-2. ZGC uses load barriers on every object access. What does that cost at very high throughput?
-
----
-
-## Beyond ZGC
-
-ZGC solves most latency problems in most applications. But it has limits:
-
-|                    | ZGC (OpenJDK)              | C4 (Azul Prime)                   |
-|--------------------|-----------------------------|-----------------------------------|
-| Barriers           | Load barrier on every read | No read barrier                   |
-| Generational       | Since JDK 21 (new)         | Always generational               |
-| Throughput cost    | 2-5% at moderate heaps     | Lower overhead at large heaps     |
-| Heap scale         | Good to ~8 TB              | Tested to 8 TB, production-hardened |
-| Compaction         | Concurrent                 | Concurrent, cooperative with app  |
-
-The diagnostic skills from this workshop apply to both. JFR cannot tell the difference between ZGC and C4 pauses because there are no stop-the-world pauses to measure in either case. The difference shows up in throughput under sustained load.
+1. Based on the recordings in front of you, which runtime configuration would you ship to production? Cite the events that drove the choice.
+2. At what allocation rate or live-set size does each runtime start to fall behind the application's needs? Where is that line for *your* production workload?
 
 ---
 
@@ -514,7 +507,7 @@ The diagnostic skills from this workshop apply to both. JFR cannot tell the diff
 | Cross-gen refs     | Mutable singletons holding recent request objects        |
 | Evacuation failure | Heap sized too tight; allocation bursts                  |
 
-The signatures are the same. Only the application changes.
+The signatures are the same across applications; only the surrounding code changes.
 
 ---
 
@@ -578,23 +571,38 @@ We will walk through real attendee data for the last 10 minutes.
 
 ## Takeaways
 
-1. JFR is the diagnostic of record for JVM pause behaviour.
-2. The four pathologies have characteristic signatures.
-3. `event.isEnabled()` and `@StackTrace(false)` are the workshop's two-line summary for production-grade custom events.
-4. Reduce allocation before changing collector.
-5. Recording duration drives statistical confidence; pick yours deliberately.
+1. JFR is the diagnostic of record for production Jakarta EE applications. Ship every container with always-on JFR.
+2. The four GC pathologies have signatures you can recognise in any application on any JVM runtime.
+3. `event.isEnabled()` and `@StackTrace(false)` are the two rules for production-grade custom JFR events.
+4. Stress-test before shipping. JFR tells you what happened; pre-production stress tells you whether it will happen in prod.
+5. The runtime is a production decision with measurable consequences. The recording, not the brand, decides.
+
+---
+
+## The Azul stack
+
+You ran community Payara Micro 7 on Azul Zulu OpenJDK in the lab today. The commercial Azul stack consolidates the JDK, the Jakarta EE runtime, and the high-performance JVM under one vendor:
+
+|                          | What it adds beyond what you ran today                                                                                                                            |
+|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Azul Payara Micro 7**  | Same Jakarta EE 11 runtime, plus monthly security patches, CVE Numbering Authority disclosures, multi-phase lifecycle (Full / Extended / Lifetime), 24-48h bug-fix SLA, and Azul Zulu OpenJDK bundled in the subscription. |
+| **Azul Platform Prime**  | The JVM above the OpenJDK pause-time envelope: C4 collector, ReadyNow warmup, Falcon JIT, production support for workloads where ZGC's allocation envelope is the constraint.                                              |
+
+The JFR analysis skills you used today apply unchanged, and the same Payara application runs without modification on either runtime. Only the runtime ceiling changes.
+
+Talk to us if your production workload has outgrown the recordings you read today.
 
 ---
 
 ## Further reading
 
-- *Java Performance: The Definitive Guide* (Scott Oaks), ch. 5
-- JEP 328: Flight Recorder
+- Payara Micro 7 documentation: <https://docs.payara.fish/>
+- Jakarta EE 11 specification: <https://jakarta.ee/specifications/>
+- JDK Flight Recorder (JEP 328): <https://openjdk.org/jeps/328>
 - ZGC documentation: <https://openjdk.org/projects/zgc/>
-- Generational ZGC (JEP 439): <https://openjdk.org/jeps/439>
 - G1 ergonomics: <https://docs.oracle.com/en/java/javase/21/gctuning/>
 - JMC user guide: <https://docs.oracle.com/en/java/java-components/jdk-mission-control/9/user-guide/>
-- Azul Platform Prime (C4): <https://www.azul.com/products/azul-platform-prime/>
+- Azul Platform Prime documentation: <https://docs.azul.com/prime/>
 
 Workshop materials: `workshop/` in this repo.
 

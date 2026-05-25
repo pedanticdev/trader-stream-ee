@@ -109,36 +109,36 @@ Accept: application/json
 POST {{base_g1}}/pressure/mode/STEADY_LOAD
 Accept: application/json
 
-### ZGC - GROWING_HEAP (150 MB/s, grows to 2 GB)
-POST {{base_zgc}}/pressure/mode/GROWING_HEAP
+### ZGC - INTRADAY_POSITION_GROWTH (150 MB/s, position book grows to 2 GB)
+POST {{base_zgc}}/pressure/mode/INTRADAY_POSITION_GROWTH
 Accept: application/json
 
-### G1 - GROWING_HEAP
-POST {{base_g1}}/pressure/mode/GROWING_HEAP
+### G1 - INTRADAY_POSITION_GROWTH
+POST {{base_g1}}/pressure/mode/INTRADAY_POSITION_GROWTH
 Accept: application/json
 
-### ZGC - PROMOTION_STORM (300 MB/s, 50% survival)
-POST {{base_zgc}}/pressure/mode/PROMOTION_STORM
+### ZGC - EARNINGS_SPIKE (300 MB/s, post-earnings directional flow)
+POST {{base_zgc}}/pressure/mode/EARNINGS_SPIKE
 Accept: application/json
 
-### G1 - PROMOTION_STORM
-POST {{base_g1}}/pressure/mode/PROMOTION_STORM
+### G1 - EARNINGS_SPIKE
+POST {{base_g1}}/pressure/mode/EARNINGS_SPIKE
 Accept: application/json
 
-### ZGC - FRAGMENTATION (200 MB/s, fragmented)
-POST {{base_zgc}}/pressure/mode/FRAGMENTATION
+### ZGC - MULTI_VENUE_QUOTE_CHURN (200 MB/s, multi-venue quote churn)
+POST {{base_zgc}}/pressure/mode/MULTI_VENUE_QUOTE_CHURN
 Accept: application/json
 
-### G1 - FRAGMENTATION
-POST {{base_g1}}/pressure/mode/FRAGMENTATION
+### G1 - MULTI_VENUE_QUOTE_CHURN
+POST {{base_g1}}/pressure/mode/MULTI_VENUE_QUOTE_CHURN
 Accept: application/json
 
-### ZGC - CROSS_GEN_REFS (150 MB/s, old-gen refs)
-POST {{base_zgc}}/pressure/mode/CROSS_GEN_REFS
+### ZGC - LONG_HORIZON_POSITION_BOOK (150 MB/s, long-held positions refer to fresh executions)
+POST {{base_zgc}}/pressure/mode/LONG_HORIZON_POSITION_BOOK
 Accept: application/json
 
-### G1 - CROSS_GEN_REFS
-POST {{base_g1}}/pressure/mode/CROSS_GEN_REFS
+### G1 - LONG_HORIZON_POSITION_BOOK
+POST {{base_g1}}/pressure/mode/LONG_HORIZON_POSITION_BOOK
 Accept: application/json
 
 ### Both - Stop all pressure (restore idle)

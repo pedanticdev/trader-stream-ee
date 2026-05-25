@@ -1,6 +1,6 @@
-# Java Flight Recorder for Low-Latency Systems
+# Low-Latency Trading with Jakarta EE and Payara Micro
 
-## A hands-on workshop for JNation
+## Build, observe, and stress-test a real trading system with JFR · JNation hands-on workshop
 
 Total time: 3 hours 30 minutes, broken into five modules. Each module ends with a hands-on exercise and a discussion checkpoint. You will leave with the application source, a generation script for the recordings, a printable analysis checklist, and reusable JFR event templates.
 
@@ -22,7 +22,6 @@ Senior Java developers comfortable with Jakarta EE, virtual threads, and idiomat
 
 Before running this workshop in front of a room, read [speaker-prep.md](./speaker-prep.md) and [operational-notes.md](./operational-notes.md). The speaker-prep file has the day-of checklist; operational-notes has the risk matrix and the live diagnostic checklist for when something misbehaves.
 
----
 
 ## Architecture you will be running
 
@@ -59,7 +58,6 @@ Each instance forms its own single-node Hazelcast cluster. Heap size, `AlwaysPre
 
 For a more powerful host (16+ GB RAM), you can run the full 3+3 side-by-side cluster with monitoring via `docker-compose-scale.yml` (ZGC) and `docker-compose-scale-standard.yml` (G1).
 
----
 
 ## Pre-workshop setup
 
@@ -93,7 +91,6 @@ JDK Mission Control installation:
 - Azul Mission Control (free): <https://www.azul.com/products/components/azul-mission-control/>
 - OpenJDK JMC build: <https://github.com/openjdk/jmc>
 - 
----
 
 ## Module 1: Setup and warm-up (30 min)
 
@@ -135,9 +132,9 @@ jmc -open monitoring/recordings/workshop-zgc/baseline-*.jfr
 
 In JMC, find these views (exact path varies between OpenJDK JMC and Azul Mission Control; the view names are the same):
 
-1. **Garbage Collections** (under General or JVM Internals) — the headline pause times.
-2. **Memory → Allocation** — per-thread allocation rates.
-3. **Threads** — find `market-data-publisher` (the virtual thread driving the Aeron burst loop).
+1. **Garbage Collections** (under General or JVM Internals): the headline pause times.
+2. **Memory → Allocation**: per-thread allocation rates.
+3. **Threads**: find `market-data-publisher` (the virtual thread driving the Aeron burst loop).
 
 ### 1.4 Exercise: find the longest GC pause
 
@@ -153,7 +150,6 @@ Hint: in JMC, find the **Garbage Collections** view and sort by `Longest Pause` 
 
 Compare findings across the room. The ZGC baseline should show pauses under 1 ms; the G1 baseline should show occasional young-gen pauses around 5-15 ms even under steady allocation. The interesting question is *why the difference exists at idle*, not just under stress.
 
----
 
 ## Module 2: Reading JFR recordings (60 min)
 
@@ -259,23 +255,23 @@ flowchart TB
 
 For each pathology there is one or two telltale events in JFR. See [analysis-checklist.md](./analysis-checklist.md) for the full triage tree.
 
-### 2.5 Exercise: diagnose PROMOTION_STORM (15 min)
+### 2.5 Exercise: diagnose EARNINGS_SPIKE (15 min)
 
 > **Pre-recorded files must exist before this module.** Run `./workshop/scripts/record-scenarios.sh` once during setup (about 16 minutes), or have the facilitator pre-generate them. The directory `workshop/recordings/` ships with only a README; the `.jfr` files are produced from your hardware.
 
 Use the pre-recorded files:
 
 ```bash
-jmc -open workshop/recordings/zgc-promotion-storm.jfr
-jmc -open workshop/recordings/g1-promotion-storm.jfr
+jmc -open workshop/recordings/zgc-earnings-spike.jfr
+jmc -open workshop/recordings/g1-earnings-spike.jfr
 ```
 
 Or generate fresh:
 
 ```bash
-curl -X POST 'http://localhost:9080/trader-stream-ee/api/jfr/recording/start?name=promo-live&durationSeconds=75&settings=tradestream-workshop'
+curl -X POST 'http://localhost:9080/trader-stream-ee/api/jfr/recording/start?name=earnings-live&durationSeconds=75&settings=tradestream-workshop'
 sleep 10
-curl -X POST 'http://localhost:9080/trader-stream-ee/api/pressure/mode/PROMOTION_STORM'
+curl -X POST 'http://localhost:9080/trader-stream-ee/api/pressure/mode/EARNINGS_SPIKE'
 sleep 60
 curl -X POST 'http://localhost:9080/trader-stream-ee/api/pressure/mode/OFF'
 ```
@@ -287,7 +283,7 @@ In the G1 recording you should see:
 - `PromoteObjectOutsidePLAB` events climbing.
 - Eventually a mixed collection with a noticeable pause.
 
-In the ZGC recording the same workload should produce no visible pause increase. Use this as the comparison anchor for Module 4. Full hints and expected outputs are in [exercises/module-2-diagnose-promotion-storm/](./exercises/module-2-diagnose-promotion-storm/README.md).
+In the ZGC recording the same workload should produce no visible pause increase. Use this as the comparison anchor for Module 4. Full hints and expected outputs are in [exercises/module-2-diagnose-earnings-spike/](./exercises/module-2-diagnose-earnings-spike/README.md).
 
 ### Module 2 discussion checkpoint
 
@@ -296,7 +292,6 @@ Two questions to debate around the room:
 1. If your production app has a P99 pause of 80 ms and a Max of 800 ms, which one do you optimise first, and why?
 2. What recording duration would you need for the P99 to be statistically meaningful given 10 collections per minute?
 
----
 
 ## Module 3: Custom JFR events (45 min)
 
@@ -383,21 +378,20 @@ The completed dashboard XML is at [`exercises/module-3-burst-event/jmc-dashboard
 
 What would you instrument in your own application? What is the single hottest code path you currently have no visibility into?
 
----
 
-## Module 4: Collector comparison (45 min)
+## Module 4: Stress testing and production readiness (45 min)
 
-**Goal:** Run identical workloads on ZGC and G1, then read the resulting recordings as evidence.
+**Goal:** Stress-test the same Jakarta EE application on two OpenJDK runtimes and read the recordings to decide whether the application is ready to ship. The workshop will not declare a winner; the recordings will say what they say, and you will read them.
 
 ### 4.1 The setup is already running (5 min)
 
-Both clusters are healthy. You have already run baseline + PROMOTION_STORM on both. The remaining scenarios are:
+Both clusters are healthy. You have already run baseline + EARNINGS_SPIKE on both. The remaining scenarios are:
 
-|     Scenario     |                        What it stresses                         |
-|------------------|-----------------------------------------------------------------|
-| `GROWING_HEAP`   | Mixed collection scaling as live set grows from 100 MB to 2 GB. |
-| `FRAGMENTATION`  | Compaction overhead under small-object churn.                   |
-| `CROSS_GEN_REFS` | Write-barrier and remembered-set maintenance.                   |
+|             Scenario             |                        What it stresses                         |
+|----------------------------------|-----------------------------------------------------------------|
+| `INTRADAY_POSITION_GROWTH`       | Mixed collection scaling as the position book grows from 100 MB to 2 GB. |
+| `MULTI_VENUE_QUOTE_CHURN`        | Compaction overhead under short-lived multi-venue quote churn.  |
+| `LONG_HORIZON_POSITION_BOOK`     | Write-barrier and remembered-set maintenance.                   |
 
 For each scenario, the application's `MemoryPressureService` produces the exact allocation pattern; you don't need to write any code.
 
@@ -416,10 +410,10 @@ This takes about 7 minutes and produces all 10 .jfr files (2-3 MB each).
 Open paired recordings in JMC:
 
 ```bash
-jmc -open workshop/recordings/zgc-fragmentation.jfr -open workshop/recordings/g1-fragmentation.jfr
+jmc -open workshop/recordings/zgc-multi-venue-quote-churn.jfr -open workshop/recordings/g1-multi-venue-quote-churn.jfr
 ```
 
-For each pair, fill in this comparison table (template at [exercises/module-4-collector-comparison/comparison-template.md](./exercises/module-4-collector-comparison/comparison-template.md)):
+For each pair, fill in this comparison table (template at [exercises/module-4-stress-testing/comparison-template.md](./exercises/module-4-stress-testing/comparison-template.md)):
 
 |            Metric             | ZGC | G1 | Why they differ |
 |-------------------------------|-----|----|-----------------|
@@ -434,22 +428,21 @@ For CLI-only comparison:
 
 ```bash
 ./workshop/scripts/compare-recordings.sh \
-    workshop/recordings/zgc-fragmentation.jfr \
-    workshop/recordings/g1-fragmentation.jfr
+    workshop/recordings/zgc-multi-venue-quote-churn.jfr \
+    workshop/recordings/g1-multi-venue-quote-churn.jfr
 ```
 
 ### 4.4 Exercise: document the differences (10 min)
 
-For each of the four stress scenarios, write a one-sentence summary of the behavioural difference. The expected answers (from real recordings) are in [exercises/module-4-collector-comparison/README.md](./exercises/module-4-collector-comparison/README.md).
+For each of the four stress scenarios, write a one-sentence assessment of production readiness for each runtime, citing the JFR events that drove your assessment. Reference summaries (from real recordings) are in [exercises/module-4-stress-testing/README.md](./exercises/module-4-stress-testing/README.md).
 
 ### Module 4 discussion checkpoint
 
-ZGC is not always the right answer. Two questions worth debating:
+Your trading system needs a sub-10 ms P99 latency SLA under adversarial load. Two questions:
 
-1. For an application with a 99.9% pause budget of 200 ms, is the operational complexity of running a concurrent collector justified? What does the answer depend on?
-2. If you change G1 to ZGC (concurrent, ships with OpenJDK 21+), how much of the pause reduction do you get? Where does throughput trade off against latency?
+1. Based on the recordings in front of you, which runtime configuration would you ship to production? Cite the JFR events that drive the choice. Be specific: which scenario, which collector, which pause percentile.
+2. At what allocation rate or live-set size does each runtime start to fall behind the application's needs? Where is that line for *your* production workload, not ours?
 
----
 
 ## Module 5: Applying to your applications (30 min)
 
@@ -511,7 +504,6 @@ Copy these into your own project, rename them, and start instrumenting.
 
 Bring your own production JFR recording if you have one. We'll spend the last few minutes walking through real attendee recordings.
 
----
 
 ## Takeaways
 
@@ -525,7 +517,6 @@ You leave with:
 
 The repository will keep producing fresh recordings as you change scenarios or add events. Treat it as a sandbox, not a frozen artefact.
 
----
 
 ## Further reading
 

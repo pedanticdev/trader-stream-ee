@@ -45,10 +45,10 @@ G1_RECORDINGS_DIR="$ROOT_DIR/monitoring/recordings/workshop-g1"
 
 SCENARIOS=(
     "STEADY_LOAD:baseline"
-    "GROWING_HEAP:growing-heap"
-    "PROMOTION_STORM:promotion-storm"
-    "FRAGMENTATION:fragmentation"
-    "CROSS_GEN_REFS:cross-gen-refs"
+    "INTRADAY_POSITION_GROWTH:intraday-position-growth"
+    "EARNINGS_SPIKE:earnings-spike"
+    "MULTI_VENUE_QUOTE_CHURN:multi-venue-quote-churn"
+    "LONG_HORIZON_POSITION_BOOK:long-horizon-position-book"
 )
 
 log()  { printf '\033[1;34m[%s]\033[0m %s\n' "$(date +%H:%M:%S)" "$*"; }

@@ -120,8 +120,8 @@ smoke_full() {
         "$HOST_ZGC$CONTEXT/api/jfr/recording/start?name=$name&durationSeconds=65&settings=tradestream-workshop" \
         >/dev/null
     sleep 5
-    curl -fsS --max-time 10 -X POST "$HOST_ZGC$CONTEXT/api/pressure/mode/PROMOTION_STORM" >/dev/null
-    ok "PROMOTION_STORM running on ZGC; recording for 55s"
+    curl -fsS --max-time 10 -X POST "$HOST_ZGC$CONTEXT/api/pressure/mode/EARNINGS_SPIKE" >/dev/null
+    ok "EARNINGS_SPIKE running on ZGC; recording for 55s"
     sleep 55
     curl -fsS --max-time 10 -X POST "$HOST_ZGC$CONTEXT/api/pressure/mode/OFF" >/dev/null
     sleep 10
@@ -162,9 +162,9 @@ ${DIM}Common commands:${RESET}
   Start a recording on G1 (60 s):
     curl -X POST '${HOST_G1}${CONTEXT}/api/jfr/recording/start?name=demo&durationSeconds=60&settings=tradestream-workshop'
 
-  Run a GC stress scenario on both:
-    curl -X POST '${HOST_ZGC}${CONTEXT}/api/pressure/mode/PROMOTION_STORM'
-    curl -X POST '${HOST_G1}${CONTEXT}/api/pressure/mode/PROMOTION_STORM'
+  Run a stress scenario on both runtimes:
+    curl -X POST '${HOST_ZGC}${CONTEXT}/api/pressure/mode/EARNINGS_SPIKE'
+    curl -X POST '${HOST_G1}${CONTEXT}/api/pressure/mode/EARNINGS_SPIKE'
     sleep 60
     curl -X POST '${HOST_ZGC}${CONTEXT}/api/pressure/mode/OFF'
     curl -X POST '${HOST_G1}${CONTEXT}/api/pressure/mode/OFF'

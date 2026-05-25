@@ -1,4 +1,4 @@
-# TradeStreamEE Workshop: Java Flight Recorder for Low-Latency Systems
+# TradeStreamEE Workshop: Low-Latency Trading with Jakarta EE and Payara Micro
 
 Hands-on workshop materials for JNation.
 
@@ -49,9 +49,9 @@ workshop/
 ├── scripts/                 # Verify, record, compare, install helpers
 ├── exercises/
 │   ├── module-1-find-longest-pause/
-│   ├── module-2-diagnose-promotion-storm/
+│   ├── module-2-diagnose-earnings-spike/
 │   ├── module-3-burst-event/
-│   ├── module-4-collector-comparison/
+│   ├── module-4-stress-testing/
 │   └── module-5-apply-to-your-app/
 └── slides/
     └── slides.md            # Marp markdown deck

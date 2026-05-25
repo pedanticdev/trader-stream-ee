@@ -5,8 +5,8 @@
 #
 # Usage:
 #   ./workshop/scripts/compare-recordings.sh \
-#       workshop/recordings/zgc-promotion-storm.jfr \
-#       workshop/recordings/g1-promotion-storm.jfr
+#       workshop/recordings/zgc-earnings-spike.jfr \
+#       workshop/recordings/g1-earnings-spike.jfr
 
 set -euo pipefail
 
