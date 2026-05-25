@@ -21,14 +21,14 @@ class AllocationModeTest {
         @DisplayName("Should have all required allocation modes")
         void shouldHaveAllRequiredAllocationModes() {
             AllocationMode[] modes = AllocationMode.values();
-            assertEquals(6, modes.length, "Should have exactly 6 allocation modes");
+            assertEquals(13, modes.length, "Should have exactly 13 allocation modes");
 
             assertTrue(containsMode(modes, AllocationMode.OFF), "Should contain OFF mode");
             assertTrue(containsMode(modes, AllocationMode.STEADY_LOAD), "Should contain STEADY_LOAD mode");
-            assertTrue(containsMode(modes, AllocationMode.GROWING_HEAP), "Should contain GROWING_HEAP mode");
-            assertTrue(containsMode(modes, AllocationMode.PROMOTION_STORM), "Should contain PROMOTION_STORM mode");
-            assertTrue(containsMode(modes, AllocationMode.FRAGMENTATION), "Should contain FRAGMENTATION mode");
-            assertTrue(containsMode(modes, AllocationMode.CROSS_GEN_REFS), "Should contain CROSS_GEN_REFS mode");
+            assertTrue(containsMode(modes, AllocationMode.INTRADAY_POSITION_GROWTH), "Should contain INTRADAY_POSITION_GROWTH mode");
+            assertTrue(containsMode(modes, AllocationMode.EARNINGS_SPIKE), "Should contain EARNINGS_SPIKE mode");
+            assertTrue(containsMode(modes, AllocationMode.MULTI_VENUE_QUOTE_CHURN), "Should contain MULTI_VENUE_QUOTE_CHURN mode");
+            assertTrue(containsMode(modes, AllocationMode.LONG_HORIZON_POSITION_BOOK), "Should contain LONG_HORIZON_POSITION_BOOK mode");
         }
     }
 
@@ -48,10 +48,10 @@ class AllocationModeTest {
         void shouldHaveCorrectScenarioTypes() {
             assertEquals(ScenarioType.NONE, AllocationMode.OFF.getScenarioType());
             assertEquals(ScenarioType.STEADY, AllocationMode.STEADY_LOAD.getScenarioType());
-            assertEquals(ScenarioType.GROWING, AllocationMode.GROWING_HEAP.getScenarioType());
-            assertEquals(ScenarioType.PROMOTION, AllocationMode.PROMOTION_STORM.getScenarioType());
-            assertEquals(ScenarioType.FRAGMENTATION, AllocationMode.FRAGMENTATION.getScenarioType());
-            assertEquals(ScenarioType.CROSS_REF, AllocationMode.CROSS_GEN_REFS.getScenarioType());
+            assertEquals(ScenarioType.INTRADAY_GROWTH, AllocationMode.INTRADAY_POSITION_GROWTH.getScenarioType());
+            assertEquals(ScenarioType.EARNINGS_SPIKE, AllocationMode.EARNINGS_SPIKE.getScenarioType());
+            assertEquals(ScenarioType.QUOTE_CHURN, AllocationMode.MULTI_VENUE_QUOTE_CHURN.getScenarioType());
+            assertEquals(ScenarioType.POSITION_BOOK, AllocationMode.LONG_HORIZON_POSITION_BOOK.getScenarioType());
         }
 
         @ParameterizedTest
@@ -85,7 +85,7 @@ class AllocationModeTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"OFF", "STEADY_LOAD", "GROWING_HEAP", "PROMOTION_STORM"})
+        @ValueSource(strings = {"OFF", "STEADY_LOAD", "INTRADAY_POSITION_GROWTH", "EARNINGS_SPIKE"})
         @DisplayName("Should handle enum valueOf correctly")
         void shouldHandleEnumValueOfCorrectly(String modeName) {
             assertDoesNotThrow(() -> {

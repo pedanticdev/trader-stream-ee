@@ -1,6 +1,6 @@
 # GC pathology catalogue
 
-The four patterns Module 2 introduced, restated as a take-home reference. Each entry includes the runtime signature you can see in JFR, the root cause in plain language, and the fix order — cheapest mitigation first.
+The four patterns Module 2 introduced, restated as a take-home reference. Each entry includes the runtime signature you can see in JFR, the root cause in plain language, and the fix order, cheapest mitigation first.
 
 ## 1. Promotion storm
 
@@ -74,7 +74,7 @@ When G1 begins a collection it must copy survivors out of the source region. If 
 
 ## How these interact
 
-The four pathologies are not independent. A growing heap (PROMOTION_STORM) eventually fragments, then a fragmented heap with high mutation creates remembered-set pressure, then any of those can culminate in evacuation failure. The triage tree in `workshop/analysis-checklist.md` helps you find the leading symptom; once fixed, the downstream symptoms often resolve on their own.
+The four pathologies are not independent. A growing heap under sustained promotion eventually fragments; a fragmented heap with high mutation creates remembered-set pressure; any of those can culminate in evacuation failure. The triage tree in `workshop/analysis-checklist.md` helps you find the leading symptom; once fixed, the downstream symptoms often resolve on their own.
 
 ## Decision framework: when to reduce allocation vs. when to change collector
 

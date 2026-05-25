@@ -42,7 +42,7 @@ Run through this list at least 48 hours before the workshop. Most items are one-
   ```
 - [ ] Print one copy each per attendee:
   - `workshop/analysis-checklist.md` (2-page reference)
-  - `workshop/exercises/module-4-collector-comparison/comparison-template.md` (worksheet)
+  - `workshop/exercises/module-4-stress-testing/comparison-template.md` (worksheet)
 - [ ] Render the slides to PDF as a backup for the projector:
 
   ```bash
@@ -71,7 +71,7 @@ Run through this list at least 48 hours before the workshop. Most items are one-
 
 ## During the workshop
 
-- [ ] When demonstrating a recording, name it after the module so attendees can follow along (`?name=module-2-promotion-storm`).
+- [ ] When demonstrating a recording, name it after the module so attendees can follow along (`?name=module-2-earnings-spike`).
 - [ ] If a scenario hangs, follow the diagnostic checklist in `workshop/operational-notes.md` rather than ad-hoc debugging in front of the room.
 - [ ] After each module, recap the two or three findings on the projector so attendees can take notes.
 

@@ -1,4 +1,4 @@
-# PROMOTION_STORM analysis template
+# EARNINGS_SPIKE analysis template
 
 Fill this in as you work through the recording. Bring it to the Module 2 discussion.
 

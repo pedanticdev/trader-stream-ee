@@ -35,10 +35,10 @@ public class MemoryPressureService {
     private final Deque<byte[]> liveSet = new LinkedList<>();
     private final AtomicLong liveSetBytesAllocated = new AtomicLong(0);
 
-    // For Promotion Storm (thread-safe as multiple threads add to it)
+    // For Earnings Spike (thread-safe as multiple threads add to it)
     private final Deque<byte[]> promotableObjects = new ConcurrentLinkedDeque<>();
 
-    // For Cross-Gen Refs scenario - holders in old gen that reference young objects
+    // For Long-Horizon Position Book scenario - holders in old gen that reference young objects
     private final Deque<RefHolder> crossRefHolders = new LinkedList<>();
     private final AtomicLong crossRefBytesAllocated = new AtomicLong(0);
 
@@ -184,17 +184,17 @@ public class MemoryPressureService {
         case STEADY :
             executeSteadyLoadScenario(mode);
             break;
-        case GROWING :
-            executeGrowingHeapScenario(mode);
+        case INTRADAY_GROWTH :
+            executeIntradayPositionGrowthScenario(mode);
             break;
-        case PROMOTION :
-            executePromotionStormScenario(mode);
+        case EARNINGS_SPIKE :
+            executeEarningsSpikeScenario(mode);
             break;
-        case FRAGMENTATION :
-            executeFragmentationScenario(mode);
+        case QUOTE_CHURN :
+            executeMultiVenueQuoteChurnScenario(mode);
             break;
-        case CROSS_REF :
-            executeCrossRefsScenario(mode);
+        case POSITION_BOOK :
+            executeLongHorizonPositionBookScenario(mode);
             break;
         default :
             break;
@@ -234,7 +234,7 @@ public class MemoryPressureService {
         allocateTransientGarbageMultiThreaded(bytesPerIteration, 4);
     }
 
-    private void executeGrowingHeapScenario(AllocationMode mode) {
+    private void executeIntradayPositionGrowthScenario(AllocationMode mode) {
         long startTime = scenarioStartTime.get();
         long elapsed = (System.currentTimeMillis() - startTime) / 1000; // seconds
 
@@ -252,7 +252,7 @@ public class MemoryPressureService {
         allocateTransientGarbageMultiThreaded(bytesPerIteration, 4);
     }
 
-    private void executePromotionStormScenario(AllocationMode mode) {
+    private void executeEarningsSpikeScenario(AllocationMode mode) {
         int rateMBPerSec = mode.getAllocationRateMBPerSec();
         int bytesPerIteration = (rateMBPerSec * 1024 * 1024) / 10;
 
@@ -278,17 +278,17 @@ public class MemoryPressureService {
         }
     }
 
-    private void executeFragmentationScenario(AllocationMode mode) {
+    private void executeMultiVenueQuoteChurnScenario(AllocationMode mode) {
         int targetMB = mode.getLiveSetSizeMB();
         maintainLiveSet(targetMB);
 
         int rateMBPerSec = mode.getAllocationRateMBPerSec();
         int bytesPerIteration = (rateMBPerSec * 1024 * 1024) / 10;
 
-        allocateFragmentationGarbageMultiThreaded(bytesPerIteration, 4);
+        allocateQuoteChurnGarbageMultiThreaded(bytesPerIteration, 4);
     }
 
-    private void executeCrossRefsScenario(AllocationMode mode) {
+    private void executeLongHorizonPositionBookScenario(AllocationMode mode) {
         // Maintain old gen holders (these will be promoted after surviving GCs)
         maintainCrossRefHolders(mode.getLiveSetSizeMB());
 
@@ -394,7 +394,7 @@ public class MemoryPressureService {
         CompletableFuture.allOf(futures).join();
     }
 
-    private void allocateFragmentationGarbageMultiThreaded(int totalBytes, int numThreads) {
+    private void allocateQuoteChurnGarbageMultiThreaded(int totalBytes, int numThreads) {
         int bytesPerThread = totalBytes / numThreads;
         CompletableFuture<?>[] futures = new CompletableFuture[numThreads];
 

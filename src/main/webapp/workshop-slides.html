@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Low-Latency Trading with Jakarta EE and Payara Micro &middot; JNation Workshop</title>
+    <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reset.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/theme/black.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/highlight/monokai.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@200;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --payara-orange: #F0981B;
+            --payara-orange-dim: rgba(240, 152, 27, 0.15);
+            --payara-orange-border: rgba(240, 152, 27, 0.35);
+            --payara-dark: #0f0f0f;
+            --payara-darker: #080808;
+            --payara-surface: #1a1a1e;
+            --payara-surface-raised: #222226;
+            --payara-light: #f0f0f0;
+            --payara-muted: #888890;
+            --success: #4ade80;
+            --danger: #f87171;
+            --warn: #fbbf24;
+            --code-bg: #1e1e22;
+            --font-display: 'Fraunces', serif;
+            --font-body: 'IBM Plex Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        .reveal {
+            font-family: var(--font-body);
+            background: var(--payara-dark);
+            font-size: 26px;
+            line-height: 1.4;
+            color: var(--payara-light);
+            font-weight: 400;
+        }
+
+        .reveal h1 {
+            font-family: var(--font-display);
+            color: var(--payara-orange);
+            text-transform: none;
+            font-size: 2.4em;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .reveal h2 {
+            font-family: var(--font-display);
+            color: var(--payara-orange);
+            text-transform: none;
+            font-size: 1.7em;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .reveal h3 {
+            font-family: var(--font-body);
+            color: #c8c8cc;
+            text-transform: none;
+            font-size: 1.15em;
+            font-weight: 600;
+            letter-spacing: 0;
+        }
+
+        .reveal h4 {
+            font-family: var(--font-body);
+            font-size: 0.95em;
+            font-weight: 700;
+            color: var(--payara-orange);
+        }
+
+        .reveal p {
+            font-weight: 200;
+        }
+
+        .reveal strong, .reveal b {
+            font-weight: 700;
+        }
+
+        .reveal blockquote {
+            background: var(--payara-surface);
+            border-left: 4px solid var(--payara-orange);
+            border-radius: 0 8px 8px 0;
+            padding: 18px 24px;
+            margin: 20px auto;
+            font-style: normal;
+            font-weight: 200;
+            text-align: left;
+            color: #d8d8dc;
+            font-size: 0.9em;
+            box-shadow: none;
+            max-width: 90%;
+        }
+
+        .reveal blockquote strong {
+            color: var(--payara-orange);
+            font-weight: 700;
+        }
+
+        .reveal code {
+            font-family: var(--font-mono);
+            background: var(--payara-surface);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--payara-orange);
+            font-size: 0.85em;
+        }
+
+        .reveal pre {
+            margin: 15px 0;
+            box-shadow: none;
+            width: 100%;
+        }
+
+        .reveal pre code {
+            background: var(--code-bg);
+            padding: 16px 20px;
+            font-size: 0.7em;
+            line-height: 1.45;
+            border: 1px solid var(--payara-orange-border);
+            border-radius: 8px;
+            color: #e0e0e0;
+            white-space: pre;
+            display: block;
+            max-height: 600px;
+        }
+
+        .reveal pre code.ascii {
+            color: #c8c8cc;
+            font-size: 0.75em;
+            line-height: 1.3;
+        }
+
+        .reveal table {
+            font-size: 0.78em;
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .reveal table th {
+            background: var(--payara-orange);
+            color: var(--payara-dark);
+            font-weight: 700;
+            padding: 10px 14px;
+            text-align: left;
+            border-radius: 4px;
+        }
+
+        .reveal table td {
+            background: var(--payara-surface);
+            padding: 8px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: top;
+        }
+
+        .reveal table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .reveal ul, .reveal ol {
+            font-size: 0.88em;
+            margin-left: 1.2em;
+        }
+
+        .reveal li {
+            margin-bottom: 8px;
+        }
+
+        .reveal .hl {
+            color: var(--payara-orange);
+            font-weight: 700;
+        }
+
+        .reveal .success {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .reveal .danger {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .reveal .muted {
+            color: var(--payara-muted);
+            font-weight: 200;
+        }
+
+        .reveal .lead {
+            text-align: center;
+        }
+
+        .reveal .lead h1 {
+            font-size: 3em;
+        }
+
+        .reveal .lead h2 {
+            font-size: 2em;
+            color: #c8c8cc;
+            font-weight: 600;
+        }
+
+        .reveal .lead .duration {
+            color: var(--payara-orange);
+            font-family: var(--font-display);
+            font-size: 1.6em;
+            font-weight: 700;
+            margin-top: 30px;
+        }
+
+        .reveal .lead .module-num {
+            font-family: var(--font-display);
+            font-size: 5em;
+            font-weight: 900;
+            color: var(--payara-orange-dim);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .reveal .footer-note {
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            right: 0;
+            color: var(--payara-muted);
+            font-size: 0.55em;
+            text-align: center;
+        }
+
+        .reveal .callout {
+            background: var(--payara-orange-dim);
+            border: 1px solid var(--payara-orange);
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin: 16px 0;
+            font-size: 0.9em;
+        }
+
+        .reveal .runtime-frame {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .reveal .runtime-card {
+            background: var(--payara-surface);
+            border: 2px solid var(--payara-orange-border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+        }
+
+        .reveal .runtime-card .port {
+            color: var(--payara-orange);
+            font-weight: 700;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .reveal .runtime-card .runtime-name {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.1em;
+            margin-bottom: 4px;
+        }
+
+        .reveal .runtime-card .runtime-app {
+            color: var(--payara-muted);
+            font-size: 0.95em;
+        }
+
+        .reveal .constants {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.85em;
+            color: var(--payara-muted);
+            line-height: 1.7;
+        }
+
+        .reveal .constants strong {
+            color: var(--payara-light);
+            font-weight: 700;
+        }
+
+        .reveal .module-table th {
+            text-align: center;
+        }
+
+        .reveal .module-table td:first-child {
+            text-align: center;
+            font-weight: 700;
+            color: var(--payara-orange);
+        }
+
+        .reveal .module-table td:last-child {
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.95em;
+        }
+
+        .reveal .azul-stack {
+            text-align: left;
+        }
+
+        .reveal .azul-stack td:first-child {
+            background: var(--payara-orange-dim);
+            font-weight: 700;
+            color: var(--payara-orange);
+            white-space: nowrap;
+            min-width: 220px;
+        }
+
+        .reveal section.has-list ul {
+            text-align: left;
+            margin-left: 0;
+            list-style-position: inside;
+        }
+
+        .reveal .signature-list {
+            text-align: left;
+            background: var(--payara-surface);
+            border-left: 4px solid var(--payara-orange);
+            padding: 18px 30px;
+            border-radius: 0 8px 8px 0;
+            margin: 18px 0;
+        }
+
+        .reveal .fix-line {
+            margin-top: 16px;
+            padding: 10px 16px;
+            background: var(--payara-orange-dim);
+            border-radius: 6px;
+            font-size: 0.9em;
+            text-align: left;
+        }
+
+        .reveal .fix-line strong {
+            color: var(--payara-orange);
+        }
+    </style>
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+
+        <!-- ============================================================ -->
+        <!-- TITLE -->
+        <!-- ============================================================ -->
+        <section class="lead">
+            <h1>Low-Latency Trading<br>with Jakarta EE</h1>
+            <h2>Build, observe, and stress-test a real trading system on Payara Micro</h2>
+            <p class="duration">JNation &middot; 3 hours 30 minutes</p>
+            <p class="muted" style="margin-top: 30px;">Bring a laptop. We will read recordings together.</p>
+            <aside class="notes">
+                Workshop opening. Frame this as a hands-on debugging workshop on a real Jakarta EE 11 application. The audience leaves with diagnostic skills, not a runtime preference.
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- TODAY'S QUESTION -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Today's question</h2>
+            <blockquote>
+                Your trading system meets its latency SLA in staging.<br>
+                Production peak hits. P99 climbs from 8 ms to 110 ms.<br>
+                Support has no recording. Nobody changed the code.<br>
+                <strong>What happened, and how do you prove it?</strong>
+            </blockquote>
+            <p style="margin-top: 20px;">This workshop builds the answer from JFR data on a real Jakarta EE application.</p>
+            <aside class="notes">
+                Position the workshop around production debugging, not generic GC theory. The audience has lived this scenario.
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- WHAT YOU LEAVE WITH -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>What you leave with</h2>
+            <ul>
+                <li>The TradeStreamEE source and Docker setup (a real Jakarta EE 11 trading app on Payara Micro 7)</li>
+                <li>Ten pre-recorded <code>.jfr</code> files across five scenarios on two OpenJDK runtimes</li>
+                <li>A printable JFR analysis checklist</li>
+                <li>Three reusable JFR event templates</li>
+                <li>A diagnostic mental model that transfers to any Java application on any runtime</li>
+            </ul>
+            <aside class="notes">
+                Set expectations. Everything is take-home material; nothing is workshop-only.
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- FIVE MODULES -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Five modules</h2>
+            <table class="module-table">
+                <thead>
+                    <tr><th>#</th><th>Module</th><th>Time</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>Setup and warm-up</td><td>30 min</td></tr>
+                    <tr><td>2</td><td>Reading JFR recordings</td><td>60 min</td></tr>
+                    <tr><td>3</td><td>Custom JFR events</td><td>45 min</td></tr>
+                    <tr><td>4</td><td>Stress testing &amp; production readiness</td><td>45 min</td></tr>
+                    <tr><td>5</td><td>Applying to your applications</td><td>30 min</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- THE SYSTEM YOU WILL BE RUNNING -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>The system you will be running</h2>
+            <pre><code class="ascii">MarketDataPublisher (virtual thread)
+       │ SBE binary encode (off-heap)
+       ▼
+   Aeron IPC (shared memory)
+       │
+       ▼
+MarketDataFragmentHandler (zero-copy decode)
+       ├──> MatchingEngine
+       ├──> BarAggregator + ta4j
+       └──> MarketDataBroadcaster ─> Hazelcast ─> WebSocket</code></pre>
+            <p style="margin-top: 16px;">Throughput target: <span class="hl">100K messages per second</span>.</p>
+            <aside class="notes">
+                A real Jakarta EE pipeline. Aeron IPC for zero-copy transport, SBE for binary encode, virtual threads for the publisher, Hazelcast for cluster fan-out, WebSocket for the dashboard.
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- ONE APPLICATION, TWO OPENJDK RUNTIMES -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>One application, two OpenJDK runtimes</h2>
+            <div class="runtime-frame">
+                <div class="runtime-card">
+                    <span class="port">:8080  Runtime A</span>
+                    <div class="runtime-name">Zulu 25 + ZGC</div>
+                    <div class="runtime-app">Payara Micro 7</div>
+                </div>
+                <div class="runtime-card">
+                    <span class="port">:9080  Runtime B</span>
+                    <div class="runtime-name">Temurin 25 + G1</div>
+                    <div class="runtime-app">Payara Micro 7</div>
+                </div>
+            </div>
+            <div class="constants">
+                <strong>Identical</strong> Jakarta EE 11 application on both sides<br>
+                <strong>Identical</strong> heap (-Xms2g -Xmx2g, AlwaysPreTouch, THP)<br>
+                <strong>Identical</strong> workload<br>
+                The OpenJDK runtime is the only deliberate variable.
+            </div>
+            <p style="margin-top: 24px; font-size: 0.85em;">
+                The application is the constant; the runtime is the variable. This workshop will not declare a winner: the recordings will say what they say, and you will read them.
+            </p>
+            <aside class="notes">
+                Critical framing slide. The workshop teaches diagnosis, not preference. Stress the "no winner" point verbally so the audience knows what to expect from Module 4.
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MODULE 1 LEAD -->
+        <!-- ============================================================ -->
+        <section class="lead">
+            <div class="module-num">01</div>
+            <h1>Module 1</h1>
+            <h2>Setup and warm-up</h2>
+            <p class="duration">30 minutes</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- BRING UP THE INSTANCES -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Bring up the instances</h2>
+            <pre><code class="language-bash">git clone &lt;repo&gt;
+cd trader-stream-ee
+./workshop/scripts/quickstart.sh</code></pre>
+            <p style="margin-top: 12px;">Then:</p>
+            <pre><code class="language-bash">curl -s http://localhost:8080/trader-stream-ee/api/health/check | jq
+curl -s http://localhost:9080/trader-stream-ee/api/health/check | jq</code></pre>
+            <p style="margin-top: 12px;">Both must return <code>"status": "healthy"</code>.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- THE JFR REST API -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>The JFR REST API</h2>
+            <p>The application exposes JFR control over HTTP. No <code>jcmd</code>, no <code>docker exec</code>.</p>
+            <pre><code class="language-bash"># Start a 60-second recording on the ZGC instance
+curl -X POST 'http://localhost:8080/trader-stream-ee/api/jfr/recording/start?name=baseline&amp;durationSeconds=60&amp;settings=tradestream-workshop'
+
+# List captured files (auto-dumped on duration expiry)
+curl http://localhost:8080/trader-stream-ee/api/jfr/files | jq
+
+# Recordings persist to host via Docker bind mount:
+ls -lh monitoring/recordings/workshop-zgc/</code></pre>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- OPEN IN JMC -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Open in JMC</h2>
+            <pre><code class="language-bash">jmc -open monitoring/recordings/workshop-zgc/baseline-*.jfr</code></pre>
+            <p style="margin-top: 16px;">Three views to read first:</p>
+            <ol>
+                <li><code>General &rarr; Garbage Collections</code></li>
+                <li><code>Memory &rarr; Allocation</code></li>
+                <li><code>Threads &rarr; Hot Methods</code></li>
+            </ol>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- EXERCISE 1.1 -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Exercise 1.1</h2>
+            <p><strong>Find the longest GC pause in your baseline recording.</strong></p>
+            <p>Record:</p>
+            <ul>
+                <li>Duration (ms)</li>
+                <li>Collector name</li>
+                <li>GC cause</li>
+            </ul>
+            <p>Hint: in JMC, sort the Duration column descending. The first row is your answer.</p>
+            <blockquote style="font-size: 0.8em; margin-top: 16px;">
+                Full hints and expected output: <code>workshop/exercises/module-1-find-longest-pause/</code>
+            </blockquote>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MODULE 1 CHECKPOINT -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Module 1 checkpoint</h2>
+            <p>Compare across the room. What does your baseline recording show on each port?</p>
+            <ul>
+                <li>Port 8080 (Zulu 25 + ZGC): which collection events fire, and at what pause duration?</li>
+                <li>Port 9080 (Temurin 25 + G1): which collection events fire, and at what pause duration?</li>
+            </ul>
+            <p style="margin-top: 16px;">Same heap, same workload, same Payara Micro application. <strong>What is each runtime doing differently to produce its characteristic pause profile?</strong></p>
+            <p style="margin-top: 12px;" class="muted">Hold the question. We will answer it in Module 2 by reading the JFR events.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MODULE 2 LEAD -->
+        <!-- ============================================================ -->
+        <section class="lead">
+            <div class="module-num">02</div>
+            <h1>Module 2</h1>
+            <h2>Reading JFR recordings</h2>
+            <p class="duration">60 minutes</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- GC EVENTS: READ THESE THREE FIRST -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>GC events: read these three first</h2>
+            <table>
+                <thead>
+                    <tr><th>Event</th><th>What it tells you</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>jdk.GarbageCollection</code></td><td>Wall-clock pause time, cause</td></tr>
+                    <tr><td><code>jdk.GCPhasePause</code></td><td>Where the pause time actually went</td></tr>
+                    <tr><td><code>jdk.GCPhasePauseLevel1</code></td><td>Per-subphase: Update RS, Evacuate, Object Copy, ...</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 16px;">For G1: also <code>jdk.G1HeapSummary</code>, <code>jdk.EvacuationFailed</code>, <code>jdk.PromotionFailed</code>.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- AVERAGE LIES, DISTRIBUTIONS DON'T -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Average lies. Distributions don't.</h2>
+            <table>
+                <thead>
+                    <tr><th>Quantile</th><th>What it tells you</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>P50</td><td>"Typical pause"</td></tr>
+                    <tr><td>P95</td><td>"Routine bad pause"</td></tr>
+                    <tr><td><strong>P99</strong></td><td><strong>"What 1 in 100 GCs cost"</strong></td></tr>
+                    <tr><td><strong>P99.9</strong></td><td><strong>"Where incidents come from"</strong></td></tr>
+                    <tr><td>Max</td><td>"Worst single pause"</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 16px;">Sample size matters. <span class="hl">P99 from 10 collections is meaningless.</span></p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- YOUNG, MIXED, FULL -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Young, mixed, full</h2>
+            <table>
+                <thead>
+                    <tr><th>G1 name</th><th>What it was doing</th><th>Cost</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>Young Generation</code> (Normal)</td><td>Young-only collection</td><td>Cheap</td></tr>
+                    <tr><td><code>Young Generation</code> (Mixed)</td><td>Young + some old</td><td>Expensive</td></tr>
+                    <tr><td><code>Full GC</code></td><td>Whole-heap stop-the-world</td><td>"You have a problem"</td></tr>
+                    <tr><td><code>Concurrent Cycle</code></td><td>Marking with the application</td><td>Not a pause</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 16px; font-size: 0.85em;">
+                ZGC reports its collections under different names (<code>ZGen Young</code>, <code>ZGen Old</code>, plus brief <code>Pause Mark Start</code> / <code>Pause Relocate Start</code> events). Both generations are collected predominantly concurrently; the STW events you see in JFR are short coordination phases, not collection work.
+            </p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- THE FOUR PATHOLOGIES -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>The four pathologies</h2>
+            <pre><code class="ascii">Long GC pause
+    │
+    ├─ pause scales with old gen?      → PROMOTION STORM
+    ├─ many small regions, churn?      → FRAGMENTATION
+    ├─ Update RS dominates pause?      → CROSS-GEN REFS
+    └─ EvacuationFailed events?        → EVAC FAILURE</code></pre>
+            <p style="margin-top: 20px;">Recognise the JFR signature; you can diagnose any of these in <span class="hl">any application</span>.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- PROMOTION STORM SIGNATURE -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Promotion storm signature</h2>
+            <div class="signature-list">
+                <ul>
+                    <li><code>jdk.PromoteObjectOutsidePLAB</code> count climbing</li>
+                    <li>Old gen growing monotonically</li>
+                    <li>Mixed collections appear and lengthen</li>
+                    <li>High allocation rate + high survival rate</li>
+                </ul>
+            </div>
+            <div class="fix-line">
+                <strong>Fix order:</strong> reduce allocation &rarr; increase young gen &rarr; change collector.
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- FRAGMENTATION SIGNATURE -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Fragmentation signature</h2>
+            <div class="signature-list">
+                <ul>
+                    <li>Small objects (size &lt; 1 KB) dominate <code>jdk.ObjectAllocationSample</code></li>
+                    <li><code>jdk.G1HeapRegionTypeChange</code> events frequent</li>
+                    <li>Pause time scales with region count, not heap size</li>
+                    <li><code>Object Copy</code> phase dominates</li>
+                </ul>
+            </div>
+            <div class="fix-line">
+                <strong>Fix:</strong> concurrent compacting collector (ZGC, C4), or consolidate small objects.
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- CROSS-GENERATIONAL REFERENCE SIGNATURE -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Cross-generational reference signature</h2>
+            <div class="signature-list">
+                <ul>
+                    <li><code>Update RS</code> or <code>Scan RS</code> dominates pause time</li>
+                    <li><code>ExecutionSample</code> stacks point into <code>G1BarrierSet</code></li>
+                    <li>Mutable singletons holding refs to recent young-gen objects</li>
+                </ul>
+            </div>
+            <div class="fix-line">
+                <strong>Fix:</strong> immutable holders, copy-on-write, or a concurrent collector without remembered sets (ZGC, C4).
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- EXERCISE 2.5 -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Exercise 2.5</h2>
+            <p><strong>Diagnose EARNINGS_SPIKE.</strong></p>
+            <pre><code class="language-bash"># Pre-recorded:
+jmc -open workshop/recordings/g1-earnings-spike.jfr
+jmc -open workshop/recordings/zgc-earnings-spike.jfr</code></pre>
+            <p style="margin-top: 14px;">For each recording, report what you see:</p>
+            <ul style="font-size: 0.85em;">
+                <li><strong>G1:</strong> when does the first mixed collection trigger? What is old gen at that moment? How does pause time change across the recording?</li>
+                <li><strong>ZGC:</strong> same workload, what events fire and at what pause duration? Does pause time change across the recording?</li>
+            </ul>
+            <p style="margin-top: 12px; font-size: 0.85em;">Bring your findings to the room. The recordings will say what they say; we will read them together.</p>
+            <blockquote style="font-size: 0.75em; margin-top: 12px;">
+                Template: <code>workshop/exercises/module-2-diagnose-earnings-spike/analysis-template.md</code>
+            </blockquote>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MODULE 2 CHECKPOINT -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Module 2 checkpoint</h2>
+            <p>Two questions:</p>
+            <ol>
+                <li>P99 = 80 ms, Max = 800 ms. Which do you fix first?</li>
+                <li>What recording duration makes P99 statistically meaningful at 10 collections per minute?</li>
+            </ol>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MODULE 3 LEAD -->
+        <!-- ============================================================ -->
+        <section class="lead">
+            <div class="module-num">03</div>
+            <h1>Module 3</h1>
+            <h2>Custom JFR events</h2>
+            <p class="duration">45 minutes</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- ANATOMY OF A CUSTOM EVENT -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Anatomy of a custom event</h2>
+            <pre><code class="language-java">@Name("trade.published")
+@Label("Trade Published")
+@StackTrace(false)
+public static class TradePublished extends Event {
+    public String symbol;
+    public long price;
+    public int quantity;
+    public String side;
+}</code></pre>
+            <pre><code class="language-java">TradePublished event = new TradePublished();
+if (event.isEnabled()) {           // ← critical: cheap when JFR is off
+    event.symbol = symbol;
+    event.price = price;
+    event.quantity = qty;
+    event.side = side.name();
+    event.commit();
+}</code></pre>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- THREE RULES FOR HOT-PATH EVENTS -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Three rules for hot-path events</h2>
+            <ol>
+                <li><strong><code>event.isEnabled()</code></strong> before any field assignment. The JIT can sometimes elide the <code>new Event()</code> allocation when the type is disabled, but only the guard stops your field-population work from running.</li>
+                <li><strong><code>@StackTrace(false)</code></strong> on high-volume events. Stack capture is the dominant cost.</li>
+                <li><strong>Primitive fields over Strings.</strong> Strings are interned in the JFR pool; the lookup is per-emission.</li>
+            </ol>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- CORRELATING WITH GC EVENTS -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Correlating with GC events</h2>
+            <p>In JMC's Event Browser, overlay timelines:</p>
+            <pre><code class="ascii">GC pause:        [---50ms---]
+SBE encode:  ............    .  .  .   .
+                ^             ^
+                stalls        catches up</code></pre>
+            <p style="margin-top: 14px; font-size: 0.9em;">
+                If SBE encodes go to zero during the pause, the publisher virtual thread was stopped.<br>
+                If they don't, you have <span class="hl">carrier-thread pinning</span> to investigate.
+            </p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- EXERCISE 3.4 -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Exercise 3.4</h2>
+            <p><strong>Add a <code>BurstPatternEvent</code> that fires on 5x spikes.</strong></p>
+            <pre><code class="language-bash"># Starter file:
+workshop/exercises/module-3-burst-event/BurstPatternEvent.starter.java
+
+# Install into source tree:
+./workshop/scripts/install-exercise.sh module-3-burst-event
+
+# Rebuild and roll one instance (Zulu shown; the same step works for Temurin):
+docker compose -f docker-compose-workshop.yml build trader-stream-workshop-zgc
+docker compose -f docker-compose-workshop.yml up -d --no-deps trader-stream-workshop-zgc</code></pre>
+            <p style="margin-top: 14px;">Verify the event appears in JMC's Event Browser.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MODULE 3 CHECKPOINT -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Module 3 checkpoint</h2>
+            <p>What in your own application is the single hottest code path you currently have no visibility into?</p>
+            <p style="margin-top: 16px;">Pick one. Note the fields you would want on the event. We will come back to this in Module 5.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MODULE 4 LEAD -->
+        <!-- ============================================================ -->
+        <section class="lead">
+            <div class="module-num">04</div>
+            <h1>Module 4</h1>
+            <h2>Stress testing &amp; production readiness</h2>
+            <p class="duration">45 minutes</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- THE OTHER FOUR SCENARIOS -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>The other four scenarios</h2>
+            <table>
+                <thead>
+                    <tr><th>Scenario</th><th>Stresses</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>INTRADAY_POSITION_GROWTH</code></td><td>Mixed collection scaling</td></tr>
+                    <tr><td><code>EARNINGS_SPIKE</code></td><td>Old-gen collection efficiency</td></tr>
+                    <tr><td><code>MULTI_VENUE_QUOTE_CHURN</code></td><td>Compaction overhead</td></tr>
+                    <tr><td><code>LONG_HORIZON_POSITION_BOOK</code></td><td>Remembered-set / write barrier</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 18px; font-size: 0.88em;">
+                The application and heap are identical across both ports; the OpenJDK runtime is the only variable, and the outcome you will read from JFR follows from that.
+            </p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SIDE-BY-SIDE -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Side-by-side</h2>
+            <pre><code class="language-bash"># Visual:
+jmc -open workshop/recordings/zgc-multi-venue-quote-churn.jfr \
+    -open workshop/recordings/g1-multi-venue-quote-churn.jfr
+
+# CLI:
+./workshop/scripts/compare-recordings.sh \
+    workshop/recordings/zgc-multi-venue-quote-churn.jfr \
+    workshop/recordings/g1-multi-venue-quote-churn.jfr</code></pre>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- EXERCISE 4.4 -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Exercise 4.4</h2>
+            <p><strong>For each scenario, write a one-sentence behavioural difference.</strong></p>
+            <table>
+                <thead>
+                    <tr><th>Scenario</th><th>Difference</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>INTRADAY_POSITION_GROWTH</code></td><td class="muted">...</td></tr>
+                    <tr><td><code>EARNINGS_SPIKE</code></td><td class="muted">...</td></tr>
+                    <tr><td><code>MULTI_VENUE_QUOTE_CHURN</code></td><td class="muted">...</td></tr>
+                    <tr><td><code>LONG_HORIZON_POSITION_BOOK</code></td><td class="muted">...</td></tr>
+                </tbody>
+            </table>
+            <blockquote style="font-size: 0.75em; margin-top: 12px;">
+                Template: <code>workshop/exercises/module-4-stress-testing/comparison-template.md</code>
+            </blockquote>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MODULE 4 CHECKPOINT -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Module 4 checkpoint</h2>
+            <p>Your trading system needs sub-10 ms P99 latency under adversarial load. Two questions:</p>
+            <ol>
+                <li>Based on the recordings in front of you, which runtime configuration would you ship to production? Cite the events that drove the choice.</li>
+                <li>At what allocation rate or live-set size does each runtime start to fall behind the application's needs? Where is that line for <em>your</em> production workload?</li>
+            </ol>
+            <aside class="notes">
+                The questions force a production decision based on the recordings, not a brand preference. If the room lands on "it depends on the workload", you have done the job correctly.
+            </aside>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MODULE 5 LEAD -->
+        <!-- ============================================================ -->
+        <section class="lead">
+            <div class="module-num">05</div>
+            <h1>Module 5</h1>
+            <h2>Applying to your applications</h2>
+            <p class="duration">30 minutes</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- PATTERN MATCHING IN THE WILD -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Pattern matching in the wild</h2>
+            <table>
+                <thead>
+                    <tr><th>Workshop pathology</th><th>Where it shows up</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Promotion storm</strong></td><td>Caches with TTL &gt; young-gen interval; pooled connections</td></tr>
+                    <tr><td><strong>Fragmentation</strong></td><td>Long-lived apps with many distinct object sizes</td></tr>
+                    <tr><td><strong>Cross-gen refs</strong></td><td>Mutable singletons holding recent request objects</td></tr>
+                    <tr><td><strong>Evacuation failure</strong></td><td>Heap sized too tight; allocation bursts</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 18px;">The signatures are the same across applications; <span class="hl">only the surrounding code changes</span>.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- ALLOCATION VS. COLLECTOR CHOICE -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Allocation vs. collector choice</h2>
+            <pre><code class="ascii">Long GC pauses observed
+    │
+    ├─ allocation > 500 MB/s?  → reduce allocation FIRST
+    │                            (flyweight, off-heap, primitive arrays)
+    ├─ heap > 8 GB?            → concurrent collector
+    │                            (ZGC, Shenandoah, C4)
+    ├─ throughput-sensitive    → C4 (no read barrier overhead)
+    │  + low latency?
+    └─ G1 fits but tail is bad → tune MaxGCPauseMillis,
+                                  InitiatingHeapOccupancyPercent</code></pre>
+            <p style="margin-top: 16px;">Reducing allocation is almost always <span class="hl">cheaper</span> than changing collector.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- PRODUCTION-SAFE JFR -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Production-safe JFR</h2>
+            <pre><code class="language-bash">java \
+  -XX:StartFlightRecording=name=production,settings=default,maxsize=1g,maxage=24h,dumponexit=true,filename=/var/log/myapp/jfr/production.jfr \
+  -XX:FlightRecorderOptions=stackdepth=64</code></pre>
+            <ul style="font-size: 0.85em;">
+                <li><code>settings=default</code> keeps overhead ~1%.</li>
+                <li>Workshop profile is dev-only.</li>
+                <li>Cap size and age.</li>
+                <li><code>jcmd &lt;pid&gt; JFR.dump filename=...</code> for on-demand snapshots during incidents.</li>
+            </ul>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- THREE EVENT TEMPLATES -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>Three event templates</h2>
+            <p>For your own applications:</p>
+            <table>
+                <thead>
+                    <tr><th>Template</th><th>When</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>LatencyEvent</code></td><td>Any operation whose tail latency matters</td></tr>
+                    <tr><td><code>ThrottleEvent</code></td><td>Circuit breaker / rate limit / backpressure state change</td></tr>
+                    <tr><td><code>ResourceEvent</code></td><td>Pool / cache / file-handle state crossing a threshold</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 16px;">In <code>workshop/exercises/module-5-apply-to-your-app/event-templates/</code>.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- Q&A AND OPEN DEBUGGING -->
+        <!-- ============================================================ -->
+        <section class="lead">
+            <h2>Q&amp;A and open debugging</h2>
+            <p style="margin-top: 30px;">Bring your own JFR recordings.</p>
+            <p class="muted" style="margin-top: 14px;">We will walk through real attendee data for the last 10 minutes.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- TAKEAWAYS -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Takeaways</h2>
+            <ol>
+                <li>JFR is the diagnostic of record for production Jakarta EE applications. Ship every container with always-on JFR.</li>
+                <li>The four GC pathologies have signatures you can recognise in any application on any JVM runtime.</li>
+                <li><code>event.isEnabled()</code> and <code>@StackTrace(false)</code> are the two rules for production-grade custom JFR events.</li>
+                <li>Stress-test before shipping. JFR tells you what happened; pre-production stress tells you whether it will happen in prod.</li>
+                <li>The runtime is a production decision with measurable consequences. <span class="hl">The recording, not the brand, decides.</span></li>
+            </ol>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- THE AZUL STACK -->
+        <!-- ============================================================ -->
+        <section>
+            <h2>The Azul stack</h2>
+            <p style="font-size: 0.9em;">You ran community Payara Micro 7 on Azul Zulu OpenJDK in the lab today. The commercial Azul stack consolidates the JDK, the Jakarta EE runtime, and the high-performance JVM under one vendor:</p>
+            <table class="azul-stack">
+                <thead>
+                    <tr><th>Product</th><th>What it adds beyond what you ran today</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Azul Payara Micro 7</td>
+                        <td>Same Jakarta EE 11 runtime, plus monthly security patches, CVE Numbering Authority disclosures, multi-phase lifecycle (Full / Extended / Lifetime), 24-48h bug-fix SLA, and Azul Zulu OpenJDK bundled in the subscription.</td>
+                    </tr>
+                    <tr>
+                        <td>Azul Platform Prime</td>
+                        <td>The JVM above the OpenJDK pause-time envelope: C4 collector, ReadyNow warmup, Falcon JIT, production support for workloads where ZGC's allocation envelope is the constraint.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 16px; font-size: 0.85em;">
+                The JFR analysis skills you used today apply unchanged, and the same Payara application runs without modification on either runtime. Only the runtime ceiling changes.
+            </p>
+            <p style="margin-top: 14px; font-size: 0.85em;" class="muted">
+                Talk to us if your production workload has outgrown the recordings you read today.
+            </p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- FURTHER READING -->
+        <!-- ============================================================ -->
+        <section class="has-list">
+            <h2>Further reading</h2>
+            <ul style="font-size: 0.82em;">
+                <li>Payara Micro 7 documentation: <a href="https://docs.payara.fish/" target="_blank" rel="noopener">docs.payara.fish</a></li>
+                <li>Jakarta EE 11 specification: <a href="https://jakarta.ee/specifications/" target="_blank" rel="noopener">jakarta.ee/specifications</a></li>
+                <li>JDK Flight Recorder (JEP 328): <a href="https://openjdk.org/jeps/328" target="_blank" rel="noopener">openjdk.org/jeps/328</a></li>
+                <li>ZGC documentation: <a href="https://openjdk.org/projects/zgc/" target="_blank" rel="noopener">openjdk.org/projects/zgc</a></li>
+                <li>G1 ergonomics: <a href="https://docs.oracle.com/en/java/javase/21/gctuning/" target="_blank" rel="noopener">oracle.com G1 tuning guide</a></li>
+                <li>JMC user guide: <a href="https://docs.oracle.com/en/java/java-components/jdk-mission-control/9/user-guide/" target="_blank" rel="noopener">oracle.com JMC user guide</a></li>
+                <li>Azul Platform Prime documentation: <a href="https://docs.azul.com/prime/" target="_blank" rel="noopener">docs.azul.com/prime</a></li>
+            </ul>
+            <p style="margin-top: 16px; font-size: 0.85em;" class="muted">Workshop materials: <code>workshop/</code> in this repo.</p>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- THANK YOU -->
+        <!-- ============================================================ -->
+        <section class="lead">
+            <h1>Thank you</h1>
+            <p style="margin-top: 40px; font-size: 1.1em;">Questions, recordings, war stories: bring them.</p>
+        </section>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/highlight/highlight.js"></script>
+<script>
+    Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        loop: false,
+        transition: 'slide',
+        backgroundTransition: 'fade',
+        plugins: [RevealHighlight, RevealNotes],
+        width: 1280,
+        height: 720,
+        margin: 0.08,
+        minScale: 0.2,
+        maxScale: 2.0,
+        showNotes: false
+    });
+</script>
+</body>
+</html>
