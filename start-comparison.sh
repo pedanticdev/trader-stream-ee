@@ -75,8 +75,10 @@ echo "✅ Docker is installed"
 echo "✅ Docker Compose is installed"
 echo ""
 
-# Create base monitoring directory structure for logs
+# Create base monitoring directory structure for logs, GC logs, and JFR recordings
 mkdir -p monitoring/logs/{c4-{1,2,3},g1-{1,2,3}}
+mkdir -p monitoring/gc-logs/{c4-{1,2,3},g1-{1,2,3}}
+mkdir -p monitoring/recordings/{c4-{1,2,3},g1-{1,2,3}}
 
 if [ "$MONITORING" = true ]; then
     echo "Mode: Full deployment with monitoring stack"
@@ -181,8 +183,8 @@ echo ""
 echo "Ingestion Mode: $INGESTION_MODE"
 echo ""
 echo "To apply stress test:"
-echo "  curl -X POST http://localhost:8080/trader-stream-ee/api/memory/mode/EXTREME"
-echo "  curl -X POST http://localhost:9080/trader-stream-ee/api/memory/mode/EXTREME"
+echo "  curl -X POST http://localhost:8080/trader-stream-ee/api/pressure/mode/EXTREME"
+echo "  curl -X POST http://localhost:9080/trader-stream-ee/api/pressure/mode/EXTREME"
 echo ""
 echo "To stop everything:"
 echo "  ./stop-comparison.sh"

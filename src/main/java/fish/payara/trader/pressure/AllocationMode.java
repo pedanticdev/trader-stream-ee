@@ -6,45 +6,52 @@ public enum AllocationMode {
     STEADY_LOAD(200, // MB/sec allocation rate
                     512, // MB live set size
                     0, // No growth
-                    ScenarioType.STEADY, WorkloadType.NONE, "Steady 200 MB/sec allocation, 512 MB live set - Tests baseline GC behavior"),
+                    ScenarioType.STEADY, WorkloadType.NONE, "Steady 200 MB/sec allocation, 512 MB live set - Tests baseline runtime behavior"),
 
-    GROWING_HEAP(150, // MB/sec allocation rate
+    INTRADAY_POSITION_GROWTH(150, // MB/sec allocation rate
                     2048, // MB target live set
                     60, // seconds to reach target
-                    ScenarioType.GROWING, WorkloadType.NONE, "Growing live set 100 MB -> 2 GB over 60s - Tests mixed collection scaling"),
+                    ScenarioType.INTRADAY_GROWTH, WorkloadType.NONE,
+                    "Position book grows from 100 MB to 2 GB over 60s - intraday accumulation pressure on the runtime"),
 
-    PROMOTION_STORM(300, // MB/sec allocation rate
+    EARNINGS_SPIKE(300, // MB/sec allocation rate
                     1024, // MB live set
                     0, // No growth
-                    ScenarioType.PROMOTION, WorkloadType.NONE, "High promotion rate (50% survival) - Tests old gen collection efficiency"),
+                    ScenarioType.EARNINGS_SPIKE, WorkloadType.NONE,
+                    "Post-earnings surge: 300 MB/s allocation, 50% order survival - tests how the runtime absorbs sudden directional flow"),
 
-    FRAGMENTATION(200, // MB/sec allocation rate
+    MULTI_VENUE_QUOTE_CHURN(200, // MB/sec allocation rate
                     1024, // MB live set
                     0, // No growth
-                    ScenarioType.FRAGMENTATION, WorkloadType.NONE, "Small objects, random lifetimes - Tests compaction behavior"),
+                    ScenarioType.QUOTE_CHURN, WorkloadType.NONE,
+                    "Quote updates from many venues arrive and expire at random - tests how the runtime handles short-lived object churn"),
 
-    CROSS_GEN_REFS(150, // MB/sec allocation rate
+    LONG_HORIZON_POSITION_BOOK(150, // MB/sec allocation rate
                     800, // MB live set in old gen
                     0, // No growth
-                    ScenarioType.CROSS_REF, WorkloadType.NONE, "Many old->young references - Tests remembered set overhead"),
+                    ScenarioType.POSITION_BOOK, WorkloadType.NONE,
+                    "Long-held positions reference fresh execution objects - tests cross-generation reference overhead on the runtime"),
 
-    COMPRESSION_CPU(300, 1024, 0, ScenarioType.NONE, WorkloadType.COMPRESSION, "Gzip compress/decompress workload - Tests GC under CPU-intensive compression"),
+    COMPRESSION_CPU(300, 1024, 0, ScenarioType.NONE, WorkloadType.COMPRESSION,
+                    "Gzip compress/decompress workload - Tests runtime behaviour under CPU-intensive compression"),
 
     SERIALIZATION_CPU(250, 1024, 0, ScenarioType.NONE, WorkloadType.SERIALIZATION,
-                    "Jakarta JSON serialization/deserialization - Tests GC under object graph materialization"),
+                    "Jakarta JSON serialization/deserialization - Tests runtime behaviour under object graph materialization"),
 
-    CRYPTO_CPU(200, 1024, 0, ScenarioType.NONE, WorkloadType.CRYPTO, "SHA-256, HMAC-SHA256, AES-GCM encrypt/decrypt - Tests GC under cryptographic operations"),
+    CRYPTO_CPU(200, 1024, 0, ScenarioType.NONE, WorkloadType.CRYPTO,
+                    "SHA-256, HMAC-SHA256, AES-GCM encrypt/decrypt - Tests runtime behaviour under cryptographic operations"),
 
-    COLLECTION_CPU(300, 1024, 0, ScenarioType.NONE, WorkloadType.COLLECTION, "HashMap/TreeMap insert/lookup/remove - Tests GC under collection churn"),
+    COLLECTION_CPU(300, 1024, 0, ScenarioType.NONE, WorkloadType.COLLECTION,
+                    "HashMap/TreeMap insert/lookup/remove - Tests runtime behaviour under collection churn"),
 
     STRING_CPU(350, 1024, 0, ScenarioType.NONE, WorkloadType.STRING,
-                    "Regex, substring, StringBuilder, String.intern - Tests GC under string interning pressure"),
+                    "Regex, substring, StringBuilder, String.intern - Tests runtime behaviour under string interning pressure"),
 
     TRADING_MATCHING(400, 512, 0, ScenarioType.NONE, WorkloadType.TRADING_MATCHING,
-                    "High-frequency order matching - Tests GC under Order/Execution object churn with matching engine"),
+                    "High-frequency order matching - Tests runtime behaviour under Order/Execution object churn with matching engine"),
 
     TECHNICAL_ANALYSIS(300, 256, 0, ScenarioType.NONE, WorkloadType.TECHNICAL_ANALYSIS,
-                    "Continuous ta4j indicator computation - Tests GC under indicator object allocation (SMA, EMA, RSI, MACD, Bollinger, ATR)");
+                    "Continuous ta4j indicator computation - Tests runtime behaviour under indicator object allocation (SMA, EMA, RSI, MACD, Bollinger, ATR)");
 
     private final int allocationRateMBPerSec;
     private final int liveSetSizeMB;

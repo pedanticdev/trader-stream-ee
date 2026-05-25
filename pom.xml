@@ -359,6 +359,13 @@
                         <includes>
                             <include>**/*.md</include>
                         </includes>
+                        <excludes>
+                            <exclude>workshop/slides/**</exclude>
+                            <exclude>workshop/WORKSHOP.md</exclude>
+                            <exclude>workshop/analysis-checklist.md</exclude>
+                            <exclude>workshop/exercises/**/*.md</exclude>
+                            <exclude>workshop/recordings/**/*.md</exclude>
+                        </excludes>
                         <flexmark/>
                     </markdown>
                 </configuration>

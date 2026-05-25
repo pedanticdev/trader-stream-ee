@@ -1583,7 +1583,7 @@ public void broadcast(String json) {
             </div>
             <aside class="notes">
                 <p><strong>Simon:</strong> Most GC benchmarks just allocate byte arrays in a loop. That tests allocation throughput but misses the nuances. Real applications have cross-generational references, promotion storms, fragmentation patterns.</p>
-                <p>We designed each scenario to exploit a specific G1 weakness. CROSS_GEN_REFS targets remembered sets. FRAGMENTATION targets compaction pauses. PROMOTION_STORM targets mixed collection overhead. This is adversarial testing.</p>
+                <p>We designed each scenario to exploit a specific G1 weakness. LONG_HORIZON_POSITION_BOOK targets remembered sets. MULTI_VENUE_QUOTE_CHURN targets compaction pauses. EARNINGS_SPIKE targets mixed collection overhead. This is adversarial testing.</p>
             </aside>
         </section>
 
@@ -1654,25 +1654,25 @@ public class MemoryPressureService {
                     <td>Young GC pause frequency</td>
                 </tr>
                 <tr>
-                    <td><code>GROWING_HEAP</code></td>
+                    <td><code>INTRADAY_POSITION_GROWTH</code></td>
                     <td>150 MB/s</td>
                     <td>100 MB &rarr; 2 GB (60s)</td>
                     <td>Mixed collection pause scaling</td>
                 </tr>
                 <tr>
-                    <td><code>PROMOTION_STORM</code></td>
+                    <td><code>EARNINGS_SPIKE</code></td>
                     <td>300 MB/s</td>
                     <td>1 GB (50% survival)</td>
                     <td>Old generation collection</td>
                 </tr>
                 <tr>
-                    <td><code>FRAGMENTATION</code></td>
+                    <td><code>MULTI_VENUE_QUOTE_CHURN</code></td>
                     <td>200 MB/s</td>
                     <td>1 GB fragmented</td>
                     <td>Compaction pauses</td>
                 </tr>
                 <tr>
-                    <td><code>CROSS_GEN_REFS</code></td>
+                    <td><code>LONG_HORIZON_POSITION_BOOK</code></td>
                     <td>150 MB/s</td>
                     <td>800 MB old gen</td>
                     <td>Remembered set overhead</td>
@@ -1682,8 +1682,8 @@ public class MemoryPressureService {
                 Each scenario uses <span class="hl">4 parallel virtual threads</span> to mirror production multi-handler workloads. Memory scenarios defined in <code>AllocationMode.java</code>, CPU workloads via CDI <code>Workload</code> implementations.
             </p>
             <aside class="notes">
-                <p><strong>Simon:</strong> Five memory scenarios, five different weaknesses. STEADY_LOAD is the baseline. GROWING_HEAP tests how pause time scales with live set. PROMOTION_STORM floods old generation. FRAGMENTATION creates small objects with random lifetimes. And CROSS_GEN_REFS is the killer scenario for remembered sets.</p>
-                <p>We'll look at CROSS_GEN_REFS in detail next - it's the most technically interesting.</p>
+                <p><strong>Simon:</strong> Five memory scenarios, five different weaknesses. STEADY_LOAD is the baseline. INTRADAY_POSITION_GROWTH tests how pause time scales with live set as the book grows through the day. EARNINGS_SPIKE floods old generation under post-earnings directional flow. MULTI_VENUE_QUOTE_CHURN creates short-lived objects with random lifetimes. And LONG_HORIZON_POSITION_BOOK is the killer scenario for remembered sets.</p>
+                <p>We'll look at LONG_HORIZON_POSITION_BOOK in detail next - it's the most technically interesting.</p>
             </aside>
         </section>
 
@@ -1745,10 +1745,10 @@ public class MemoryPressureService {
         </section>
 
         <!-- ============================================================ -->
-        <!-- SLIDE: CROSS_GEN_REFS Deep Dive -->
+        <!-- SLIDE: LONG_HORIZON_POSITION_BOOK Deep Dive -->
         <!-- ============================================================ -->
         <section>
-            <h2>CROSS_GEN_REFS: Remembered Set Stress</h2>
+            <h2>LONG_HORIZON_POSITION_BOOK: Remembered Set Stress</h2>
             <h3>The Killer Scenario for G1</h3>
             <pre><code class="java" data-trim>
 // Old-generation holder object (~1MB each, will be promoted by GC)
@@ -1797,27 +1797,27 @@ private void createCrossGenRefsMultiThreaded(int bytes, int threads) {
             <h3>How Each Scenario Generates Pressure</h3>
             <div class="two-column">
                 <div class="box">
-                    <h3>FRAGMENTATION</h3>
+                    <h3>MULTI_VENUE_QUOTE_CHURN</h3>
                     <pre style="font-size: 0.65em;"><code class="java" data-trim>
 // Random small objects create holes
-private void allocateFragmentationGarbage(
+private void allocateQuoteChurnGarbage(
     int totalBytes, int threads) {
     while (remaining > 0) {
         int size = random(100, 1000);
         byte[] garbage = new byte[size];
         random.nextBytes(garbage);
         remaining -= size;
-        // Small objects die fast but
-        // fragment the free space
+        // Short-lived quote updates die fast
+        // and fragment the free space
     }
 }</code></pre>
-                    <p class="muted" style="font-size: 0.7em;">100-1000 byte objects create a Swiss cheese heap that triggers G1 compaction.</p>
+                    <p class="muted" style="font-size: 0.7em;">100-1000 byte quote updates create a Swiss cheese heap that triggers G1 compaction.</p>
                 </div>
                 <div class="box">
-                    <h3>PROMOTION_STORM</h3>
+                    <h3>EARNINGS_SPIKE</h3>
                     <pre style="font-size: 0.65em;"><code class="java" data-trim>
-// 50% survive to old generation
-private void executePromotionStorm(
+// 50% of orders survive to old generation
+private void executeEarningsSpike(
     AllocationMode mode) {
     int transient = bytes / 2;
     int promotable = bytes / 2;
@@ -1825,16 +1825,16 @@ private void executePromotionStorm(
     allocateTransientGarbage(transient, 4);
     allocatePromotableGarbage(promotable, 4);
 
-    // Move promoted objects to live set
+    // Move promoted orders to live set
     while ((obj = promotableObjects.poll()) != null)
         liveSet.add(obj);
 }</code></pre>
-                    <p class="muted" style="font-size: 0.7em;">50% survival rate floods old gen, forcing G1 into expensive mixed collections.</p>
+                    <p class="muted" style="font-size: 0.7em;">50% order survival floods old gen, forcing G1 into expensive mixed collections.</p>
                 </div>
             </div>
             <aside class="notes">
-                <p><strong>Simon:</strong> FRAGMENTATION allocates random small objects that create holes in the heap. When G1 can't find a large enough free region, it must compact. Compaction requires a stop-the-world pause.</p>
-                <p>PROMOTION_STORM allocates objects that survive long enough to be promoted to old generation. This forces G1 to run mixed collections, which have the longest pauses because they must evacuate old regions.</p>
+                <p><strong>Simon:</strong> MULTI_VENUE_QUOTE_CHURN allocates random small objects (modelling short-lived multi-venue quote updates) that create holes in the heap. When G1 cannot find a large enough free region, it must compact. Compaction requires a stop-the-world pause.</p>
+                <p>EARNINGS_SPIKE allocates objects that survive long enough to be promoted to old generation, modelling post-earnings directional flow where many orders survive the young generation. This forces G1 to run mixed collections, which have the longest pauses because they must evacuate old regions.</p>
             </aside>
         </section>
 
@@ -1853,24 +1853,24 @@ MARKET_OPEN_SPIKE:
     - mode: STEADY_LOAD
       durationSeconds: 10
       description: "Baseline - calm before the open"
-    - mode: PROMOTION_STORM
+    - mode: EARNINGS_SPIKE
       durationSeconds: 20
       description: "Market open - sudden influx of orders"
     - mode: STEADY_LOAD
       durationSeconds: 10
       description: "Post-open stabilization"
 
-FRAGMENTATION_HELL:
-  name: "Fragmentation Hell"
-  description: "Maximum fragmentation to trigger compaction pauses"
+QUOTE_CHURN_HELL:
+  name: "Quote Churn Hell"
+  description: "Maximum quote churn to trigger compaction pauses"
   steps:
-    - mode: FRAGMENTATION
+    - mode: MULTI_VENUE_QUOTE_CHURN
       durationSeconds: 30
-      description: "Build up fragmented heap"
-    - mode: GROWING_HEAP
+      description: "Build up fragmented heap from short-lived quotes"
+    - mode: INTRADAY_POSITION_GROWTH
       durationSeconds: 30
-      description: "Grow heap to force full compaction"
-    - mode: CROSS_GEN_REFS
+      description: "Grow position book to force full compaction"
+    - mode: LONG_HORIZON_POSITION_BOOK
       durationSeconds: 30
       description: "Add remembered set pressure on top"
             </code></pre>
@@ -1958,7 +1958,7 @@ public class GCPauseMonitor implements NotificationListener {
             </div>
             <div class="two-column" style="margin-top: 15px;">
                 <div class="box-danger">
-                    <h4 style="color: var(--danger);">G1GC Under PROMOTION_STORM</h4>
+                    <h4 style="color: var(--danger);">G1GC Under EARNINGS_SPIKE</h4>
                     <pre style="font-size: 0.7em;"><code class="json" data-trim>
 {
   "totalPauseCount": 164,
@@ -1969,7 +1969,7 @@ public class GCPauseMonitor implements NotificationListener {
 }</code></pre>
                 </div>
                 <div class="box-success">
-                    <h4 style="color: var(--success);">C4 Under PROMOTION_STORM</h4>
+                    <h4 style="color: var(--success);">C4 Under EARNINGS_SPIKE</h4>
                     <pre style="font-size: 0.7em;"><code class="json" data-trim>
 {
   "totalPauseCount": 665,
@@ -2132,10 +2132,10 @@ if (event.isEnabled()) { // JIT-compiled check
         </section>
 
         <!-- ============================================================ -->
-        <!-- SLIDE: PROMOTION_STORM Results -->
+        <!-- SLIDE: EARNINGS_SPIKE Results -->
         <!-- ============================================================ -->
         <section>
-            <h2>PROMOTION_STORM: G1 vs C4</h2>
+            <h2>EARNINGS_SPIKE: G1 vs C4</h2>
             <h3>300 MB/sec, 50% Survival Rate</h3>
             <div class="comparison-row">
                 <div class="comparison-item">
@@ -2181,10 +2181,10 @@ if (event.isEnabled()) { // JIT-compiled check
         </section>
 
         <!-- ============================================================ -->
-        <!-- SLIDE: GROWING_HEAP Results -->
+        <!-- SLIDE: INTRADAY_POSITION_GROWTH Results -->
         <!-- ============================================================ -->
         <section>
-            <h2>GROWING_HEAP: Live Set Scaling</h2>
+            <h2>INTRADAY_POSITION_GROWTH: Position Book Scaling</h2>
             <h3>100 MB &rarr; 2 GB over 60 Seconds</h3>
             <div class="two-column">
                 <div class="box-danger">
@@ -2273,8 +2273,8 @@ if (event.isEnabled()) { // JIT-compiled check
                     <th style="color: var(--danger);">G1GC</th>
                     <th style="color: var(--success);">C4/GPGC</th>
                 </tr>
-                <tr><td>Max Pause (PROMOTION_STORM)</td><td>25 ms</td><td>2 ms</td></tr>
-                <tr><td>Avg Pause (PROMOTION_STORM)</td><td>4.87 ms</td><td>0.078 ms</td></tr>
+                <tr><td>Max Pause (EARNINGS_SPIKE)</td><td>25 ms</td><td>2 ms</td></tr>
+                <tr><td>Avg Pause (EARNINGS_SPIKE)</td><td>4.87 ms</td><td>0.078 ms</td></tr>
                 <tr><td>SLA Violations (>10ms)</td><td>20</td><td>0</td></tr>
                 <tr><td>Total Pause Time</td><td>799 ms</td><td>52 ms</td></tr>
                 <tr><td>Pause Scaling with Heap</td><td>Grows linearly</td><td>Constant</td></tr>
@@ -2463,8 +2463,8 @@ curl -s http://localhost:8080/api/health/check | jq
 # 2. Reset GC statistics for clean measurement
 curl -X POST http://localhost:8080/api/gc/reset
 
-# 3. Apply the CROSS_GEN_REFS scenario
-curl -X POST http://localhost:8080/api/pressure/mode/CROSS_GEN_REFS
+# 3. Apply the LONG_HORIZON_POSITION_BOOK scenario
+curl -X POST http://localhost:8080/api/pressure/mode/LONG_HORIZON_POSITION_BOOK
 
 # 4. Wait 30 seconds, then check GC statistics
 sleep 30

@@ -35,7 +35,7 @@ services:
       context: .
       dockerfile: Dockerfile.scale.standard
       args:
-        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.3}
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.5}
     container_name: trader-stream-g1-1
     hostname: trader-stream-g1-1
     ports:
@@ -68,9 +68,6 @@ services:
         -XX:+OptimizeStringConcat
         -XX:+UseContainerSupport
         -XX:MaxRAMPercentage=75.0
-        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal
-        -XX:FlightRecorderOptions=stackdepth=256
-        -Xlog:jfr*=info
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
         -Djava.net.preferIPv4Stack=true
     volumes:
@@ -78,6 +75,8 @@ services:
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
       - ./monitoring/logs/g1-1:/opt/payara/logs
       - ./monitoring/gc-logs/g1-1:/opt/payara/gc-logs
+      - ./monitoring/recordings/g1-1:/opt/payara/recordings
+      - ./workshop/jfr-settings:/opt/payara/jfr-settings:ro
     labels:
       - "traefik.enable=true"
       - "cluster=g1"
@@ -124,9 +123,6 @@ services:
         -XX:+OptimizeStringConcat
         -XX:+UseContainerSupport
         -XX:MaxRAMPercentage=75.0
-        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal
-        -XX:FlightRecorderOptions=stackdepth=256
-        -Xlog:jfr*=info
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
         -Djava.net.preferIPv4Stack=true
     volumes:
@@ -134,6 +130,8 @@ services:
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
       - ./monitoring/logs/g1-2:/opt/payara/logs
       - ./monitoring/gc-logs/g1-2:/opt/payara/gc-logs
+      - ./monitoring/recordings/g1-2:/opt/payara/recordings
+      - ./workshop/jfr-settings:/opt/payara/jfr-settings:ro
     labels:
       - "traefik.enable=true"
       - "cluster=g1"
@@ -180,9 +178,6 @@ services:
         -XX:+OptimizeStringConcat
         -XX:+UseContainerSupport
         -XX:MaxRAMPercentage=75.0
-        -XX:StartFlightRecording=name=g1-cluster,filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal
-        -XX:FlightRecorderOptions=stackdepth=256
-        -Xlog:jfr*=info
         -javaagent:/opt/payara/jmx_prometheus_javaagent.jar=9010:/opt/payara/jmx-exporter-config.yml
         -Djava.net.preferIPv4Stack=true
     volumes:
@@ -190,6 +185,8 @@ services:
       - ./monitoring/jmx-exporter/jmx-exporter-config.yml:/opt/payara/jmx-exporter-config.yml:ro
       - ./monitoring/logs/g1-3:/opt/payara/logs
       - ./monitoring/gc-logs/g1-3:/opt/payara/gc-logs
+      - ./monitoring/recordings/g1-3:/opt/payara/recordings
+      - ./workshop/jfr-settings:/opt/payara/jfr-settings:ro
     labels:
       - "traefik.enable=true"
       - "cluster=g1"

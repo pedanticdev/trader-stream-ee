@@ -9,13 +9,16 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jdk.jfr.Configuration;
 import jdk.jfr.FlightRecorder;
 import jdk.jfr.Recording;
 import jdk.jfr.RecordingState;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -44,6 +47,7 @@ public class JfrRecordingResource {
 
     private static final Logger LOGGER = Logger.getLogger(JfrRecordingResource.class.getName());
     private static final java.nio.file.Path RECORDINGS_DIR = java.nio.file.Paths.get("/opt/payara/recordings");
+    private static final java.nio.file.Path JFC_SETTINGS_DIR = java.nio.file.Paths.get("/opt/payara/jfr-settings");
 
     /** Get JFR availability and recording status */
     @GET
@@ -76,25 +80,119 @@ public class JfrRecordingResource {
         return Response.ok(status).build();
     }
 
-    /** Start a new JFR recording */
+    /**
+     * Start a new JFR recording.
+     *
+     * @param name
+     *            human-readable recording name; used as the dumped filename prefix
+     * @param durationSeconds
+     *            wall-clock duration before auto-stop and dump to disk
+     * @param maxSizeBytes
+     *            hard cap on recording size; older events are evicted past this
+     * @param settings
+     *            optional JFC profile: 'default', 'profile', or a workshop name such as 'tradestream-workshop' loaded from /opt/payara/jfr-settings. When
+     *            omitted, an opinionated workshop event set is enabled programmatically.
+     */
     @POST
     @Path("/recording/start")
     @Produces(MediaType.APPLICATION_JSON)
     public Response startRecording(@QueryParam("name") @DefaultValue("ad-hoc") String name,
                     @QueryParam("durationSeconds") @DefaultValue("60") int durationSeconds,
-                    @QueryParam("maxSize") @DefaultValue("1073741824") long maxSizeBytes) {
+                    @QueryParam("maxSize") @DefaultValue("1073741824") long maxSizeBytes, @QueryParam("settings") String settings) {
 
         if (!FlightRecorder.isAvailable()) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(Map.of("error", "Flight Recorder is not available")).build();
         }
 
-        Map<String, String> options = new HashMap<>();
-        options.put("name", name);
+        Recording recording;
+        try {
+            recording = createRecording(name, settings);
+        } catch (IOException | ParseException e) {
+            LOGGER.log(Level.WARNING, "Failed to load JFC settings: " + settings, e);
+            return Response.status(Response.Status.BAD_REQUEST)
+                            .entity(Map.of("error", "Failed to load settings", "settings", settings, "message", e.getMessage()))
+                            .build();
+        }
 
-        Recording recording = new Recording(options);
         recording.setMaxSize(maxSizeBytes);
-        recording.setMaxAge(Duration.ofSeconds(durationSeconds));
+        recording.setDuration(Duration.ofSeconds(durationSeconds));
+        recording.start();
 
+        final long recordingId = recording.getId();
+        CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep((durationSeconds + 2) * 1000L);
+                Recording r = findRecording(recordingId);
+                if (r == null) {
+                    return;
+                }
+                if (r.getState() == RecordingState.RUNNING) {
+                    r.stop();
+                }
+                if (r.getState() == RecordingState.STOPPED) {
+                    dumpRecording(r);
+                    LOGGER.info("Dumped recording: " + r.getName() + " (" + recordingId + ")");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                LOGGER.warning("Recording stop interrupted for: " + name);
+            }
+        });
+
+        LOGGER.info("Started JFR recording: " + name + " (" + recordingId + ") for " + durationSeconds + "s, settings="
+                        + (settings == null ? "<workshop-default>" : settings));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("recordingId", recordingId);
+        response.put("name", name);
+        response.put("durationSeconds", durationSeconds);
+        response.put("maxSizeBytes", maxSizeBytes);
+        response.put("settings", settings == null ? "workshop-default" : settings);
+        response.put("state", "RUNNING");
+        return Response.ok(response).build();
+    }
+
+    /**
+     * Build a recording with either a named JFC profile or the workshop default event set.
+     *
+     * <p>
+     * Resolution order for {@code settings}:
+     * <ol>
+     * <li>{@code null} or {@code "workshop-default"} — programmatic event list (back-compat).</li>
+     * <li>{@code "default"} or {@code "profile"} — JDK-bundled JFC profile via {@link Configuration#getConfiguration(String)}.</li>
+     * <li>Anything else — looked up as {@code /opt/payara/jfr-settings/<name>.jfc}.</li>
+     * </ol>
+     */
+    private Recording createRecording(String name, String settings) throws IOException, ParseException {
+        if (settings == null || settings.isBlank() || "workshop-default".equalsIgnoreCase(settings)) {
+            Recording recording = new Recording();
+            recording.setName(name);
+            applyWorkshopDefaultEvents(recording);
+            return recording;
+        }
+
+        if ("default".equalsIgnoreCase(settings) || "profile".equalsIgnoreCase(settings)) {
+            Recording recording = new Recording(Configuration.getConfiguration(settings.toLowerCase(Locale.ROOT)));
+            recording.setName(name);
+            return recording;
+        }
+
+        String safeName = settings.endsWith(".jfc") ? settings : settings + ".jfc";
+        java.nio.file.Path jfcPath = JFC_SETTINGS_DIR.resolve(safeName).normalize();
+        if (!jfcPath.startsWith(JFC_SETTINGS_DIR.normalize())) {
+            throw new IOException("Settings path escapes the JFC settings directory: " + settings);
+        }
+        if (!Files.exists(jfcPath)) {
+            throw new IOException("JFC settings file not found: " + jfcPath);
+        }
+        try (InputStream in = Files.newInputStream(jfcPath)) {
+            Recording recording = new Recording(Configuration.create(new java.io.InputStreamReader(in)));
+            recording.setName(name);
+            return recording;
+        }
+    }
+
+    private void applyWorkshopDefaultEvents(Recording recording) {
         recording.enable("jdk.CPUInformation");
         recording.enable("jdk.GCPhaseParallel");
         recording.enable("jdk.ObjectAllocationInNewTLAB");
@@ -113,30 +211,6 @@ public class JfrRecordingResource {
         recording.enable("gc.sla.violation");
         recording.enable("aeron.backpressure");
         recording.enable("burst.mode.activated");
-
-        recording.start();
-
-        final long recordingId = recording.getId();
-        CompletableFuture.runAsync(() -> {
-            try {
-                Thread.sleep(durationSeconds * 1000L);
-                Recording r = findRecording(recordingId);
-                if (r != null && r.getState() == RecordingState.RUNNING) {
-                    r.stop();
-                    dumpRecording(r);
-                    LOGGER.info("Auto-stopped recording: " + r.getName() + " (" + recordingId + ")");
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                LOGGER.warning("Recording stop interrupted for: " + name);
-            }
-        });
-
-        LOGGER.info("Started JFR recording: " + name + " (" + recordingId + ") for " + durationSeconds + "s");
-
-        return Response.ok(
-                        Map.of("recordingId", recordingId, "name", name, "durationSeconds", durationSeconds, "maxSizeBytes", maxSizeBytes, "state", "RUNNING"))
-                        .build();
     }
 
     /** Stop a running recording */
@@ -240,17 +314,23 @@ public class JfrRecordingResource {
             return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", "Filename is required")).type(MediaType.APPLICATION_JSON).build();
         }
 
-        java.nio.file.Path filePath = RECORDINGS_DIR.resolve(filename);
+        if (!filename.endsWith(".jfr")) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", "Only .jfr files are allowed")).type(MediaType.APPLICATION_JSON).build();
+        }
+
+        java.nio.file.Path filePath = RECORDINGS_DIR.resolve(filename).normalize();
+        if (!filePath.startsWith(RECORDINGS_DIR.normalize())) {
+            return Response.status(Response.Status.FORBIDDEN)
+                            .entity(Map.of("error", "Filename escapes the recordings directory", "filename", filename))
+                            .type(MediaType.APPLICATION_JSON)
+                            .build();
+        }
 
         if (!Files.exists(filePath)) {
             return Response.status(Response.Status.NOT_FOUND)
                             .entity(Map.of("error", "File not found", "filename", filename))
                             .type(MediaType.APPLICATION_JSON)
                             .build();
-        }
-
-        if (!filename.endsWith(".jfr")) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", "Only .jfr files are allowed")).type(MediaType.APPLICATION_JSON).build();
         }
 
         try {

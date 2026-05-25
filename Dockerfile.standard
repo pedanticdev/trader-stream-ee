@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for TradeStreamEE
-# Uses Eclipse Temurin (Standard OpenJDK) for comparison against Azul Platform Prime
+# Uses Eclipse Temurin 25 (Standard OpenJDK) for comparison against Azul Zulu ZGC
 
-FROM azul/zulu-openjdk:21 AS build
+FROM eclipse-temurin:25 AS build
 WORKDIR /app
 
 # Copy Maven wrapper and pom.xml first for better layer caching
@@ -18,8 +18,8 @@ COPY src ./src
 RUN ./mvnw spotless:apply
 RUN ./mvnw clean package -DskipTests
 
-# Use Eclipse Temurin (Standard OpenJDK)
-FROM eclipse-temurin:21
+# Eclipse Temurin 25 with G1GC for comparison against ZGC
+FROM eclipse-temurin:25
 
 LABEL maintainer="TradeStreamEE"
 LABEL description="High-frequency trading dashboard (Standard JVM Comparison)"
@@ -27,7 +27,7 @@ LABEL description="High-frequency trading dashboard (Standard JVM Comparison)"
 WORKDIR /opt/payara
 
 # Add Payara Micro from URL
-ARG PAYARA_VERSION=7.2026.3
+ARG PAYARA_VERSION=7.2026.5
 ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/payara-micro/${PAYARA_VERSION}/payara-micro-${PAYARA_VERSION}.jar /opt/payara/payara-micro.jar
 
 # Copy WAR file from build stage
@@ -49,7 +49,9 @@ EXPOSE 8080
 # docker-compose-g1.yml environment variables. See that file for actual runtime
 # flags in cluster mode.
 #
-# JFR is enabled by default - entrypoint script handles JFR_ENABLED environment variable
+# JFR is OFF by default. Ad-hoc recordings are produced via the /api/jfr REST
+# endpoints. To enable an always-on circular recording, set JFR_ALWAYS_ON=true
+# in the environment; see docker-entrypoint.sh.
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
     -XX:+UseG1GC \

@@ -18,9 +18,10 @@ class BasicFunctionalityTest {
         // Test AllocationMode enum
         assertEquals(AllocationMode.OFF, AllocationMode.valueOf("OFF"));
         assertEquals(AllocationMode.STEADY_LOAD, AllocationMode.valueOf("STEADY_LOAD"));
-        assertEquals(AllocationMode.GROWING_HEAP, AllocationMode.valueOf("GROWING_HEAP"));
-        assertEquals(AllocationMode.PROMOTION_STORM, AllocationMode.valueOf("PROMOTION_STORM"));
-        assertEquals(AllocationMode.FRAGMENTATION, AllocationMode.valueOf("FRAGMENTATION"));
+        assertEquals(AllocationMode.INTRADAY_POSITION_GROWTH, AllocationMode.valueOf("INTRADAY_POSITION_GROWTH"));
+        assertEquals(AllocationMode.EARNINGS_SPIKE, AllocationMode.valueOf("EARNINGS_SPIKE"));
+        assertEquals(AllocationMode.MULTI_VENUE_QUOTE_CHURN, AllocationMode.valueOf("MULTI_VENUE_QUOTE_CHURN"));
+        assertEquals(AllocationMode.LONG_HORIZON_POSITION_BOOK, AllocationMode.valueOf("LONG_HORIZON_POSITION_BOOK"));
 
         // Test allocation rates
         assertEquals(0, AllocationMode.OFF.getAllocationRateMBPerSec());

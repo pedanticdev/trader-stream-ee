@@ -36,3 +36,26 @@ monitoring/gc-logs/
 monitoring/prometheus/data/
 monitoring/grafana/data/
 monitoring/loki/data/
+
+# Runtime artefacts produced by start-comparison.sh and the running clusters.
+# Bind-mounted JFR dumps land here; the curated workshop set lives in
+# workshop/recordings/ instead.
+monitoring/recordings/
+monitoring/metrics.log
+monitoring/.scraper.pid
+
+# Crash dumps from any local JVM (Zing safepoint aborts in particular).
+hs_err_pid*.log
+hs_err_pid*
+
+# Workshop tree: everything is intentional content. Re-include it explicitly
+# so the broad *.md / *.jar ignores above don't swallow it.
+!workshop/
+!workshop/**
+!workshop/**/*.md
+!workshop/**/*.jfc
+!workshop/**/*.jfr
+!workshop/**/*.java
+!workshop/**/*.xml
+!workshop/**/*.sh
+!workshop/**/*.txt

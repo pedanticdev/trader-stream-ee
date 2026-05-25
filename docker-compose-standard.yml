@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.standard
       args:
-        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.3}
+        PAYARA_VERSION: ${PAYARA_VERSION:-7.2026.5}
     container_name: trader-stream-ee
     ports:
       - "8080:8080"

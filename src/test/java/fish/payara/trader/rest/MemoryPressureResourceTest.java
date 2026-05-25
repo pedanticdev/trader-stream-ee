@@ -74,6 +74,6 @@ class MemoryPressureResourceTest {
         @SuppressWarnings("unchecked")
         Map<String, Map<String, Object>> entity = (Map<String, Map<String, Object>>) response.getEntity();
         assertTrue(entity.containsKey("STEADY_LOAD"));
-        assertTrue(entity.containsKey("PROMOTION_STORM"));
+        assertTrue(entity.containsKey("EARNINGS_SPIKE"));
     }
 }

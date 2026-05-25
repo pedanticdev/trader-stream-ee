@@ -299,10 +299,10 @@
 
             <ul>
                 <li><strong>STEADY_LOAD:</strong> 200 MB/sec allocation with 512 MB stable live set. Tests baseline young generation collection behavior.</li>
-                <li><strong>GROWING_HEAP:</strong> 150 MB/sec with live set growing from 100 MB to 2 GB over 60 seconds. Tests mixed collection pause scaling.</li>
-                <li><strong>PROMOTION_STORM:</strong> 300 MB/sec with 50% survival rate. Tests old generation collection efficiency under high promotion.</li>
-                <li><strong>FRAGMENTATION:</strong> 200 MB/sec with small objects (100-1000 bytes). Tests compaction behavior.</li>
-                <li><strong>CROSS_GEN_REFS:</strong> 150 MB/sec with 800 MB in old generation holding references to young objects. Tests remembered set overhead.</li>
+                <li><strong>INTRADAY_POSITION_GROWTH:</strong> 150 MB/sec with position book growing from 100 MB to 2 GB over 60 seconds. Tests mixed collection pause scaling.</li>
+                <li><strong>EARNINGS_SPIKE:</strong> 300 MB/sec with 50% order survival rate. Tests old generation collection efficiency under high promotion.</li>
+                <li><strong>MULTI_VENUE_QUOTE_CHURN:</strong> 200 MB/sec with small objects (100-1000 bytes). Tests compaction behavior under short-lived quote churn.</li>
+                <li><strong>LONG_HORIZON_POSITION_BOOK:</strong> 150 MB/sec with 800 MB in old generation holding references to young objects. Tests remembered set overhead.</li>
                 <li><strong>TRADING_MATCHING:</strong> 400 MB/sec from real order matching engine operations. Tests GC under Order/Execution object churn with a live price-time priority order book.</li>
                 <li><strong>TECHNICAL_ANALYSIS:</strong> 300 MB/sec from ta4j indicator computation (SMA, EMA, RSI, MACD, Bollinger Bands, ATR). Tests GC under technical analysis object allocation.</li>
             </ul>
@@ -311,11 +311,11 @@
 
             <p>Each scenario uses 4 parallel threads to generate allocation load, mirroring production web servers and trading systems where multiple threads compete for heap space. The allocation rates (100-300 MB/sec) are calibrated to show normal GC behavior rather than pathological thrashing, ensuring consistent results across 2GB-4GB heap configurations.</p>
 
-            <p>Here is the raw JSON returned from our Payara endpoints during a PROMOTION_STORM scenario:</p>
+            <p>Here is the raw JSON returned from our Payara endpoints during a EARNINGS_SPIKE scenario:</p>
 
             <pre><code class="language-json">{
   "running": true,
-  "currentMode": "PROMOTION_STORM",
+  "currentMode": "EARNINGS_SPIKE",
   "description": "High promotion rate (50% survival) - Tests old gen collection efficiency",
   "allocationRateMBPerSec": 300,
   "liveSetSizeMB": 1024,
@@ -331,7 +331,7 @@
 
             <div class="highlight-block">
                 <p>The Results</p>
-                <p>Under PROMOTION_STORM (300 MB/sec with high old generation traffic), the application's garbage collection pauses peaked at 1 millisecond. The 50th percentile (median) was 0ms. In comparable testing, G1 showed significantly higher pause times as mixed collections struggled to keep pace with promotion rates.</p>
+                <p>Under EARNINGS_SPIKE (300 MB/sec with high old generation traffic), the application's garbage collection pauses peaked at 1 millisecond. The 50th percentile (median) was 0ms. In comparable testing, G1 showed significantly higher pause times as mixed collections struggled to keep pace with promotion rates.</p>
             </div>
 
             <h2>Payara Micro: Jakarta EE Runtime</h2>
@@ -380,7 +380,7 @@ public void onFragment(DirectBuffer buffer, int offset, int length, Header heade
 
             <p>To show collector behavior under specific pathological conditions, the <code>MemoryPressureService</code> implements 12 distinct workloads across two categories. Five memory scenarios target known G1 weaknesses, and seven CPU-intensive workloads stress the GC under realistic compute pressure. Each dispatches via CDI from a central workload registry.</p>
 
-            <p>The CROSS_GEN_REFS scenario creates old generation objects that hold references to newly allocated young objects, triggering G1's write barriers and remembered set maintenance:</p>
+            <p>The LONG_HORIZON_POSITION_BOOK scenario creates old generation objects that hold references to newly allocated young objects, triggering G1's write barriers and remembered set maintenance:</p>
 
             <pre><code class="language-java">// Cross-generational reference stress test
 private static class RefHolder {

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    JDK Mission Control custom dashboard for the Module 3 exercise.
+
+    Import via: Window -> Show View -> Other -> Mission Control -> Custom Dashboard,
+    then right-click the dashboard area -> Import.
+
+    The dashboard overlays three timelines:
+      1. burst.pattern.detected (your new event)
+      2. gc.sla.violation (existing custom event)
+      3. aeron.backpressure (existing custom event)
+
+    Look for visual correlation: do burst detections precede SLA violations or
+    backpressure events? If yes, you have a leading indicator the operations team
+    could alert on.
+-->
+<dashboard name="TradeStream Workshop: Burst Correlation" version="1">
+  <description>Overlay custom burst detections with GC SLA violations and Aeron backpressure to visualise causation in the recording window.</description>
+
+  <view name="burst-detection-rate" type="timeseries">
+    <title>Burst detections per second</title>
+    <eventType>burst.pattern.detected</eventType>
+    <aggregator>count</aggregator>
+    <window>1s</window>
+    <description>One unit on the y-axis = one burst pattern detected in that second.</description>
+  </view>
+
+  <view name="multiplier-distribution" type="histogram">
+    <title>Burst multiplier histogram</title>
+    <eventType>burst.pattern.detected</eventType>
+    <field>multiplier</field>
+    <buckets>10</buckets>
+    <description>How extreme were the spikes? A flat tail means many low-multiplier detections; a sharp tail means rare extreme bursts.</description>
+  </view>
+
+  <view name="sla-violations" type="timeseries">
+    <title>GC SLA violations per second</title>
+    <eventType>gc.sla.violation</eventType>
+    <aggregator>count</aggregator>
+    <window>1s</window>
+  </view>
+
+  <view name="backpressure" type="timeseries">
+    <title>Aeron backpressure events per second</title>
+    <eventType>aeron.backpressure</eventType>
+    <aggregator>count</aggregator>
+    <window>1s</window>
+  </view>
+
+  <view name="gc-pause" type="timeseries">
+    <title>GC pause duration (ms)</title>
+    <eventType>jdk.GarbageCollection</eventType>
+    <field>duration</field>
+    <aggregator>max</aggregator>
+    <window>1s</window>
+  </view>
+
+  <layout>
+    <row weight="40">
+      <view ref="burst-detection-rate" weight="50"/>
+      <view ref="multiplier-distribution" weight="50"/>
+    </row>
+    <row weight="60">
+      <view ref="gc-pause" weight="34"/>
+      <view ref="sla-violations" weight="33"/>
+      <view ref="backpressure" weight="33"/>
+    </row>
+  </layout>
+</dashboard>

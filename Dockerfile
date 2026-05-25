@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for TradeStreamEE
-# Uses Azul Platform Prime (Zing) for Pauseless Garbage Collection demonstration
+# Uses Azul Zulu 25 with ZGC for low-latency concurrent garbage collection
 
-FROM azul/zulu-openjdk:21 AS build
+FROM azul/zulu-openjdk:25-latest AS build
 WORKDIR /app
 
 # Copy Maven wrapper and pom.xml first for better layer caching
@@ -18,16 +18,16 @@ COPY src ./src
 RUN ./mvnw spotless:apply
 RUN ./mvnw clean package -DskipTests
 
-# Use Azul Platform Prime for C4 GC
-FROM azul/prime:21
+# Azul Zulu 25 with ZGC for concurrent garbage collection
+FROM azul/zulu-openjdk:25-latest
 
 LABEL maintainer="TradeStreamEE"
-LABEL description="High-frequency trading dashboard with Aeron + SBE + Payara Micro + Azul C4"
+LABEL description="High-frequency trading dashboard with Aeron + SBE + Payara Micro + Zulu 25 ZGC"
 
 WORKDIR /opt/payara
 
 # Add Payara Micro from URL
-ARG PAYARA_VERSION=7.2026.3
+ARG PAYARA_VERSION=7.2026.5
 ADD https://nexus.payara.fish/repository/payara-community/fish/payara/extras/payara-micro/${PAYARA_VERSION}/payara-micro-${PAYARA_VERSION}.jar /opt/payara/payara-micro.jar
 
 # Copy WAR file from build stage
@@ -43,24 +43,25 @@ RUN mkdir -p /opt/payara/recordings /opt/payara/gc-logs && chmod 777 /opt/payara
 EXPOSE 8080
 EXPOSE 9009
 
-# Default JVM Options for Azul Platform Prime
+# Default JVM Options for Azul Zulu 25 + ZGC
 #
 # NOTE: These JAVA_OPTS are used for single-instance deployments (start.sh script).
 # For cluster deployments (start-comparison.sh), these values are overridden by
 # docker-compose-{c4,g1}.yml environment variables. See those files for actual
 # runtime flags in cluster mode.
 #
-# Azul Platform Prime uses C4 GC by default - no need to specify -XX:+UseZGC
+# ZGC is a concurrent collector with sub-millisecond pauses on Java 25.
 #
-# JFR is enabled by default - entrypoint script handles JFR_ENABLED environment variable
+# JFR is OFF by default. Ad-hoc recordings are produced via the /api/jfr REST
+# endpoints. To enable an always-on circular recording, set JFR_ALWAYS_ON=true
+# in the environment; see docker-entrypoint.sh.
 ENV JAVA_OPTS="-Xms8g \
     -Xmx8g \
+    -XX:+UseZGC \
     -Xlog:gc*:file=/opt/payara/gc-logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10M \
     --add-opens java.base/jdk.internal.misc=ALL-UNNAMED \
     --add-opens java.base/sun.nio.ch=ALL-UNNAMED \
     --add-opens java.base/java.nio=ALL-UNNAMED \
-    -XX:+UnlockDiagnosticVMOptions \
-    -XX:+UnlockExperimentalVMOptions \
     -XX:+AlwaysPreTouch \
     -XX:+UseTransparentHugePages \
     -XX:+UseStringDeduplication \

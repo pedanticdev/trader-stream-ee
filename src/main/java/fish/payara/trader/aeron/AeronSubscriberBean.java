@@ -64,8 +64,16 @@ public class AeronSubscriberBean {
 
         try {
             LOGGER.info("Launching embedded MediaDriver...");
-            mediaDriver = MediaDriver
-                            .launchEmbedded(new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirDeleteOnStart(true).dirDeleteOnShutdown(true));
+            // BackoffIdleStrategy on the shared MediaDriver thread ensures the
+            // driver eventually parks when idle, crossing a JVM safepoint poll.
+            // Without this, Zing/GPGC aborts under sustained load with
+            // "Checkpoint sync time longer than 200000 ms detected" because the
+            // Aeron driver thread never reaches a safepoint on its own.
+            final IdleStrategy driverIdleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+            mediaDriver = MediaDriver.launchEmbedded(new MediaDriver.Context().threadingMode(ThreadingMode.SHARED)
+                            .sharedIdleStrategy(driverIdleStrategy)
+                            .dirDeleteOnStart(true)
+                            .dirDeleteOnShutdown(true));
 
             LOGGER.info("MediaDriver launched at: " + mediaDriver.aeronDirectoryName());
             LOGGER.info("Connecting Aeron client...");
