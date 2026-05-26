@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workshop Operational Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@200;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+    <style>
+        :root {
+            --navy: #0C1A2A;
+            --navy-mid: #132744;
+            --navy-light: #1B3A5C;
+            --blue: #1B6EF3;
+            --blue-bright: #3B82F6;
+            --teal: #06B6D4;
+            --teal-dim: rgba(6, 182, 212, 0.12);
+            --teal-border: rgba(6, 182, 212, 0.3);
+            --orange: #F0981B;
+            --orange-bg: rgba(240, 152, 27, 0.1);
+            --orange-border: rgba(240, 152, 27, 0.3);
+            --bg: #F8FAFC;
+            --bg-alt: #F1F5F9;
+            --surface: #E8EDF3;
+            --text: #0F172A;
+            --text-secondary: #334155;
+            --text-muted: #64748B;
+            --text-dim: #94A3B8;
+            --border: #CBD5E1;
+            --border-strong: #94A3B8;
+            --code-bg: #0F172A;
+            --code-border: #1E3A5F;
+            --success: #10B981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --success-border: rgba(16, 185, 129, 0.3);
+            --danger: #EF4444;
+            --danger-bg: rgba(239, 68, 68, 0.08);
+            --danger-border: rgba(239, 68, 68, 0.25);
+            --warn: #F59E0B;
+            --warn-bg: rgba(245, 158, 11, 0.1);
+            --warn-border: rgba(245, 158, 11, 0.3);
+            --font-display: 'Fraunces', serif;
+            --font-body: 'IBM Plex Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::selection { background: var(--blue); color: #fff; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-alt); }
+        ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+        header {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+            padding: 32px 48px;
+            color: #F8FAFC;
+            box-shadow: 0 2px 16px rgba(12, 26, 42, 0.3);
+        }
+
+        header h1 {
+            font-family: var(--font-display);
+            font-size: 2em;
+            font-weight: 900;
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            font-size: 1em;
+            color: #94A3B8;
+            margin-top: 8px;
+        }
+
+        header .tag {
+            font-family: var(--font-mono);
+            font-size: 0.72em;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 4px;
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--teal);
+            border: 1px solid var(--teal-border);
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 48px 80px;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 1.6em;
+            font-weight: 900;
+            color: var(--navy);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--blue);
+        }
+
+        h3 {
+            font-family: var(--font-body);
+            font-size: 1.15em;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 12px;
+            margin-top: 32px;
+        }
+
+        p {
+            font-size: 0.92em;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+            max-width: 80ch;
+        }
+
+        ul {
+            padding-left: 24px;
+            margin: 10px 0 20px;
+        }
+
+        li {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        li strong {
+            color: var(--text);
+        }
+
+        .risk-table-wrap {
+            overflow-x: auto;
+            margin: 20px 0 32px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82em;
+        }
+
+        table th {
+            background: var(--navy);
+            color: #F8FAFC;
+            font-weight: 700;
+            padding: 12px 14px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            background: #fff;
+            vertical-align: top;
+            line-height: 1.5;
+        }
+
+        table td strong {
+            color: var(--text);
+        }
+
+        table tr:last-child td {
+            border-bottom: none;
+        }
+
+        table tr:hover td {
+            background: var(--bg-alt);
+        }
+
+        .likelihood-low { color: var(--success); font-weight: 600; }
+        .likelihood-medium { color: var(--warn); font-weight: 600; }
+        .likelihood-high { color: var(--danger); font-weight: 600; }
+
+        .code-block {
+            position: relative;
+            margin: 16px 0 24px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--code-border);
+            background: var(--code-bg);
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15);
+        }
+
+        .code-block .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: #162032;
+            border-bottom: 1px solid var(--code-border);
+            font-family: var(--font-mono);
+            font-size: 0.72em;
+            color: var(--text-dim);
+        }
+
+        .code-block .code-header .lang {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--teal);
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            border-color: var(--teal);
+            color: var(--teal);
+        }
+
+        .copy-btn.copied {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 16px 20px;
+            background: var(--code-bg);
+            overflow-x: auto;
+        }
+
+        .code-block pre code {
+            font-family: var(--font-mono);
+            font-size: 0.82em;
+            line-height: 1.6;
+            background: none !important;
+            padding: 0 !important;
+        }
+
+        :not(pre) > code {
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            background: var(--teal-dim);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--blue);
+            border: 1px solid rgba(27, 110, 243, 0.15);
+        }
+
+        .callout {
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin: 20px 0;
+        }
+
+        .callout p { margin-bottom: 8px; }
+        .callout p:last-child { margin-bottom: 0; }
+
+        .callout-warn {
+            background: var(--warn-bg);
+            border: 1px solid var(--warn-border);
+            border-left: 4px solid var(--warn);
+        }
+
+        .callout-warn p { color: var(--text-secondary); }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+            counter-reset: step;
+        }
+
+        .checklist li {
+            position: relative;
+            padding: 14px 16px 14px 48px;
+            margin-bottom: 2px;
+            border-bottom: 1px solid var(--border);
+            counter-increment: step;
+        }
+
+        .checklist li::before {
+            content: counter(step);
+            position: absolute;
+            left: 12px;
+            top: 14px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--blue);
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checklist li code {
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            background: var(--teal-dim);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: var(--blue);
+        }
+
+        .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, var(--teal-border), var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        @media (max-width: 768px) {
+            header { padding: 24px; }
+            main { padding: 24px 16px 60px; }
+            table { font-size: 0.75em; }
+            .risk-table-wrap { margin: 16px -16px; border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <span class="tag">Speaker Reference</span>
+    <h1>Workshop Operational Notes</h1>
+    <p>Risks the speaker should plan for, with concrete mitigations and fallback paths. Read this once during prep; refer to it on the day if something misbehaves.</p>
+</header>
+
+<main>
+
+    <section>
+        <h2>Risk Matrix</h2>
+
+        <div class="risk-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Risk</th>
+                        <th>Likelihood</th>
+                        <th>Impact</th>
+                        <th>Mitigation</th>
+                        <th>Fallback</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Attendee on macOS hits <code>find -printf</code> errors</strong></td>
+                        <td><span class="likelihood-low">Low</span></td>
+                        <td>Workflow break</td>
+                        <td><code>record-scenarios.sh</code> uses <code>ls -1t</code>, portable across BSD/GNU find</td>
+                        <td>Pre-recorded <code>.jfr</code> files in <code>workshop/recordings/</code> cover the same scenarios</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Azul Zulu image fails to pull (no internet at venue)</strong></td>
+                        <td><span class="likelihood-medium">Medium</span></td>
+                        <td>Module 4 dies</td>
+                        <td><code>docker save</code> both images to <code>.tar</code> ahead of time; ship on USB</td>
+                        <td>Switch both instances to <code>Dockerfile.scale.standard</code> (Temurin/G1) for that session</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ZGC concurrent cycle falls behind under sustained scenario load</strong></td>
+                        <td><span class="likelihood-low">Low</span></td>
+                        <td>GC throughput drops</td>
+                        <td>Workshop compose runs ONE instance per collector (no Aeron busy-spin contention). Do not run the full comparison stack on laptops</td>
+                        <td>Restart the container, rerun the single failing scenario</td>
+                    </tr>
+                    <tr>
+                        <td><strong>JDK Mission Control not installed on attendee laptop</strong></td>
+                        <td><span class="likelihood-medium">Medium</span></td>
+                        <td>Can't open recordings</td>
+                        <td><code>verify-setup.sh</code> checks and prints install URLs</td>
+                        <td>Use <code>workshop/scripts/jfr-query.sh</code> to read recordings from the terminal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Laptop has &lt; 8 GB RAM free</strong></td>
+                        <td><span class="likelihood-low">Low</span></td>
+                        <td>OOM during scenario</td>
+                        <td>Workshop compose uses 2 GB heap; host needs ~4 GB total</td>
+                        <td>Reduce <code>-Xms</code>/<code>-Xmx</code> to 1g in <code>docker-compose-workshop.yml</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Conference Wi-Fi blocks Docker Hub or nexus.payara.fish</strong></td>
+                        <td><span class="likelihood-medium">Medium</span></td>
+                        <td>First-run build fails</td>
+                        <td><code>docker compose build</code> before leaving home; image is cached locally</td>
+                        <td>USB stick with <code>workshop-image.tar</code> + <code>docker load -i workshop-image.tar</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>HTTP request to JFR API hangs &gt; 15 s under load</strong></td>
+                        <td><span class="likelihood-medium">Medium</span></td>
+                        <td>Recording script aborts</td>
+                        <td><code>record-scenarios.sh</code> uses <code>curl --max-time 15 --retry 3</code></td>
+                        <td>Stop the container; always-on recording flushes via <code>dumponexit=true</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hazelcast cluster discovery noise floods the logs</strong></td>
+                        <td><span class="likelihood-low">Low</span></td>
+                        <td>Hard to read live logs</td>
+                        <td>Workshop compose runs single node; cluster is size 1 and quiet</td>
+                        <td>n/a</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Attendee falls behind in a hands-on segment</strong></td>
+                        <td><span class="likelihood-medium">Medium</span></td>
+                        <td>Frustration</td>
+                        <td>Each exercise README has hint progressions and expected output; pre-recorded files mean every exercise is achievable even without a running cluster</td>
+                        <td>Pair them with an attendee who is on track</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ZGC falls behind on a constrained laptop</strong></td>
+                        <td><span class="likelihood-low">Low</span></td>
+                        <td>Module 3/5 disruption</td>
+                        <td>Single instance means no inter-MediaDriver contention. If ZGC still falls behind, the host is genuinely overloaded</td>
+                        <td>Switch both instances to Temurin/G1 via <code>Dockerfile.scale.standard</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <section>
+        <h2>What Attendees Actually Need</h2>
+        <p>Minimum requirements for every attendee laptop:</p>
+        <ul>
+            <li><strong>Docker 24+</strong> with 4 GB allocated to the engine</li>
+            <li><strong>10 GB free disk</strong></li>
+            <li><strong>JDK 21+</strong> on <code>PATH</code> (for the <code>jfr</code> CLI used by workshop scripts)</li>
+            <li><strong>JDK Mission Control</strong> (free downloads listed in <code>workshop/README.md</code>)</li>
+            <li><strong>A browser</strong></li>
+            <li>These ports free: <strong>8080</strong> (ZGC instance) and <strong>9080</strong> (G1 instance)</li>
+        </ul>
+    </section>
+
+    <hr class="section-divider">
+
+    <section>
+        <h2>Diagnostic Checklist</h2>
+        <p>When something doesn't work mid-workshop, run these in order:</p>
+
+        <ol class="checklist">
+            <li>Is the container alive?<br><code>docker ps --filter name=trader-stream-workshop</code></li>
+            <li>Is the ZGC instance responding?<br><code>curl -fsS http://localhost:8080/trader-stream-ee/api/health/check | jq .status</code></li>
+            <li>Is the G1 instance responding?<br><code>curl -fsS http://localhost:9080/trader-stream-ee/api/health/check | jq .status</code></li>
+            <li>Did JFR initialise on ZGC?<br><code>curl -fsS http://localhost:8080/trader-stream-ee/api/jfr/status | jq</code></li>
+            <li>What does the ZGC app log?<br><code>docker logs --tail 30 trader-stream-workshop-zgc</code></li>
+            <li>Is the ZGC JVM healthy?<br><code>docker exec trader-stream-workshop-zgc sh -c 'ls /opt/payara/hs_err_pid* 2>/dev/null && cat /opt/payara/hs_err_pid*.log | head -40'</code></li>
+            <li>Disk full? Bind mount writable?<br><code>docker exec trader-stream-workshop-zgc sh -c 'touch /opt/payara/recordings/.write-test && rm /opt/payara/recordings/.write-test && echo OK'</code></li>
+        </ol>
+
+        <div class="callout callout-warn">
+            <p>If steps 1-4 are healthy but a scenario still misbehaves, the issue is almost always (a) the wrong REST path (it is <code>/api/pressure/mode/...</code>, not <code>/api/memory/mode/...</code>) or (b) the scenario is still running from a previous attempt. Run <code>curl -X POST .../api/pressure/mode/OFF</code> and try again.</p>
+        </div>
+    </section>
+
+</main>
+
+<script>
+    function copyCode(btn) {
+        var codeBlock = btn.closest('.code-block');
+        if (!codeBlock) return;
+        var code = codeBlock.querySelector('code');
+        if (!code) return;
+        navigator.clipboard.writeText(code.textContent).then(function() {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(function() {
+                btn.textContent = 'Copy';
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    }
+
+    hljs.highlightAll();
+</script>
+
+</body>
+</html>

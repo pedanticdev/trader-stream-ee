@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JFR Analysis Checklist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@200;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+    <style>
+        :root {
+            --navy: #0C1A2A;
+            --navy-mid: #132744;
+            --navy-light: #1B3A5C;
+            --blue: #1B6EF3;
+            --blue-bright: #3B82F6;
+            --teal: #06B6D4;
+            --teal-dim: rgba(6, 182, 212, 0.12);
+            --teal-border: rgba(6, 182, 212, 0.3);
+            --orange: #F0981B;
+            --orange-bg: rgba(240, 152, 27, 0.1);
+            --orange-border: rgba(240, 152, 27, 0.3);
+            --bg: #F8FAFC;
+            --bg-alt: #F1F5F9;
+            --surface: #E8EDF3;
+            --text: #0F172A;
+            --text-secondary: #334155;
+            --text-muted: #64748B;
+            --text-dim: #94A3B8;
+            --border: #CBD5E1;
+            --border-strong: #94A3B8;
+            --code-bg: #0F172A;
+            --code-border: #1E3A5F;
+            --success: #10B981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --success-border: rgba(16, 185, 129, 0.3);
+            --danger: #EF4444;
+            --danger-bg: rgba(239, 68, 68, 0.08);
+            --danger-border: rgba(239, 68, 68, 0.25);
+            --warn: #F59E0B;
+            --warn-bg: rgba(245, 158, 11, 0.1);
+            --warn-border: rgba(245, 158, 11, 0.3);
+            --font-display: 'Fraunces', serif;
+            --font-body: 'IBM Plex Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::selection { background: var(--blue); color: #fff; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-alt); }
+        ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+        header {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+            padding: 32px 48px;
+            color: #F8FAFC;
+            box-shadow: 0 2px 16px rgba(12, 26, 42, 0.3);
+        }
+
+        header h1 {
+            font-family: var(--font-display);
+            font-size: 2em;
+            font-weight: 900;
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            font-size: 1em;
+            color: #94A3B8;
+            margin-top: 8px;
+        }
+
+        header .tag {
+            font-family: var(--font-mono);
+            font-size: 0.72em;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 4px;
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--teal);
+            border: 1px solid var(--teal-border);
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        main {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 40px 48px 80px;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 1.5em;
+            font-weight: 900;
+            color: var(--navy);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--blue);
+        }
+
+        h3 {
+            font-family: var(--font-body);
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 10px;
+            margin-top: 28px;
+            padding-left: 12px;
+            border-left: 3px solid var(--teal);
+        }
+
+        p {
+            font-size: 0.92em;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+            max-width: 72ch;
+        }
+
+        p strong, li strong {
+            color: var(--text);
+        }
+
+        ul, ol {
+            padding-left: 24px;
+            margin: 10px 0 20px;
+        }
+
+        li {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            line-height: 1.6;
+        }
+
+        :not(pre) > code {
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            background: var(--teal-dim);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--blue);
+            border: 1px solid rgba(27, 110, 243, 0.15);
+        }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            position: relative;
+            padding: 10px 16px 10px 40px;
+            margin-bottom: 2px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .checklist li::before {
+            content: '';
+            position: absolute;
+            left: 14px;
+            top: 14px;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-strong);
+            border-radius: 3px;
+        }
+
+        .ordered {
+            list-style: none;
+            padding: 0;
+            counter-reset: step;
+        }
+
+        .ordered li {
+            position: relative;
+            padding: 12px 16px 12px 48px;
+            margin-bottom: 2px;
+            border-bottom: 1px solid var(--border);
+            counter-increment: step;
+        }
+
+        .ordered li::before {
+            content: counter(step);
+            position: absolute;
+            left: 12px;
+            top: 12px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--blue);
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 16px 0 24px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        table th {
+            background: var(--navy);
+            color: #F8FAFC;
+            font-weight: 700;
+            padding: 10px 16px;
+            text-align: left;
+        }
+
+        table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            background: #fff;
+        }
+
+        table td strong {
+            color: var(--text);
+        }
+
+        table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .ascii-art {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin: 16px 0 24px;
+            font-family: var(--font-mono);
+            font-size: 0.78em;
+            line-height: 1.6;
+            color: #94A3B8;
+            overflow-x: auto;
+            white-space: pre;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15);
+        }
+
+        .code-block {
+            position: relative;
+            margin: 16px 0 24px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--code-border);
+            background: var(--code-bg);
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15);
+        }
+
+        .code-block .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: #162032;
+            border-bottom: 1px solid var(--code-border);
+            font-family: var(--font-mono);
+            font-size: 0.72em;
+            color: var(--text-dim);
+        }
+
+        .code-block .code-header .lang {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--teal);
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            border-color: var(--teal);
+            color: var(--teal);
+        }
+
+        .copy-btn.copied {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 16px 20px;
+            background: var(--code-bg);
+            overflow-x: auto;
+        }
+
+        .code-block pre code {
+            font-family: var(--font-mono);
+            font-size: 0.82em;
+            line-height: 1.6;
+            background: none !important;
+            padding: 0 !important;
+        }
+
+        .callout {
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin: 20px 0;
+        }
+
+        .callout p { margin-bottom: 8px; }
+        .callout p:last-child { margin-bottom: 0; }
+
+        .callout-orange {
+            background: var(--orange-bg);
+            border: 1px solid var(--orange-border);
+            border-left: 4px solid var(--orange);
+        }
+
+        .callout-orange p { color: var(--text-secondary); }
+
+        .callout-info {
+            background: var(--teal-dim);
+            border: 1px solid var(--teal-border);
+            border-left: 4px solid var(--teal);
+        }
+
+        .callout-info p { color: var(--text-secondary); }
+
+        .callout-danger {
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            border-left: 4px solid var(--danger);
+        }
+
+        .callout-danger p { color: var(--text-secondary); }
+
+        .signature-box {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--blue);
+            border-radius: 0 10px 10px 0;
+            padding: 20px 24px;
+            margin: 16px 0 28px;
+        }
+
+        .signature-box h3 {
+            border-left: none;
+            padding-left: 0;
+            margin-top: 0;
+        }
+
+        .fix-list {
+            list-style: none;
+            padding: 0;
+            counter-reset: fix;
+            margin-top: 12px;
+        }
+
+        .fix-list li {
+            position: relative;
+            padding: 6px 16px 6px 36px;
+            counter-increment: fix;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .fix-list li:last-child {
+            border-bottom: none;
+        }
+
+        .fix-list li::before {
+            content: counter(fix);
+            position: absolute;
+            left: 8px;
+            top: 6px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--success);
+            font-family: var(--font-mono);
+            font-size: 0.7em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, var(--teal-border), var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        .dont-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .dont-list li {
+            position: relative;
+            padding: 12px 16px 12px 40px;
+            margin-bottom: 2px;
+            border-bottom: 1px solid var(--border);
+            background: var(--danger-bg);
+            border-radius: 6px;
+        }
+
+        .dont-list li::before {
+            content: '\2717';
+            position: absolute;
+            left: 14px;
+            top: 12px;
+            width: 20px;
+            height: 20px;
+            color: var(--danger);
+            font-weight: 700;
+            font-size: 1em;
+        }
+
+        @media (max-width: 768px) {
+            header { padding: 24px; }
+            main { padding: 24px 16px 60px; }
+            .ascii-art { font-size: 0.7em; }
+        }
+
+        @media print {
+            header { background: var(--navy); box-shadow: none; padding: 20px; }
+            main { padding: 20px 0; max-width: 100%; }
+            .section-divider { margin: 24px 0; }
+            .code-block, .ascii-art { box-shadow: none; break-inside: avoid; }
+            .signature-box { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <span class="tag">Printable Reference</span>
+    <h1>JFR Analysis Checklist</h1>
+    <p>Two pages. Print double-sided. Keep at your desk.</p>
+</header>
+
+<main>
+
+    <section>
+        <h2>Capture</h2>
+        <ul class="checklist">
+            <li>Recording length: at least 10 minutes for stable percentiles; longer for rare events.</li>
+            <li>Settings profile: <code>default.jfc</code> in production (~1%), <code>profile.jfc</code> for dev (~2%), workshop <code>.jfc</code> only when reproducing a specific scenario.</li>
+            <li><code>maxsize</code> and <code>maxage</code> set; recording is circular, not unbounded.</li>
+            <li>Application is in steady state when capture begins (JIT warmed, caches populated). Skip the first 60 seconds.</li>
+            <li>If you control the workload, freeze it during capture. If you don't, note the request rate at start and end.</li>
+            <li>Filename includes timestamp, host, and recording purpose.</li>
+        </ul>
+    </section>
+
+    <hr class="section-divider">
+
+    <section>
+        <h2>Triage: Read in This Order</h2>
+        <ol class="ordered">
+            <li><strong>Recording duration and event coverage.</strong> <code>Outline &rarr; General &rarr; Recording Information</code>. Confirm the timeline matches what you expected.</li>
+            <li><strong>GC pause headline.</strong> <code>Outline &rarr; General &rarr; Garbage Collections</code>, sort Duration descending. Read the top 5 rows.</li>
+            <li><strong>Heap shape.</strong> <code>Outline &rarr; Memory &rarr; Heap Usage After GC</code>. Is old gen growing? Plateau? Sawtooth?</li>
+            <li><strong>Allocation hot stacks.</strong> <code>Outline &rarr; Memory &rarr; Allocations &rarr; Hot Methods</code>. Top 3 methods by bytes allocated.</li>
+            <li><strong>Custom application events.</strong> <code>Event Browser &rarr; Custom</code>. Are domain events firing at expected rates?</li>
+        </ol>
+
+        <div class="callout callout-orange">
+            <p>If you only have time for one view, choose #2.</p>
+        </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <section>
+        <h2>Pause Time Distributions</h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Quantile</th><th>What It Tells You</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>P50</strong></td><td>"Typical pause." Mostly informational.</td></tr>
+                    <tr><td><strong>P95</strong></td><td>"Routine bad pause." Should be near the SLA threshold.</td></tr>
+                    <tr><td><strong>P99</strong></td><td>"What 1 in 100 GCs cost." Most operational alerts live here.</td></tr>
+                    <tr><td><strong>P99.9</strong></td><td>"What 1 in 1000 GCs cost." Where incidents come from.</td></tr>
+                    <tr><td><strong>Max</strong></td><td>"Worst single pause." Investigate even one if it exceeds your SLA.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout callout-info">
+            <p>Sample size matters. P99 from 10 collections is not statistically meaningful. Aim for hundreds of pause events in the window.</p>
+        </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <section>
+        <h2>Pathology Triage Tree</h2>
+        <div class="ascii-art">Pause time &gt; SLA?
+├─ Yes → check Name column:
+│        ├─ "G1 Young Generation (Normal)"
+│        │  └─ check Allocation rate. &gt; 500 MB/s? → reduce allocation.
+│        │     Otherwise → check survivor sizing.
+│        ├─ "G1 Young Generation (Mixed)"
+│        │  └─ check old gen growth. Filling fast? → PROMOTION STORM.
+│        │     check region count being mixed. High? → FRAGMENTATION.
+│        ├─ "G1 Full GC"
+│        │  └─ EvacuationFailed events present? → to-space exhausted.
+│        │     PromotionFailed present? → old gen full.
+│        │     Neither? → System.gc() called, or metaspace.
+│        └─ Pause's biggest phase (jdk.GCPhasePauseLevel1):
+│           ├─ "Update RS"     → cross-gen ref pressure
+│           ├─ "Scan RS"       → cross-gen ref pressure
+│           ├─ "Evacuate CS"   → promotion / object copy cost
+│           ├─ "Code Roots"    → many classes being recompiled
+│           └─ "Ref Proc"      → too many soft/weak/phantom refs
+└─ No → recording shows healthy GC. If app feels slow, look elsewhere
+        (lock contention, virtual-thread pinning, I/O).</div>
+    </section>
+
+    <hr class="section-divider">
+
+    <section>
+        <h2>Pathology Signatures</h2>
+
+        <div class="signature-box">
+            <h3>Promotion Storm</h3>
+            <ul>
+                <li><code>jdk.PromoteObjectOutsidePLAB</code> count climbs across recording.</li>
+                <li>Old gen usage curve rises monotonically.</li>
+                <li>Mixed collections appear and lengthen over time.</li>
+                <li>Allocation rate is high (&gt; 200 MB/s) AND survival rate is high (&gt; 30%).</li>
+            </ul>
+            <p><strong>Fixes, in order of preference:</strong></p>
+            <ol class="fix-list">
+                <li>Reduce allocation in the survival-heavy code path (object pooling, primitive arrays).</li>
+                <li>Increase young gen so more objects die young (<code>-XX:NewRatio</code>, region count).</li>
+                <li>Switch to a concurrent collector (ZGC, Shenandoah).</li>
+            </ol>
+        </div>
+
+        <div class="signature-box">
+            <h3>Fragmentation</h3>
+            <ul>
+                <li>Many small objects (<code>jdk.ObjectAllocationSample</code>, size &lt; 1 KB).</li>
+                <li><code>jdk.G1HeapRegionTypeChange</code> events frequent.</li>
+                <li>Pause time correlates with region count being evacuated, not heap size.</li>
+                <li><code>jdk.GCPhasePauseLevel2 &rarr; Object Copy</code> is the dominant phase.</li>
+            </ul>
+            <p><strong>Fixes:</strong></p>
+            <ol class="fix-list">
+                <li>Switch to a compacting concurrent collector (ZGC defragments less, C4 compacts continuously).</li>
+                <li>Consolidate small objects into arrays or off-heap buffers.</li>
+                <li>Increase <code>G1HeapRegionSize</code> so fewer regions hold equivalent data.</li>
+            </ol>
+        </div>
+
+        <div class="signature-box">
+            <h3>Cross-generational References</h3>
+            <ul>
+                <li><code>jdk.GCPhasePauseLevel1</code> events with name "Update RS" or "Scan RS" dominating pause time.</li>
+                <li><code>ExecutionSample</code> stacks pointing into <code>G1BarrierSet::write_ref_field_post</code>.</li>
+                <li>Old-gen objects holding references to young-gen objects (mutable singletons, caches).</li>
+            </ul>
+            <p><strong>Fixes:</strong></p>
+            <ol class="fix-list">
+                <li>Make old-gen holders immutable or copy-on-write.</li>
+                <li>Switch to a collector with cheaper barriers (ZGC's load barrier) or without remembered sets (C4).</li>
+                <li>Reduce write rate to old-gen mutable fields.</li>
+            </ol>
+        </div>
+
+        <div class="signature-box">
+            <h3>Evacuation Failure</h3>
+            <ul>
+                <li><code>jdk.EvacuationFailed</code> events present.</li>
+                <li>May be followed by a full GC if the heap remains constrained; JDK 21's Tenuring Anywhere change reduces this likelihood by letting subsequent young collections reclaim old-gen regions.</li>
+                <li>All available heap regions are committed and none remain free for promotion or survivor copy when the failure fires.</li>
+            </ul>
+            <p><strong>Fixes:</strong></p>
+            <ol class="fix-list">
+                <li>Increase <code>MaxHeapSize</code>.</li>
+                <li>Reduce allocation rate.</li>
+                <li>Lower <code>InitiatingHeapOccupancyPercent</code> so concurrent marking starts earlier.</li>
+            </ol>
+        </div>
+
+        <div class="signature-box">
+            <h3>Virtual Thread Red Flags</h3>
+            <ul>
+                <li><code>jdk.VirtualThreadPinned</code> events with duration over 100 ms.</li>
+                <li>Pinned stacks usually point to <code>synchronized</code> blocks or JNI calls.</li>
+            </ul>
+            <p><strong>Fixes:</strong></p>
+            <ol class="fix-list">
+                <li>Replace <code>synchronized</code> with <code>ReentrantLock</code> where the carrier thread would otherwise be pinned.</li>
+                <li>Move JNI-heavy work off virtual threads (use platform threads for native code paths).</li>
+            </ol>
+        </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <section>
+        <h2>CLI Quick Reference</h2>
+
+        <div class="code-block">
+            <div class="code-header">
+                <span class="lang">bash</span>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code class="language-bash"># Summary
+jfr summary recording.jfr
+
+# All GC events
+jfr print --events jdk.GarbageCollection recording.jfr
+
+# Custom events
+jfr print --events 'trade.*,gc.sla.violation' recording.jfr
+
+# Compare two recordings (workshop helper)
+./workshop/scripts/compare-recordings.sh zgc.jfr g1.jfr
+
+# Open in JMC
+jmc -open recording.jfr</code></pre>
+        </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <section>
+        <h2>Don't</h2>
+        <ul class="dont-list">
+            <li>Don't conclude from a 60-second recording that you have a GC problem in production. Take a 10-minute recording first.</li>
+            <li>Don't enable <code>jdk.ObjectAllocationInNewTLAB</code> with stack traces in production. It is a development-only tool.</li>
+            <li>Don't change collector before reducing allocation. The cheapest fix is almost always upstream.</li>
+            <li>Don't tune <code>MaxGCPauseMillis</code> to a value below your P99 measurement. G1 will respond by collecting more often, not faster.</li>
+        </ul>
+    </section>
+
+</main>
+
+<script>
+    function copyCode(btn) {
+        var codeBlock = btn.closest('.code-block');
+        if (!codeBlock) return;
+        var code = codeBlock.querySelector('code');
+        if (!code) return;
+        navigator.clipboard.writeText(code.textContent).then(function() {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(function() {
+                btn.textContent = 'Copy';
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    }
+
+    hljs.highlightAll();
+</script>
+
+</body>
+</html>
