@@ -12,7 +12,7 @@ Hands-on workshop materials for JNation.
 | Risk matrix and live diagnostic steps        | [operational-notes.md](./operational-notes.md)                                                                                 |
 | Verify your laptop is ready                  | `./scripts/verify-setup.sh`                                                                                                    |
 | Print a desk reference                       | [analysis-checklist.md](./analysis-checklist.md)                                                                               |
-| Read the speaker slides                      | [slides/slides.md](./slides/slides.md)                                                                                         |
+| Read the workshop handbook                    | http://localhost:8080/trader-stream-ee/workshop.html                                                                           |
 | Reproduce the pre-recorded files             | `./scripts/record-scenarios.sh`                                                                                                |
 | Compare two recordings on the CLI            | `./scripts/compare-recordings.sh`                                                                                              |
 | Inspect any recording from the terminal      | `./scripts/jfr-query.sh summary <file>.jfr`                                                                                    |
@@ -53,14 +53,10 @@ workshop/
 │   ├── module-3-burst-event/
 │   ├── module-4-stress-testing/
 │   └── module-5-apply-to-your-app/
-└── slides/
-    └── slides.md            # Marp markdown deck
+└── recordings/              # Pre-recorded .jfr files (10 total)
 ```
 
-## Rendering the slides
+## Rendering the workshop handbook
 
-The deck uses [Marp](https://marp.app/). Render in your editor:
-
-- VS Code: install the "Marp for VS Code" extension and open `slides/slides.md`.
-- CLI: `npx @marp-team/marp-cli@latest slides/slides.md --pdf -o slides.pdf`
+The workshop content is served as HTML at `/trader-stream-ee/workshop.html`. Open it in a browser on the projector machine.
 

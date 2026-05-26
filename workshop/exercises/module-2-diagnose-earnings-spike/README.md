@@ -13,11 +13,11 @@ Or generate fresh against your running clusters:
 
 ```bash
 # G1
-curl -X POST 'http://localhost:9081/trader-stream-ee/api/jfr/recording/start?name=earnings-live&durationSeconds=75&settings=tradestream-workshop'
+curl -X POST 'http://localhost:9080/trader-stream-ee/api/jfr/recording/start?name=earnings-live&durationSeconds=75&settings=tradestream-workshop'
 sleep 10
-curl -X POST 'http://localhost:9081/trader-stream-ee/api/pressure/mode/EARNINGS_SPIKE'
+curl -X POST 'http://localhost:9080/trader-stream-ee/api/pressure/mode/EARNINGS_SPIKE'
 sleep 60
-curl -X POST 'http://localhost:9081/trader-stream-ee/api/pressure/mode/OFF'
+curl -X POST 'http://localhost:9080/trader-stream-ee/api/pressure/mode/OFF'
 ```
 
 ## Steps

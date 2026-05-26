@@ -56,4 +56,4 @@ echo "       docker compose -f docker-compose-workshop.yml build trader-stream-w
 echo "  3. Roll instance 1 only (keeps cluster alive):"
 echo "       docker compose -f docker-compose-workshop.yml up -d --no-deps trader-stream-workshop-zgc"
 echo "  4. Capture a fresh recording with the new event enabled:"
-echo "       curl -X POST 'http://localhost:8081/trader-stream-ee/api/jfr/recording/start?name=burst-event&durationSeconds=60&settings=tradestream-workshop'"
+echo "       curl -X POST 'http://localhost:8080/trader-stream-ee/api/jfr/recording/start?name=burst-event&durationSeconds=60&settings=tradestream-workshop'"

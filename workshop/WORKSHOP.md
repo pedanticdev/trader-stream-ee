@@ -56,7 +56,7 @@ flowchart TB
 
 Each instance forms its own single-node Hazelcast cluster. Heap size, `AlwaysPreTouch`, and transparent huge pages are identical on both sides. The only deliberate difference is the garbage collector.
 
-For a more powerful host (16+ GB RAM), you can run the full 3+3 side-by-side cluster with monitoring via `docker-compose-scale.yml` (ZGC) and `docker-compose-scale-standard.yml` (G1).
+For a more powerful host (16+ GB RAM), you can run the full 3+3 side-by-side cluster with monitoring via `docker-compose-c4.yml` (ZGC) and `docker-compose-g1.yml` (G1).
 
 
 ## Pre-workshop setup
@@ -76,7 +76,7 @@ git checkout jnation-workshop
 docker compose -f docker-compose-workshop.yml up -d --build
 
 # For the full 3+3 comparison stack (needs a beefy host):
-# docker compose -f docker-compose-scale.yml -f docker-compose-scale-standard.yml up -d
+# docker compose -f docker-compose-c4.yml -f docker-compose-g1.yml up -d
 ```
 
 You should end up with:
