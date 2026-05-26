@@ -191,9 +191,8 @@ The **Collector Name** column tells you which GC algorithm ran. This workshop us
 | **G1** (Garbage First) | OpenJDK, ships with JDK 9+ | Generational, mostly concurrent. Young collections are STW; old-gen marking is concurrent. | Pauses scale with live set. Typical 5-50 ms. |
 | **ZGC** (Z Garbage Collector) | OpenJDK, ships with JDK 11+ (production-ready JDK 15+) | Generational (since JDK 21), fully concurrent. STW phases do only root scanning. | Sub-millisecond regardless of heap size. |
 | **Shenandoah** | OpenJDK, ships with JDK 12+ | Concurrent, uses brooks pointers for object movement. | Similar to ZGC: sub-millisecond. |
-| **C4** (Continuously Concurrent Compacting Collector) | Azul Platform Prime (commercial, not OpenJDK) | Fully concurrent, no STW phases at all. | Zero pauses, even during compaction. |
 
-G1 is the OpenJDK default. ZGC and Shenandoah are the low-latency OpenJDK alternatives. C4 is Azul's proprietary collector that goes one step further: where ZGC has brief sub-ms STW pauses for root scanning, C4 eliminates even those.
+G1 is the OpenJDK default. ZGC and Shenandoah are the low-latency OpenJDK alternatives. Azul Platform Prime ships C4, a fully concurrent collector with zero STW pauses; it is mentioned in the closing section as the commercial option beyond the OpenJDK envelope.
 
 This workshop compares ZGC (Azul Zulu 25) against G1 (Eclipse Temurin 25). The contrast is the same: concurrent vs STW collection under allocation pressure.
 

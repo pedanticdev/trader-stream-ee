@@ -1,10 +1,10 @@
 # Expected output for a 60-second baseline recording at roughly 60K msg/sec
 
-## C4 baseline (typical)
+## ZGC baseline (typical)
 
-Longest pause:        0.2 - 1.0 ms (often shown as "0 ms" by JMC due to rounding)
-Collector name:       GPGC New
-GC cause:             Concurrent New collection
+Longest pause:        0.1 - 1.0 ms (often shown as "0 ms" by JMC due to rounding)
+Collector name:       ZGC Minor / ZGen Young
+GC cause:             Allocation Rate / High Usage
 Pauses over 5 ms:     0
 Total pause time:     < 10 ms across the recording
 
@@ -19,8 +19,8 @@ Total pause time:     30 - 80 ms across the recording
 ## Interpretation
 
 Even at steady state and with a comfortable heap, G1 incurs single-digit
-millisecond young-gen pauses periodically. C4 does not, because all phases
-including young-gen collection are concurrent with the application.
+millisecond young-gen pauses periodically. ZGC does not, because both
+young and old generation collection run concurrently with the application.
 
 For a 60K msg/sec workload, a 10 ms pause means roughly 600 messages buffered.
 Whether that is acceptable depends on your SLA - this is the kind of question

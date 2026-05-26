@@ -987,13 +987,13 @@
 
     <section class="hero" id="overview">
         <h2>Low-Latency Trading with Jakarta EE and Payara Micro</h2>
-        <p class="subtitle">Build, observe, and stress-test a real trading system with JFR &middot; JNation hands-on workshop</p>
+        <p class="subtitle">Learn to read JFR recordings on any Java runtime &middot; hands-on workshop with a real trading system</p>
 
         <div class="hero-meta">
             <span class="badge">3h 30m</span>
             <span class="badge">5 Modules</span>
             <span class="badge">Hands-on Exercises</span>
-            <span class="badge">Two OpenJDK runtimes, one Jakarta EE app</span>
+            <span class="badge">Learn JFR diagnosis on two OpenJDK runtimes</span>
         </div>
 
         <div class="learning-objectives">
@@ -1011,7 +1011,7 @@
             <h3>What You Leave With</h3>
             <ul>
                 <li>The TradeStreamEE source and Docker setup &mdash; a real Jakarta EE 11 trading app on Payara Micro 7.</li>
-                <li>Ten pre-recorded <code>.jfr</code> files across five scenarios on two OpenJDK runtimes.</li>
+                <li>Ten pre-recorded <code>.jfr</code> files across five scenarios on two OpenJDK runtimes. The same diagnostic skills apply to any runtime, including Azul Platform Prime.</li>
                 <li>A printable JFR analysis checklist.</li>
                 <li>Three reusable JFR event templates for your own applications.</li>
                 <li>A diagnostic mental model that transfers to any Java application on any runtime.</li>
@@ -1038,7 +1038,30 @@
             <div class="arch-node"><strong>WebSocket</strong><span>clients</span></div>
         </div>
 
-        <p>The default workshop setup (<code>docker-compose-workshop.yml</code>) runs two single-instance Payara Micro containers, one per collector, each with 2 GB heap. The only deliberate difference is the garbage collector.</p>
+        <p>The pipeline above is a Jakarta EE 11 application running on Payara Micro 7. Every component is a CDI bean. Here is why each piece was chosen:</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th style="width:18%;">Component</th><th>Technology</th><th>Why</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Application server</strong></td><td>Payara Micro 7</td><td>Single JAR, no installation, sub-second startup. Hazelcast clustering built in. Ideal for containerised low-latency services.</td></tr>
+                    <tr><td><strong>Concurrency</strong></td><td>Jakarta Concurrency 3.0 <code>@ManagedExecutorDefinition(virtual=true)</code></td><td>Standard API for virtual thread executors. No framework lock-in. The container manages the executor lifecycle; your code just injects it.</td></tr>
+                    <tr><td><strong>Wiring</strong></td><td>CDI (<code>@ApplicationScoped</code>, <code>@Inject</code>)</td><td>27 application-scoped beans, all wired by CDI. Lifecycle via <code>@PostConstruct</code>, <code>@PreDestroy</code>, and <code>@Observes @Initialized</code>. No Spring, no manual singletons.</td></tr>
+                    <tr><td><strong>API layer</strong></td><td>JAX-RS (<code>@Path</code>, <code>@GET</code>, <code>@POST</code>)</td><td>16 REST resources under <code>/api/*</code>. JFR recording control, health checks, GC stats, pressure scenarios, order management all exposed as standard REST endpoints.</td></tr>
+                    <tr><td><strong>Client fan-out</strong></td><td>Jakarta WebSocket (<code>@ServerEndpoint</code>)</td><td>4 server-push endpoints: market data, executions, indicators, SLA violations. No client-to-server messages. Broadcaster beans hold <code>Set&lt;Session&gt;</code> and push on every event.</td></tr>
+                    <tr><td><strong>Cluster broadcast</strong></td><td>Hazelcast <code>ITopic</code></td><td>In a multi-instance cluster, each Payara Micro node broadcasts to its local WebSocket sessions. Hazelcast <code>ITopic</code> propagates events across instances so every client sees the same data regardless of which node it connected to.</td></tr>
+                    <tr><td><strong>Serialization</strong></td><td>SBE (Simple Binary Encoding)</td><td>Flyweight encoders and decoders that write directly to off-heap <code>UnsafeBuffer</code>. Zero allocation on the encode path. No GC pressure from serialisation.</td></tr>
+                    <tr><td><strong>Transport</strong></td><td>Aeron IPC (shared memory)</td><td>Zero-copy message passing between publisher and subscriber on the same host. No network hop, no serialisation, no GC. The subscriber polls via a dedicated thread; the publisher writes via virtual thread.</td></tr>
+                    <tr><td><strong>Domain model</strong></td><td>Java 21 records, sealed interfaces</td><td>DTOs, order models, risk snapshots, and stress scenarios are all records. <code>StressScenario</code> is a sealed interface with five record implementations. Immutable data, no boilerplate.</td></tr>
+                    <tr><td><strong>Configuration</strong></td><td>MicroProfile Config (<code>@ConfigProperty</code>)</td><td>All tuning parameters (heap thresholds, GC pause SLAs, Aeron channel, Hazelcast group name) are externalised. No hardcoded values.</td></tr>
+                    <tr><td><strong>JFR control</strong></td><td>JFR programmatic API over JAX-RS</td><td><code>JfrRecordingResource</code> wraps <code>jdk.jfr.FlightRecorder</code> behind REST endpoints. Start, stop, list, and download recordings via <code>curl</code>. No <code>jcmd</code>, no <code>docker exec</code>.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout callout-orange">
+            <p><strong>The key Jakarta EE insight:</strong> The hot path (SBE encode, Aeron publish, fragment decode, matching engine) runs inside CDI-managed beans using virtual threads. The container provides the executor, the lifecycle, and the clustering. The application code focuses on the domain logic, not the infrastructure. When you open a JFR recording and see a GC pause, you are seeing a pause that interrupted a CDI bean method executing on a container-managed virtual thread. The Jakarta EE programming model is the constant; the JVM runtime is the variable.</p>
+        </div>
 
         <div class="arch-flow">
             <div class="arch-node" style="border-color: var(--success-border); min-width: 160px;">
@@ -1090,8 +1113,99 @@ git checkout jnation-workshop
         <div class="module-header">
             <div class="module-number">01</div>
             <h2>Setup and Warm-up</h2>
-            <p class="goal">Get every attendee from clone to "I can open a real JFR recording in JMC" within 30 minutes.</p>
-            <span class="duration-badge">30 min</span>
+            <p class="goal">Walk through the Jakarta EE architecture, verify the instances, and open your first JFR recording in JMC.</p>
+            <span class="duration-badge">45 min</span>
+        </div>
+
+        <div class="subsection">
+            <h3>1.0 Architecture Walkthrough</h3>
+            <p>Before we touch JFR, let's walk through the source. Understanding the architecture is necessary context for the recordings you will read. Every component you see in the pipeline is a CDI bean in this project.</p>
+
+            <h4>Virtual thread executor</h4>
+            <p>The entire application uses a single Jakarta Concurrency 3.0 definition to create virtual threads:</p>
+
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="lang">java</span>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><code class="language-java">@ApplicationScoped
+@ManagedExecutorDefinition(
+    name = "java:module/concurrent/VirtualThreadExecutor",
+    virtual = true,
+    qualifiers = {VirtualThreadExecutor.class}
+)
+public class ConcurrencyConfig {}</code></pre>
+            </div>
+
+            <p>Any bean that needs concurrent work injects <code>@VirtualThreadExecutor ManagedExecutorService</code>. The container creates the virtual thread factory; the application never touches <code>Thread.newVirtualThreadPerTaskExecutor()</code> directly. Five beans consume this executor: the Aeron subscriber, the market data publisher, the bar aggregator, the memory pressure service, and every workload implementation.</p>
+
+            <h4>CDI lifecycle: startup and shutdown</h4>
+            <p>The Aeron publisher and subscriber start when the CDI container initialises. They observe the <code>@Initialized(ApplicationScoped.class)</code> event:</p>
+
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="lang">java</span>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><code class="language-java">@ApplicationScoped
+public class AeronSubscriberBean {
+
+    void onStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {
+        mediaDriver = MediaDriver.launchEmbedded(new MediaDriver.Context()
+            .threadingMode(ThreadingMode.SHARED)
+            .sharedIdleStrategy(new BackoffIdleStrategy()));
+        aeron = Aeron.connect(new Aeron.Context()
+            .aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+        subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+        executor.submit(this::pollLoop);
+    }
+
+    @PreDestroy
+    void shutdown() { /* close Aeron, media driver */ }
+}</code></pre>
+            </div>
+
+            <p>This is the standard Jakarta EE pattern: observe a lifecycle event, start the resource, clean up on <code>@PreDestroy</code>. The Aeron media driver, the subscription, and the polling thread all live inside the container lifecycle.</p>
+
+            <h4>WebSocket fan-out with Hazelcast</h4>
+            <p>Four <code>@ServerEndpoint</code> classes push data to browser clients. The <code>MarketDataBroadcaster</code> is the bridge between the Aeron pipeline and the WebSocket sessions:</p>
+
+            <div class="code-block">
+                <div class="code-header">
+                    <span class="lang">java</span>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><code class="language-java">@ApplicationScoped
+public class MarketDataBroadcaster {
+
+    @Inject HazelcastInstance hazelcast;
+
+    private final Set&lt;Session&gt; sessions = ConcurrentHashMap.newKeySet();
+    private ITopic&lt;String&gt; clusterTopic;
+
+    @PostConstruct
+    void init() {
+        clusterTopic = hazelcast.getTopic("market-data-broadcast");
+        clusterTopic.addMessageListener(msg ->
+            broadcastToLocalSessions(msg.getMessageObject()));
+    }
+
+    void broadcast(String json) {
+        clusterTopic.publish(json);
+    }
+
+    void broadcastToLocalSessions(String json) {
+        sessions.forEach(session -> session.getAsyncRemote()
+            .sendText(json));
+    }
+}</code></pre>
+            </div>
+
+            <p>Each Payara Micro instance publishes to the Hazelcast <code>ITopic</code>. Every instance subscribes to the same topic and pushes to its own local WebSocket sessions. Clients connected to any node see the same data. This is how Jakarta EE clustering works with Payara Micro: the application code does not know about the cluster; the broadcaster just publishes to a topic.</p>
+
+            <h4>JFR recording over REST</h4>
+            <p>The <code>JfrRecordingResource</code> wraps the <code>jdk.jfr</code> programmatic API behind JAX-RS endpoints. You start a recording with <code>POST /api/jfr/recording/start</code>, list files with <code>GET /api/jfr/files</code>, and download <code>.jfr</code> files with <code>GET /api/jfr/download/{name}</code>. No <code>jcmd</code>, no SSH into the container, no <code>docker exec</code>. This pattern works in any Jakarta EE application on any JVM.</p>
         </div>
 
         <div class="subsection">
@@ -1219,7 +1333,7 @@ ls -lh monitoring/recordings/workshop-g1/</code></pre>
 
         <div class="subsection">
             <h3>2.3 Young versus Mixed versus Full</h3>
-            <p>The <strong>Collector Name</strong> column tells you which GC algorithm ran. This workshop uses two of the four main collectors available in OpenJDK:</p>
+            <p>The <strong>Collector Name</strong> column tells you which GC algorithm ran. This workshop compares ZGC against G1. The broader landscape includes four main collectors:</p>
 
             <div class="table-wrap">
                 <table>
@@ -1408,7 +1522,33 @@ if (tradeEvent.isEnabled()) {
         </div>
 
         <div class="subsection">
-            <h3>3.2 Where to Emit From</h3>
+            <h3>3.2 Why Jakarta EE Apps Need Custom Events</h3>
+            <p>In a Jakarta EE application, the container manages thread pools, connection pools, bean lifecycles, and the request/response cycle. Standard JFR events tell you what the JVM did: a GC pause here, a JIT compilation there. They do not tell you which business operation was running when the pause hit.</p>
+
+            <p>Consider this application. The <code>MarketDataPublisher</code> is an <code>@ApplicationScoped</code> bean running on a container-managed virtual thread. When a GC pause occurs, the JFR recording shows the pause. But without the <code>trade.published</code> event, you cannot tell whether the pause delayed 10 trades or 10,000. The domain event bridges the gap between runtime behaviour and business impact.</p>
+
+            <p>The same principle applies to any Jakarta EE application:</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Jakarta EE Boundary</th><th>What a Domain Event Would Show</th></tr></thead>
+                    <tbody>
+                        <tr><td>JAX-RS <code>@POST</code> handler</td><td>Request latency including any GC pauses that occurred during deserialisation, validation, or persistence.</td></tr>
+                        <tr><td>CDI <code>@Observes</code> async event</td><td>Whether the observer was delayed by a GC pause between the event fire and the observer invocation.</td></tr>
+                        <tr><td>WebSocket <code>@OnOpen</code> / session broadcast</td><td>How many WebSocket messages were queued during a pause. Whether backpressure activated.</td></tr>
+                        <tr><td><code>@ManagedExecutorDefinition</code> task</td><td>Whether the virtual thread was unmounted during a GC pause, or pinned to its carrier.</td></tr>
+                        <tr><td><code>@PostConstruct</code> initialisation</td><td>How long startup took and where the time went. Relevant for cold-start latency in serverless-like deployments.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout callout-orange">
+                <p><strong>Rule of thumb:</strong> If a code path matters to your SLA, it needs a custom JFR event. GC events tell you the JVM paused. Domain events tell you what the pause cost in business terms.</p>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3>3.3 Where to Emit From</h3>
             <ol>
                 <li><strong>One event per logical operation, not per method call.</strong> Don't decorate every function; pick the boundary where the operation succeeded or failed.</li>
                 <li><strong>Numeric fields are cheap; String fields are not.</strong> Strings get interned in the JFR string pool, but the interning lookup is hot-path overhead. Use enums-as-ints where possible.</li>
@@ -1417,7 +1557,7 @@ if (tradeEvent.isEnabled()) {
         </div>
 
         <div class="subsection">
-            <h3>3.3 Correlating with GC Events</h3>
+            <h3>3.4 Correlating with GC Events</h3>
             <p>In JMC, the <strong>Event Browser</strong> lets you overlay timelines. To see whether GC pauses cause SBE encoding stalls:</p>
             <ol>
                 <li>Find <code>sbe.encode</code> under Custom events.</li>
@@ -1460,7 +1600,7 @@ SBE encode:  ............    .  .  .   .
         <div class="module-header">
             <div class="module-number">04</div>
             <h2>Stress Testing &amp; Production Readiness</h2>
-            <p class="goal">Stress-test the same Jakarta EE application on two OpenJDK runtimes. Read the recordings and decide whether the application is ready to ship. The workshop will not declare a winner; the recordings will say what they say, and you will read them.</p>
+            <p class="goal">Stress-test the same Jakarta EE application on two OpenJDK runtimes and read the recordings. The skill you are building is runtime-agnostic: the same JFR triage works on G1, ZGC, Shenandoah, C4, or any collector you encounter in production.</p>
             <span class="duration-badge">45 min</span>
         </div>
 
@@ -1562,19 +1702,23 @@ SBE encode:  ............    .  .  .   .
         </div>
 
         <div class="subsection">
-            <h3>5.1 Pattern Matching</h3>
-            <p>The four pathologies are not specific to trading systems. The closest analogues in common workloads:</p>
+            <h3>5.1 Pattern Matching in Jakarta EE Applications</h3>
+            <p>The four pathologies are not specific to trading systems. In a Jakarta EE application, the same pathologies show up in predictable places. The CDI bean model, the container-managed lifecycle, and the standard API patterns create characteristic allocation profiles that map directly to the four signatures you learned in Module 2.</p>
 
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>Pathology</th><th>Where It Shows Up Outside HFT</th></tr></thead>
+                    <thead><tr><th>Pathology</th><th>Jakarta EE Pattern That Causes It</th><th>JFR Signature</th></tr></thead>
                     <tbody>
-                        <tr><td><strong>Promotion Storm</strong></td><td>Caches with TTL &gt; young-gen GC interval; pooled connection objects.</td></tr>
-                        <tr><td><strong>Fragmentation</strong></td><td>Long-lived applications with many distinct object sizes (logging frameworks).</td></tr>
-                        <tr><td><strong>Cross-gen Refs</strong></td><td>Mutable singletons that hold references to recent request objects.</td></tr>
-                        <tr><td><strong>Evacuation Failure</strong></td><td>Heap sized too tight for the survivor space; allocation bursts.</td></tr>
+                        <tr><td><strong>Promotion Storm</strong></td><td>An <code>@ApplicationScoped</code> bean with a growing cache (e.g., <code>ConcurrentHashMap</code> accumulating session data, or a <code>Map&lt;String, Price&gt;</code> that never evicts). Objects survive young-gen collections because the cache holds them, and old gen fills monotonically.</td><td><code>jdk.PromoteObjectOutsidePLAB</code> count climbing. Old gen growing. Mixed collections lengthen.</td></tr>
+                        <tr><td><strong>Fragmentation</strong></td><td>CDI proxy objects, interceptor chains, and <code>@JsonbTransient</code> annotated DTOs create many small objects of different sizes per request. Long-running Payara Micro instances accumulate distinct object-size distributions over time.</td><td><code>jdk.ObjectAllocationSample</code> dominated by small objects. <code>Object Copy</code> phase dominates pause time.</td></tr>
+                        <tr><td><strong>Cross-gen Refs</strong></td><td>An <code>@ApplicationScoped</code> broadcaster bean holding <code>Set&lt;Session&gt;</code> references. The bean is old gen; the sessions (and their buffers) are young gen. Every young-gen collection must scan the session set. The same pattern appears with any singleton that holds request-scoped objects.</td><td><code>Update RS</code> or <code>Scan RS</code> dominates pause time. <code>ExecutionSample</code> stacks in <code>G1BarrierSet</code>.</td></tr>
+                        <tr><td><strong>Evacuation Failure</strong></td><td>Connection pool or thread pool sized too large for the heap. Or <code>ManagedExecutorService</code> task queues filling faster than they drain during a burst. The heap has nowhere to evacuate live objects to.</td><td><code>jdk.EvacuationFailed</code> events. <code>jdk.PromotionFailed</code> events. Full GC triggers.</td></tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div class="callout callout-info">
+                <p><strong>Why this matters for Jakarta EE developers:</strong> The container abstracts away thread management, pooling, and lifecycle. That abstraction is valuable, but it also means you cannot see what the container is doing to the heap. JFR is the tool that makes the container's allocation behaviour visible. The four signatures above appear in any Jakarta EE application under load; the only difference is which bean and which API boundary triggers them.</p>
             </div>
 
             <p>The take-home reference is <code>exercises/module-5-apply-to-your-app/gc-pathology-catalog.md</code>, which restates the four patterns with their JFR signatures, plain-language root causes, and a fix-order list per pattern.</p>
@@ -1645,7 +1789,7 @@ SBE encode:  ............    .  .  .   .
                 <li>The four GC pathologies have <strong>signatures you can recognise in any application on any JVM runtime</strong>.</li>
                 <li><code>event.isEnabled()</code> and <code>@StackTrace(false)</code> are the <strong>two rules for production-grade custom JFR events</strong>.</li>
                 <li><strong>Stress-test before shipping.</strong> JFR tells you what happened; pre-production stress tells you whether it will happen in prod.</li>
-                <li>The runtime is a production decision with measurable consequences. <strong>The recording, not the brand, decides.</strong></li>
+                <li>The runtime is a production decision with measurable consequences. <strong>The recording, not the brand, decides.</strong> Today you read OpenJDK runtimes. The same skill applies to any JVM, including those that sit above the ceiling you measured.</li>
             </ol>
         </div>
     </section>
@@ -1657,7 +1801,11 @@ SBE encode:  ............    .  .  .   .
         </div>
 
         <div class="subsection">
-            <p>You ran community Payara Micro 7 on Azul Zulu OpenJDK in the lab today. The commercial Azul stack consolidates the JDK, the Jakarta EE runtime, and the high-performance JVM under one vendor:</p>
+            <p>You spent today reading JFR recordings from two OpenJDK runtimes. Every recording you opened showed you what a collector does under load: where it pauses, how long for, and why. That diagnostic skill does not depend on the brand on the JVM.</p>
+
+            <p>The recordings you read today have a ceiling. ZGC's sub-millisecond pauses are the best the OpenJDK envelope provides. Azul Platform Prime's C4 collector operates above that envelope: zero stop-the-world phases, even during compaction. The same JFR analysis you just learned will show you the difference if you open a Prime recording.</p>
+
+            <p>The commercial Azul stack consolidates the JDK, the Jakarta EE runtime, and the high-performance JVM under one vendor:</p>
 
             <div class="table-wrap">
                 <table>
@@ -1671,15 +1819,15 @@ SBE encode:  ............    .  .  .   .
                         </tr>
                         <tr>
                             <td><strong>Azul Platform Prime</strong></td>
-                            <td>The JVM above the OpenJDK pause-time envelope: C4 collector, ReadyNow warmup, Falcon JIT, production support for workloads where ZGC's allocation envelope is the constraint.</td>
+                            <td>The JVM above the OpenJDK pause-time envelope: C4 collector eliminates the STW pauses you saw in today's ZGC recordings. ReadyNow warmup, Falcon JIT, and production support for workloads where ZGC's allocation envelope is the constraint.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <p>The JFR analysis skills you used today apply unchanged, and the same Payara application runs without modification on either runtime. Only the runtime ceiling changes.</p>
+            <p>The same Payara application runs without modification. Only the runtime ceiling changes. Bring a Prime recording to JMC and read it with the same checklist you used today.</p>
 
-            <p class="muted">Talk to us if your production workload has outgrown the recordings you read today.</p>
+            <p class="muted">Talk to the Azul team if your production workload needs to go beyond what you measured today.</p>
         </div>
     </section>
 
