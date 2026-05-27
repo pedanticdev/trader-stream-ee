@@ -727,61 +727,87 @@
             white-space: pre;
         }
 
-        /* ===== Decision Tree ===== */
+        /* ===== Triage Flow ===== */
 
-        .decision-tree {
-            background: linear-gradient(135deg, var(--bg-alt) 0%, var(--surface) 100%);
+        .triage-flow {
+            margin: 20px 0;
+        }
+
+        .triage-step {
+            display: grid;
+            grid-template-columns: 48px 1fr 1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .triage-num {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 1.6em;
+            font-weight: 900;
+            color: var(--navy);
+            background: linear-gradient(135deg, var(--teal-dim), var(--surface));
+            border: 2px solid var(--teal-border);
+            border-radius: 12px;
+            min-height: 72px;
+        }
+
+        .triage-question {
+            display: flex;
+            align-items: center;
+            background: var(--bg-alt);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px 24px;
-            margin: 16px 0;
-        }
-
-        .decision-tree ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .decision-tree li {
-            position: relative;
-            padding-left: 20px;
-            margin-bottom: 6px;
-        }
-
-        .decision-tree li::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 10px;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--border-strong);
-        }
-
-        .decision-tree li.question {
+            border-left: 4px solid var(--blue);
+            border-radius: 8px;
+            padding: 16px 20px;
             font-weight: 600;
-            color: var(--blue);
+            font-size: 0.95em;
         }
 
-        .decision-tree li.question::before {
-            background: var(--blue);
+        .triage-yes {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 20px;
+            min-height: 72px;
         }
 
-        .decision-tree li.answer-yes {
-            color: var(--success);
+        .triage-yes strong {
+            font-size: 1em;
         }
 
-        .decision-tree li.answer-yes::before {
-            background: var(--success);
+        .triage-yes span {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            font-weight: 400;
         }
 
-        .decision-tree li.answer-no {
-            color: var(--danger);
+        .triage-connector {
+            width: 2px;
+            height: 20px;
+            background: var(--border-strong);
+            margin: 4px 0 4px 23px;
+            border-radius: 1px;
         }
 
-        .decision-tree li.answer-no::before {
-            background: var(--danger);
+        @media (max-width: 900px) {
+            .triage-step {
+                grid-template-columns: 1fr;
+            }
+            .triage-num {
+                min-height: 40px;
+                width: 40px;
+                font-size: 1.2em;
+            }
+            .triage-connector {
+                margin-left: 19px;
+            }
         }
 
         /* ===== Lists ===== */
@@ -1365,13 +1391,13 @@ ls -lh monitoring/recordings/workshop-g1/</code></pre>
             <p>Average pause time lies. Distributions tell the truth.</p>
 
             <div class="arch-flow">
-                <div class="arch-node"><strong>P50</strong><span>typical user feels</span></div>
+                <div class="arch-node" style="border-color: var(--success-border);"><strong style="color:var(--success)">P50</strong><span>nothing to worry about</span></div>
                 <span class="arch-arrow">&rarr;</span>
-                <div class="arch-node"><strong>P99</strong><span>1 in 100 requests hits</span></div>
+                <div class="arch-node" style="border-color: var(--warn-border);"><strong style="color:var(--warn)">P99</strong><span>worth keeping an eye on</span></div>
                 <span class="arch-arrow">&rarr;</span>
-                <div class="arch-node"><strong>P99.9</strong><span>causes incidents</span></div>
+                <div class="arch-node" style="border-color: var(--orange-border);"><strong style="color:var(--orange)">P99.9</strong><span>this is the one that pages you at 3 AM</span></div>
                 <span class="arch-arrow">&rarr;</span>
-                <div class="arch-node" style="border-color: var(--danger-border);"><strong style="color:var(--danger)">Max</strong><span>worst single pause</span></div>
+                <div class="arch-node" style="border-color: var(--danger-border);"><strong style="color:var(--danger)">Max</strong><span>drop everything, the SLA is on fire</span></div>
             </div>
 
             <div class="callout callout-warn">
@@ -1399,12 +1425,12 @@ ls -lh monitoring/recordings/workshop-g1/</code></pre>
 
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>Collector Name</th><th>What G1 Was Doing</th></tr></thead>
+                    <thead><tr><th>Collector Name</th><th>What G1 Was Doing</th><th>Severity</th></tr></thead>
                     <tbody>
-                        <tr><td><code>G1New</code> (Normal)</td><td>Young-only collection. Cheap.</td></tr>
-                        <tr><td><code>G1Mixed</code></td><td>Young plus some old regions. The expensive case.</td></tr>
-                        <tr><td><code>G1Old</code></td><td>Whole-heap, stop-the-world. "You have a problem."</td></tr>
-                        <tr><td><code>G1ConcurrentMark</code></td><td>Mark phases running with the application; not a pause.</td></tr>
+                        <tr><td><code>G1New</code> (Normal)</td><td>Young-only collection.</td><td style="color:var(--success);">routine maintenance</td></tr>
+                        <tr><td><code>G1Mixed</code></td><td>Young plus some old regions.</td><td style="color:var(--warn);">the bill is coming due</td></tr>
+                        <tr><td><code>G1Old</code></td><td>Whole-heap, stop-the-world.</td><td style="color:var(--danger);">the application stopped breathing</td></tr>
+                        <tr><td><code>G1ConcurrentMark</code></td><td>Mark phases running with the application.</td><td style="color:var(--teal);">not a pause, working in the background</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1412,14 +1438,14 @@ ls -lh monitoring/recordings/workshop-g1/</code></pre>
             <h4>Common Causes</h4>
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>Cause</th><th>Meaning</th><th>Collector</th></tr></thead>
+                    <thead><tr><th>Cause</th><th>Meaning</th><th>Worry Level</th></tr></thead>
                     <tbody>
-                        <tr><td><code>Allocation Rate</code></td><td>App allocating fast enough to fill young gen. Normal, healthy.</td><td>G1, ZGC</td></tr>
-                        <tr><td><code>G1 Evacuation Pause</code></td><td>G1 moving live objects out of young regions.</td><td>G1</td></tr>
-                        <tr><td><code>High Usage</code></td><td>Heap occupancy crossed a threshold. ZGC initiates concurrent cycle.</td><td>ZGC</td></tr>
-                        <tr><td><code>G1 Humongous Allocation</code></td><td>Object larger than half a G1 region. Causes fragmentation.</td><td>G1</td></tr>
-                        <tr><td><code>System.gc()</code></td><td>Explicit GC request. Usually unwanted in production.</td><td>Any</td></tr>
-                        <tr><td><code>Metadata GC Threshold</code></td><td>Metaspace filled up. Often dynamic class generation.</td><td>Any</td></tr>
+                        <tr><td><code>Allocation Rate</code></td><td>App allocating fast enough to fill young gen.</td><td style="color:var(--success);">this is normal, the app is doing work</td></tr>
+                        <tr><td><code>G1 Evacuation Pause</code></td><td>G1 moving live objects out of young regions.</td><td style="color:var(--warn);">expected, but watch the duration</td></tr>
+                        <tr><td><code>High Usage</code></td><td>Heap occupancy crossed a threshold. ZGC initiates concurrent cycle.</td><td style="color:var(--teal);">ZGC handling it, no human needed</td></tr>
+                        <tr><td><code>G1 Humongous Allocation</code></td><td>Object larger than half a G1 region. Causes fragmentation.</td><td style="color:var(--orange);">your heap is getting Swiss-cheesed</td></tr>
+                        <tr><td><code>System.gc()</code></td><td>Explicit GC request from application code.</td><td style="color:var(--danger);">find who called this and remove it</td></tr>
+                        <tr><td><code>Metadata GC Threshold</code></td><td>Metaspace filled up. Often dynamic class generation.</td><td style="color:var(--warn);">check if a framework is generating classes in a loop</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1446,17 +1472,44 @@ ls -lh monitoring/recordings/workshop-g1/</code></pre>
             </div>
 
             <h4>Triage Decision Tree</h4>
-            <div class="decision-tree">
-                <ul>
-                    <li class="question">Long GC pause &rarr; Pause time scales with old gen?</li>
-                    <li class="answer-yes">&rarr; <strong>Promotion storm:</strong> too many objects surviving</li>
-                    <li class="answer-no">&rarr; Many small regions?</li>
-                    <li class="answer-yes">&rarr; <strong>Fragmentation:</strong> compaction overhead</li>
-                    <li class="answer-no">&rarr; High RememberedSet update time?</li>
-                    <li class="answer-yes">&rarr; <strong>Cross-generational refs:</strong> write barrier pressure</li>
-                    <li class="answer-no">&rarr; EvacuationFailed events?</li>
-                    <li class="answer-yes">&rarr; <strong>Evacuation failure:</strong> to-space exhausted</li>
-                </ul>
+            <p>Start at the top. If the answer is yes, stop: you found the pathology. If no, move down.</p>
+
+            <div class="triage-flow">
+                <div class="triage-step">
+                    <div class="triage-num">1</div>
+                    <div class="triage-question">Does pause time grow as old gen fills up?</div>
+                    <div class="triage-yes" style="border-color: var(--danger-border);">
+                        <strong style="color:var(--danger)">Promotion Storm</strong>
+                        <span>Objects surviving faster than the collector can promote them. Your heap is a conveyor belt with no off-ramp.</span>
+                    </div>
+                </div>
+                <div class="triage-connector"></div>
+                <div class="triage-step">
+                    <div class="triage-num">2</div>
+                    <div class="triage-question">Lots of small, fragmented free regions?</div>
+                    <div class="triage-yes" style="border-color: var(--orange-border);">
+                        <strong style="color:var(--orange)">Fragmentation</strong>
+                        <span>Swiss cheese. Plenty of total free space, but no single gap big enough to use.</span>
+                    </div>
+                </div>
+                <div class="triage-connector"></div>
+                <div class="triage-step">
+                    <div class="triage-num">3</div>
+                    <div class="triage-question">Is RememberedSet update time (scanning old-to-young pointers) eating your pause budget?</div>
+                    <div class="triage-yes" style="border-color: var(--warn-border);">
+                        <strong style="color:var(--warn)">Cross-Gen Refs</strong>
+                        <span>Old objects pointing at young objects. Every young GC follows thousands of sticky notes.</span>
+                    </div>
+                </div>
+                <div class="triage-connector"></div>
+                <div class="triage-step">
+                    <div class="triage-num">4</div>
+                    <div class="triage-question">Do you see <code>EvacuationFailed</code> events?</div>
+                    <div class="triage-yes" style="border-color: var(--danger-border);">
+                        <strong style="color:var(--danger)">Evacuation Failure</strong>
+                        <span>Every storage unit in the city is already rented. The heap is full.</span>
+                    </div>
+                </div>
             </div>
 
             <p>See <code>analysis-checklist.md</code> for the full triage tree with telltale JFR events per pathology.</p>
@@ -1505,6 +1558,29 @@ curl -X POST 'http://localhost:9080/trader-stream-ee/api/pressure/mode/OFF'</cod
             <p>In the <strong>ZGC recording</strong> the same workload should produce no visible pause increase. Use this as the comparison anchor for Module 4.</p>
 
             <p>Full hints and expected outputs are in <code>exercises/module-2-diagnose-earnings-spike/</code>.</p>
+        </div>
+
+        <div class="subsection">
+            <h3>2.6 GC Glossary</h3>
+            <p>The terms above come up in every JFR recording. Here is what they mean.</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Term</th><th>Plain English</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Young generation</strong></td><td>Where new objects are allocated. Collected frequently. Most objects die here.</td></tr>
+                        <tr><td><strong>Old generation</strong></td><td>Where objects that survived multiple young-gen collections live. Collected less often, but more expensive when it happens.</td></tr>
+                        <tr><td><strong>Promotion</strong></td><td>An object surviving long enough to be moved from young gen to old gen.</td></tr>
+                        <tr><td><strong>Mixed collection</strong></td><td>G1 collecting young regions plus some old regions in the same pause. More expensive than young-only.</td></tr>
+                        <tr><td><strong>Remembered set</strong></td><td>A per-region data structure tracking which old objects hold references to young objects. G1 must scan these during every young-gen collection. More cross-generational references = longer pause.</td></tr>
+                        <tr><td><strong>Write barrier</strong></td><td>Code injected by the JVM on every reference field write. Updates card tables and remembered sets. Adds a few nanoseconds to every pointer assignment your application makes.</td></tr>
+                        <tr><td><strong>Evacuation</strong></td><td>Moving live objects out of a region so the region can be reclaimed. The core operation of a copying collector.</td></tr>
+                        <tr><td><strong>PLAB</strong></td><td>Promotion Local Allocation Buffer. Each GC thread gets a private buffer for promoted objects. Faster than shared allocation, but can waste space if the buffer is too big.</td></tr>
+                        <tr><td><strong>Compaction</strong></td><td>Moving live objects together to eliminate gaps. Necessary when fragmentation prevents allocation. Always requires a stop-the-world pause in G1.</td></tr>
+                        <tr><td><strong>Stop-the-world (STW)</strong></td><td>All application threads halt while the GC works. No progress is made. The metric you are trying to minimise.</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="discussion">
@@ -1658,11 +1734,11 @@ SBE encode:  ............    .  .  .   .
 
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>Scenario</th><th>What It Stresses</th></tr></thead>
+                    <thead><tr><th>Scenario</th><th>What It Stresses</th><th>What You Will See</th></tr></thead>
                     <tbody>
-                        <tr><td><code>INTRADAY_POSITION_GROWTH</code></td><td>Mixed collection scaling as the position book grows from 100 MB to 2 GB.</td></tr>
-                        <tr><td><code>MULTI_VENUE_QUOTE_CHURN</code></td><td>Compaction overhead under short-lived multi-venue quote churn.</td></tr>
-                        <tr><td><code>LONG_HORIZON_POSITION_BOOK</code></td><td>Write-barrier and remembered-set maintenance.</td></tr>
+                        <tr><td><code>INTRADAY_POSITION_GROWTH</code></td><td>Mixed collection scaling as the position book grows from 100 MB to 2 GB.</td><td style="color:var(--warn);">G1 pauses get longer as the live set grows. ZGC stays flat.</td></tr>
+                        <tr><td><code>MULTI_VENUE_QUOTE_CHURN</code></td><td>Compaction overhead under short-lived multi-venue quote churn.</td><td style="color:var(--orange);">G1 runs out of free regions and must compact. Expect the biggest single pauses here.</td></tr>
+                        <tr><td><code>LONG_HORIZON_POSITION_BOOK</code></td><td>Write-barrier and remembered-set maintenance.</td><td style="color:var(--danger);">cross-generational references pile up. Every young GC has to scan more old-to-young pointers.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1776,16 +1852,42 @@ SBE encode:  ............    .  .  .   .
             <h3>5.2 Allocation versus Collector Choice</h3>
             <p>The hardest call in performance work is: do I reduce allocation, or do I change collector?</p>
 
-            <div class="decision-tree">
-                <ul>
-                    <li class="question">Long GC pauses observed &rarr; Allocation rate &gt; 500 MB/sec?</li>
-                    <li class="answer-yes">&rarr; <strong>Reduce allocation first</strong>: flyweight, off-heap, primitive arrays</li>
-                    <li class="answer-no">&rarr; Heap &gt; 8 GB?</li>
-                    <li class="answer-yes">&rarr; <strong>Consider concurrent collector</strong>: ZGC, Shenandoah</li>
-                    <li class="answer-no">&rarr; Pause sensitive but P99 acceptable?</li>
-                    <li class="answer-yes">&rarr; <strong>Tune G1</strong>: MaxGCPauseMillis, InitiatingHeapOccupancyPercent</li>
-                    <li class="answer-no">&rarr; Consider concurrent collector</li>
-                </ul>
+            <div class="triage-flow">
+                <div class="triage-step">
+                    <div class="triage-num">1</div>
+                    <div class="triage-question">Allocation rate &gt; 500 MB/sec?</div>
+                    <div class="triage-yes" style="border-color: var(--warn-border);">
+                        <strong style="color:var(--warn)">Reduce allocation first</strong>
+                        <span>Flyweight patterns, off-heap buffers, primitive arrays. Cheaper than changing JVM.</span>
+                    </div>
+                </div>
+                <div class="triage-connector"></div>
+                <div class="triage-step">
+                    <div class="triage-num">2</div>
+                    <div class="triage-question">Heap &gt; 8 GB?</div>
+                    <div class="triage-yes" style="border-color: var(--teal-border);">
+                        <strong style="color:var(--teal)">Consider concurrent collector</strong>
+                        <span>ZGC or Shenandoah. G1's pauses scale with live set beyond this point.</span>
+                    </div>
+                </div>
+                <div class="triage-connector"></div>
+                <div class="triage-step">
+                    <div class="triage-num">3</div>
+                    <div class="triage-question">Pause-sensitive, but P99 still acceptable?</div>
+                    <div class="triage-yes" style="border-color: var(--success-border);">
+                        <strong style="color:var(--success)">Tune G1</strong>
+                        <span>MaxGCPauseMillis, InitiatingHeapOccupancyPercent. Squeezing the last mile.</span>
+                    </div>
+                </div>
+                <div class="triage-connector"></div>
+                <div class="triage-step">
+                    <div class="triage-num">4</div>
+                    <div class="triage-question">None of the above helped?</div>
+                    <div class="triage-yes" style="border-color: var(--danger-border);">
+                        <strong style="color:var(--danger)">Move to concurrent collector</strong>
+                        <span>You have optimised the hot paths and the residual GC cost is still too high. Change the JVM, not the code.</span>
+                    </div>
+                </div>
             </div>
 
             <div class="callout callout-info">
