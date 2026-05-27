@@ -210,11 +210,11 @@ GET {{base_zgc}}/demo/presets
 Accept: application/json
 
 ### Get a specific demo preset
-GET {{base_zgc}}/demo/preset/1
+GET {{base_zgc}}/demo/preset/MARKET_OPEN_SPIKE
 Accept: application/json
 
-### Start demo preset 1
-POST {{base_zgc}}/demo/preset/1/start
+### Start a demo preset
+POST {{base_zgc}}/demo/preset/MARKET_OPEN_SPIKE/start
 Accept: application/json
 
 ### Cancel demo execution (replace {{executionId}})

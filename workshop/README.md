@@ -12,7 +12,7 @@ Hands-on workshop materials for JNation.
 | Risk matrix and live diagnostic steps        | [operational-notes.md](./operational-notes.md)                                                                                 |
 | Verify your laptop is ready                  | `./scripts/verify-setup.sh`                                                                                                    |
 | Print a desk reference                       | [analysis-checklist.md](./analysis-checklist.md)                                                                               |
-| Read the workshop handbook                    | http://localhost:8080/trader-stream-ee/workshop.html                                                                           |
+| Read the workshop handbook                   | http://localhost:8080/trader-stream-ee/workshop.html                                                                           |
 | Reproduce the pre-recorded files             | `./scripts/record-scenarios.sh`                                                                                                |
 | Compare two recordings on the CLI            | `./scripts/compare-recordings.sh`                                                                                              |
 | Inspect any recording from the terminal      | `./scripts/jfr-query.sh summary <file>.jfr`                                                                                    |

@@ -73,12 +73,12 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 COPY src/main/resources/hazelcast-config.xml /opt/payara/hazelcast-config.xml
 
 # Set unique cluster name for ZGC environment and update discovery members
-RUN sed -i 's/payara-trader-cluster/payara-trader-c4/' /opt/payara/hazelcast-config.xml && \
-    sed -i 's/trader-stream-/trader-stream-c4-/' /opt/payara/hazelcast-config.xml
+RUN sed -i 's/payara-trader-cluster/payara-trader-zgc/' /opt/payara/hazelcast-config.xml && \
+    sed -i 's/trader-stream-/trader-stream-zgc-/' /opt/payara/hazelcast-config.xml
 
 # Run Payara Micro with the WAR.
 # NOTE: --nohazelcast is omitted so clustering stays enabled.
 # When JFR_ALWAYS_ON=true is set, the shell substitution below appends a
 # circular always-on recording. Otherwise only ad-hoc recordings via the
 # /api/jfr REST endpoints will produce .jfr files.
-CMD ["sh", "-c", "exec java $JAVA_OPTS ${JFR_ALWAYS_ON:+-XX:StartFlightRecording=name=${JFR_RECORDING_NAME:-c4-cluster},filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal -XX:FlightRecorderOptions=stackdepth=256} -jar payara-micro.jar --deploy /opt/payara/trader-stream-ee.war --contextroot trader-stream-ee --hzconfigfile /opt/payara/hazelcast-config.xml"]
+CMD ["sh", "-c", "exec java $JAVA_OPTS ${JFR_ALWAYS_ON:+-XX:StartFlightRecording=name=${JFR_RECORDING_NAME:-zgc-cluster},filename=/opt/payara/recordings/recording.jfr,dumponexit=true,maxage=1h,maxsize=1g,method-profiling=normal -XX:FlightRecorderOptions=stackdepth=256} -jar payara-micro.jar --deploy /opt/payara/trader-stream-ee.war --contextroot trader-stream-ee --hzconfigfile /opt/payara/hazelcast-config.xml"]

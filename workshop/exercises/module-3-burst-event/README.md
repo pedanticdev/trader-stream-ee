@@ -42,7 +42,7 @@ This rolls only one instance, so the cluster stays up.
 curl -X POST 'http://localhost:8080/trader-stream-ee/api/jfr/recording/start?name=burst-test&durationSeconds=120&settings=tradestream-workshop'
 
 # Trigger MARKET_OPEN_SPIKE (a multi-step preset that includes a 5x burst phase)
-curl -X POST 'http://localhost:8080/trader-stream-ee/api/demo/presets/MARKET_OPEN_SPIKE/execute'
+curl -X POST 'http://localhost:8080/trader-stream-ee/api/demo/preset/MARKET_OPEN_SPIKE/start'
 
 # Wait for the recording to finish, then open it
 ls -lh monitoring/recordings/workshop-zgc/
