@@ -237,6 +237,51 @@
             overflow: hidden;
         }
 
+        .repo-banner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid var(--teal-border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 32px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .repo-banner-label {
+            font-family: var(--font-mono);
+            font-size: 0.7em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--teal);
+        }
+
+        .repo-banner-link {
+            font-family: var(--font-mono);
+            font-size: 1.15em;
+            font-weight: 600;
+            color: #fff;
+            text-decoration: none;
+            padding: 4px 0;
+            border-bottom: 2px solid var(--teal);
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .repo-banner-link:hover {
+            color: var(--teal);
+            border-color: #fff;
+        }
+
+        .repo-banner-hint {
+            font-size: 0.8em;
+            color: var(--text-dim);
+            flex-basis: 100%;
+        }
+
         .hero::after {
             content: '';
             position: absolute;
@@ -1060,6 +1105,14 @@
 <main>
 
     <section class="hero" id="overview">
+        <div class="repo-banner">
+            <span class="repo-banner-label">Workshop Repository</span>
+            <a href="https://github.com/pedanticdev/trader-stream-ee/tree/jnation-workshop" target="_blank" rel="noopener" class="repo-banner-link">
+                github.com/pedanticdev/trader-stream-ee&nbsp;&nbsp;<span style="font-size:0.75em; color:var(--teal);">branch: jnation-workshop</span>
+            </a>
+            <span class="repo-banner-hint">Clone, build, run. <code>git clone ... &amp;&amp; git checkout jnation-workshop</code>. Everything in this page lives in that repo.</span>
+        </div>
+
         <h2>Low-Latency Trading with Jakarta EE and Payara Micro</h2>
         <p class="subtitle">Learn to read JFR recordings on any Java runtime &middot; hands-on workshop with a realistic trading system</p>
 
